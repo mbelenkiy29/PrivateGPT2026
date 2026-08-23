@@ -52,29 +52,49 @@ jest.mock("../../models/documents", () => ({
     ]),
   },
 }));
-jest.mock("../../models/documentSyncQueue", () => ({
-  DocumentSyncQueue: {
-    validFileTypes: ["link"],
-    extraFileTypes: [],
-    staleDocumentQueues: jest.fn().mockResolvedValue([
-      {
-        id: 1,
-        workspaceDoc: {
-          id: 1,
-          docId: "workspace-doc-id",
-          docpath: "custom-documents/watched-and-pinned.json",
-          filename: "watched-and-pinned.json",
-          workspace: { slug: "workspace", name: "Workspace" },
-        },
+jest.mock("../../models/documentSyncQueue", () => {
+  const extraFileTypes = [];
+  return {
+    DocumentSyncQueue: {
+      validFileTypes: ["link"],
+      extraFileTypes,
+      registerFileType(type) {
+        if (!type || extraFileTypes.includes(type)) return false;
+        extraFileTypes.push(type);
+        return true;
       },
-    ]),
-    calcNextSync: jest.fn(() => new Date()),
-    _update: jest.fn(),
-    saveRun: jest.fn(),
-  },
-}));
+      staleDocumentQueues: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          workspaceDoc: {
+            id: 1,
+            docId: "workspace-doc-id",
+            docpath: "custom-documents/watched-and-pinned.json",
+            filename: "watched-and-pinned.json",
+            workspace: { slug: "workspace", name: "Workspace" },
+          },
+        },
+      ]),
+      calcNextSync: jest.fn(() => new Date()),
+      _update: jest.fn(),
+      saveRun: jest.fn(),
+    },
+  };
+});
 jest.mock("../../models/documentSyncRun", () => ({
   DocumentSyncRun: { statuses: { success: "success" } },
+}));
+jest.mock("../../models/connectedFileSource", () => ({
+  ConnectedFileSource: {
+    providers: { googleDrive: "google-drive", onedrive: "onedrive" },
+    get: jest.fn(),
+  },
+}));
+jest.mock("../../utils/fileSources/googleDrive", () => ({
+  GoogleDriveSource: {},
+}));
+jest.mock("../../utils/fileSources/onedrive", () => ({
+  OneDriveSource: {},
 }));
 
 // A pinned document is de-duplicated out of the RAG results by comparing the `sourceIdentifier` of
@@ -85,6 +105,16 @@ describe("watched document re-sync", () => {
   beforeAll(async () => {
     require("../../jobs/sync-watched-documents");
     await concluded;
+  });
+
+  it("loads knowledge source adapters so extra file types are not unwatched", () => {
+    const fs = require("fs");
+    const path = require("path");
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../../jobs/sync-watched-documents.js"),
+      "utf8"
+    );
+    expect(src).toMatch(/knowledgeSources\/register/);
   });
 
   it("stamps the workspace vectors with the source identifier written to disk", () => {
@@ -101,6 +131,8 @@ describe("watched document re-sync", () => {
       mockVectorDatabase.addDocumentToNamespace.mock.calls[1];
     const [, diskPayload] = mockUpdateSourceDocument.mock.calls[0];
 
-    expect(sourceIdentifier(bloomedPayload)).toBe(sourceIdentifier(diskPayload));
+    expect(sourceIdentifier(bloomedPayload)).toBe(
+      sourceIdentifier(diskPayload)
+    );
   });
 });

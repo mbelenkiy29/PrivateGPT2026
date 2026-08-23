@@ -7,6 +7,8 @@ const {
 } = require("../utils/middleware/multiUserProtected");
 const { ConnectedFileSource } = require("../models/connectedFileSource");
 const { SystemSettings } = require("../models/systemSettings");
+const { KnowledgeSource } = require("../models/knowledgeSource");
+const { Workspace } = require("../models/workspace");
 const {
   getFileSourceOAuthConfig,
   publicConfig,
@@ -59,8 +61,14 @@ function fileSourcesEndpoints(app) {
         const records = await ConnectedFileSource.where();
         const config = publicConfig(await getFileSourceOAuthConfig());
         const byProvider = Object.fromEntries(
-          records.map((row) => [row.provider, ConnectedFileSource.toPublic(row)])
+          records.map((row) => [
+            row.provider,
+            ConnectedFileSource.toPublic(row),
+          ])
         );
+        const watches = await KnowledgeSource.where({
+          provider: { in: ["google-drive", "onedrive"] },
+        });
         response.status(200).json({
           sources: {
             local: { provider: "local", connected: true },
@@ -74,6 +82,16 @@ function fileSourcesEndpoints(app) {
             },
           },
           oauth: config,
+          knowledgeSources: watches.map((row) => ({
+            id: row.id,
+            provider: row.provider,
+            workspaceId: row.workspaceId,
+            displayName: row.display_name,
+            remoteId: row.remote_id,
+            watchEnabled: row.watch_enabled,
+            lastSyncedAt: row.last_synced_at,
+            lastError: row.last_error,
+          })),
         });
       } catch (e) {
         console.error(e);
@@ -105,18 +123,17 @@ function fileSourcesEndpoints(app) {
         const existing = await getFileSourceOAuthConfig();
         const next = {
           onedrive: {
-            clientId:
-              incoming.onedrive?.clientId ?? existing.onedrive.clientId,
+            clientId: incoming.onedrive?.clientId ?? existing.onedrive.clientId,
             clientSecret: looksMasked(incoming.onedrive?.clientSecret)
               ? existing.onedrive.clientSecret
-              : incoming.onedrive?.clientSecret ??
-                existing.onedrive.clientSecret,
+              : (incoming.onedrive?.clientSecret ??
+                existing.onedrive.clientSecret),
           },
           google: {
             clientId: incoming.google?.clientId ?? existing.google.clientId,
             clientSecret: looksMasked(incoming.google?.clientSecret)
               ? existing.google.clientSecret
-              : incoming.google?.clientSecret ?? existing.google.clientSecret,
+              : (incoming.google?.clientSecret ?? existing.google.clientSecret),
           },
         };
         await SystemSettings.updateSettings({
@@ -164,7 +181,9 @@ function fileSourcesEndpoints(app) {
     if (!adapter)
       return response
         .status(400)
-        .send(popupHtml({ success: false, error: "Unknown provider", provider }));
+        .send(
+          popupHtml({ success: false, error: "Unknown provider", provider })
+        );
 
     if (error)
       return response.send(
@@ -263,9 +282,13 @@ function fileSourcesEndpoints(app) {
           return response.status(404).json({ error: "Not connected" });
         const { fileIds = [], workspaceSlug } = reqBody(request) || {};
         if (!workspaceSlug)
-          return response.status(400).json({ error: "workspaceSlug is required" });
+          return response
+            .status(400)
+            .json({ error: "workspaceSlug is required" });
         if (!Array.isArray(fileIds) || fileIds.length === 0)
-          return response.status(400).json({ error: "Select at least one file" });
+          return response
+            .status(400)
+            .json({ error: "Select at least one file" });
 
         const adapter = ADAPTERS[record.provider];
         const result = await indexRemoteFiles({
@@ -274,6 +297,41 @@ function fileSourcesEndpoints(app) {
           fileIds,
           workspaceSlug,
         });
+
+        if (result.folders?.length) {
+          const workspace = await Workspace.get({ slug: workspaceSlug });
+          if (workspace) {
+            for (const folder of result.folders) {
+              let sync_cursor = null;
+              try {
+                if (record.provider === "google-drive") {
+                  sync_cursor =
+                    await GoogleDriveSource.getStartPageToken(record);
+                } else if (record.provider === "onedrive") {
+                  sync_cursor = await OneDriveSource.getDeltaLink(
+                    record,
+                    folder.id
+                  );
+                }
+              } catch (e) {
+                console.error(e);
+              }
+              await KnowledgeSource.upsertByRemote({
+                workspaceId: workspace.id,
+                provider: record.provider,
+                remote_id: folder.id,
+                display_name: folder.name,
+                watch_enabled: true,
+                sync_cursor,
+                config: {
+                  connectedFileSourceId: record.id,
+                  folderIds: [folder.id, ...(folder.folderIds || [])],
+                },
+              });
+            }
+          }
+        }
+
         response.status(200).json({ success: true, ...result });
       } catch (e) {
         console.error(e);

@@ -13,10 +13,14 @@ export default function CloudDrivesSettings() {
     google: { clientId: "", clientSecret: "", configured: false },
   });
   const [saving, setSaving] = useState(false);
+  const [watches, setWatches] = useState([]);
 
   useEffect(() => {
     FileSources.getOAuthConfig().then((res) => {
       if (res?.config) setConfig(res.config);
+    });
+    FileSources.list().then((res) => {
+      setWatches(res?.knowledgeSources || []);
     });
   }, []);
 
@@ -65,7 +69,10 @@ export default function CloudDrivesSettings() {
             </p>
           </div>
 
-          <form className="flex flex-col gap-y-6 mt-6 max-w-[640px]" onSubmit={save}>
+          <form
+            className="flex flex-col gap-y-6 mt-6 max-w-[640px]"
+            onSubmit={save}
+          >
             <Card
               title="OneDrive / Microsoft"
               description={
@@ -122,10 +129,54 @@ export default function CloudDrivesSettings() {
               />
             </Card>
 
-            <Button type="submit" disabled={saving} loading={saving} className="w-fit">
+            <Button
+              type="submit"
+              disabled={saving}
+              loading={saving}
+              className="w-fit"
+            >
               {saving ? "Saving…" : "Save credentials"}
             </Button>
           </form>
+
+          {watches.length > 0 && (
+            <div className="flex flex-col gap-y-3 mt-10 max-w-[640px]">
+              <p className="text-sm font-semibold text-theme-text-primary">
+                Folder watches
+              </p>
+              <p className="text-xs text-theme-text-secondary">
+                Folders indexed from Manage Documents are watched hourly for
+                changes.
+              </p>
+              {watches.map((watch) => (
+                <Card
+                  key={watch.id}
+                  title={watch.displayName || watch.remoteId || "Folder"}
+                  description={
+                    watch.provider === "google-drive"
+                      ? "Google Drive"
+                      : "OneDrive"
+                  }
+                >
+                  {watch.lastError ? (
+                    <p className="text-[11px] text-red-400 break-words">
+                      {watch.watchEnabled ? "Sync error" : "Watch paused"}:{" "}
+                      {watch.lastError}
+                    </p>
+                  ) : watch.lastSyncedAt ? (
+                    <p className="text-[11px] text-theme-text-secondary">
+                      Last synced{" "}
+                      {new Date(watch.lastSyncedAt).toLocaleString()}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-theme-text-secondary">
+                      Waiting for first sync
+                    </p>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

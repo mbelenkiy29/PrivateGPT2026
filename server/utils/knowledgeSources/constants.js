@@ -1,0 +1,4 @@
+const MAX_ITEMS_PER_RUN = 200;
+const WATCH_STALE_AFTER_MS = 3600000;
+
+module.exports = { MAX_ITEMS_PER_RUN, WATCH_STALE_AFTER_MS };

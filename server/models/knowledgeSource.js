@@ -61,7 +61,7 @@ const KnowledgeSource = {
       const encrypted_config =
         data.config != null
           ? this.encryptConfig(data.config)
-          : data.encrypted_config ?? null;
+          : (data.encrypted_config ?? null);
 
       return await prisma.knowledge_sources.create({
         data: {
@@ -121,6 +121,36 @@ const KnowledgeSource = {
       console.error(e);
       return false;
     }
+  },
+
+  /**
+   * Create or refresh a watched folder for a workspace + provider + remote id.
+   */
+  async upsertByRemote(data = {}) {
+    const workspaceId = Number(data.workspaceId);
+    const provider = String(data.provider);
+    const remote_id = data.remote_id ?? null;
+    const existing = await this.get({ workspaceId, provider, remote_id });
+    const payload = {
+      display_name: data.display_name,
+      watch_enabled:
+        data.watch_enabled === undefined ? true : Boolean(data.watch_enabled),
+      last_error: null,
+    };
+    if (data.config != null) payload.config = data.config;
+    if (data.sync_cursor !== undefined && !existing?.sync_cursor)
+      payload.sync_cursor = data.sync_cursor;
+
+    if (existing) return this.update(existing.id, payload);
+    return this.create({
+      workspaceId,
+      provider,
+      remote_id,
+      display_name: data.display_name,
+      watch_enabled: payload.watch_enabled,
+      sync_cursor: data.sync_cursor ?? null,
+      config: data.config,
+    });
   },
 };
 

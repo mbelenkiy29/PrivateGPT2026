@@ -83,7 +83,9 @@ async function refreshIfNeeded(record) {
 
   const config = await getFileSourceOAuthConfig();
   if (!config.google.clientId || !config.google.clientSecret)
-    throw new Error("Google Drive is not configured. Add client ID and secret.");
+    throw new Error(
+      "Google Drive is not configured. Add client ID and secret."
+    );
   if (!tokens.refreshToken)
     throw new Error("Google Drive session expired. Reconnect the account.");
 
@@ -100,7 +102,9 @@ async function refreshIfNeeded(record) {
   });
   const data = await res.json();
   if (!res.ok)
-    throw new Error(data.error_description || data.error || "Token refresh failed");
+    throw new Error(
+      data.error_description || data.error || "Token refresh failed"
+    );
 
   await ConnectedFileSource.upsertByProvider("google-drive", {
     access_token: data.access_token,
@@ -153,7 +157,9 @@ const GoogleDriveSource = {
       return {
         success: false,
         error:
-          data.error_description || data.error || "Google token exchange failed",
+          data.error_description ||
+          data.error ||
+          "Google token exchange failed",
       };
 
     const profileRes = await fetch(
@@ -183,7 +189,10 @@ const GoogleDriveSource = {
       token,
       `/files?q=${q}&pageSize=200&fields=${fields}&orderBy=folder,name`
     );
-    return { items: (data.files || []).map(mapFile), next: data.nextPageToken || null };
+    return {
+      items: (data.files || []).map(mapFile),
+      next: data.nextPageToken || null,
+    };
   },
 
   async search(record, query) {
@@ -194,7 +203,10 @@ const GoogleDriveSource = {
     const fields = encodeURIComponent(
       "files(id,name,mimeType,size,modifiedTime,webViewLink)"
     );
-    const data = await drive(token, `/files?q=${q}&pageSize=50&fields=${fields}`);
+    const data = await drive(
+      token,
+      `/files?q=${q}&pageSize=50&fields=${fields}`
+    );
     return { items: (data.files || []).map(mapFile) };
   },
 
@@ -229,6 +241,51 @@ const GoogleDriveSource = {
     if (!res.ok) throw new Error(`Failed to download ${meta.name}`);
     const buffer = Buffer.from(await res.arrayBuffer());
     return { kind: "file", name: filename, buffer };
+  },
+
+  async getStartPageToken(record) {
+    const token = await refreshIfNeeded(record);
+    const data = await drive(token, "/changes/startPageToken");
+    if (!data.startPageToken)
+      throw new Error("Drive did not return a startPageToken.");
+    return data.startPageToken;
+  },
+
+  /**
+   * One page of Drive changes.list. `pageToken` is a previously saved
+   * startPageToken or nextPageToken.
+   */
+  async listChanges(record, pageToken, { pageSize = 100 } = {}) {
+    if (!pageToken) throw new Error("Drive changes require a pageToken.");
+    const token = await refreshIfNeeded(record);
+    const fields = encodeURIComponent(
+      "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,mimeType,size,modifiedTime,webViewLink,parents,trashed))"
+    );
+    const data = await drive(
+      token,
+      `/changes?pageToken=${encodeURIComponent(pageToken)}&pageSize=${pageSize}&restrictToMyDrive=true&fields=${fields}`
+    );
+    const items = [];
+    for (const change of data.changes || []) {
+      if (change.removed || change.file?.trashed) {
+        items.push({
+          id: change.fileId || change.file?.id,
+          name: change.file?.name || change.fileId,
+          deleted: true,
+        });
+        continue;
+      }
+      if (!change.file) continue;
+      items.push({
+        ...mapFile(change.file),
+        parents: change.file.parents || [],
+      });
+    }
+    return {
+      items,
+      nextPageToken: data.nextPageToken || null,
+      newStartPageToken: data.newStartPageToken || null,
+    };
   },
 };
 

@@ -81,6 +81,34 @@ const Slack = {
       .catch((e) => ({ success: false, error: e.message }));
   },
 
+  botConfig: async () => {
+    return await fetch(`${API_BASE}/channels/slack/config`, {
+      method: "GET",
+      headers: baseHeaders(),
+    })
+      .then((res) => res.json())
+      .catch((e) => ({ config: null, error: e.message }));
+  },
+
+  saveBot: async ({ signingSecret, defaultWorkspace, active }) => {
+    return await fetch(`${API_BASE}/channels/slack/config`, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({ signingSecret, defaultWorkspace, active }),
+    })
+      .then((res) => res.json())
+      .catch((e) => ({ success: false, error: e.message }));
+  },
+
+  disableBot: async () => {
+    return await fetch(`${API_BASE}/channels/slack/disconnect`, {
+      method: "POST",
+      headers: baseHeaders(),
+    })
+      .then((res) => res.json())
+      .catch((e) => ({ success: false, error: e.message }));
+  },
+
   connectPopup: async () => {
     const { url, error } = await Slack.authUrl();
     if (!url)

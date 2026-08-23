@@ -2,11 +2,7 @@ const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
 const { DocumentManager } = require("../DocumentManager");
-const {
-  sourceIdentifier,
-  recentChatHistory,
-  chatPrompt,
-} = require("../chats");
+const { sourceIdentifier, recentChatHistory, chatPrompt } = require("../chats");
 const { fillSourceWindow } = require("../helpers/chat");
 const { AgentHandler } = require("../agents");
 const {
@@ -61,6 +57,7 @@ async function streamResponse({
   message = "",
   attachments = [],
   voiceResponse = false,
+  includeCitations = false,
 }) {
   if (!ctx?.bot || !chatId || !workspace || !message)
     throw new Error("Invalid context or missing required parameters!");
@@ -168,6 +165,7 @@ async function streamResponse({
       voiceResponse,
       ctx,
       chatId,
+      includeCitations,
     });
   } catch (error) {
     console.error("Error streaming response:", error);
@@ -323,6 +321,7 @@ async function persistAndDeliver({
   voiceResponse,
   ctx,
   chatId,
+  includeCitations = false,
 }) {
   if (!completeText?.length) {
     await ctx.bot.sendMessage(chatId, "No response generated.");
@@ -342,11 +341,30 @@ async function persistAndDeliver({
     threadId: thread?.id || null,
   });
 
+  if (includeCitations) {
+    const footer = formatCitationFooter(sources);
+    if (footer) await ctx.bot.sendMessage(chatId, footer);
+  }
+
   // Send voice as an additional attachment if requested
   if (voiceResponse) {
     ctx.log?.info?.(`Generating voice response for ${chatId}`);
     await sendVoiceResponse(ctx.bot, chatId, completeText);
   }
+}
+
+function formatCitationFooter(sources = []) {
+  const titles = [];
+  const seen = new Set();
+  for (const source of sources) {
+    const title =
+      source?.title || source?.id || source?.chunkSource || source?.url;
+    if (!title || seen.has(title)) continue;
+    seen.add(title);
+    titles.push(title);
+  }
+  if (!titles.length) return null;
+  return `*Sources*\n${titles.map((title, i) => `${i + 1}. ${title}`).join("\n")}`;
 }
 
 /**
@@ -477,4 +495,4 @@ function createStreamHandler({ ctx, chatId }) {
   return { responseHandler, flushEdit };
 }
 
-module.exports = { streamResponse };
+module.exports = { streamResponse, formatCitationFooter };

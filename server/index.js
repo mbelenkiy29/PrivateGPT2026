@@ -48,6 +48,7 @@ const {
 const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
 const { slackEndpoints } = require("./endpoints/slack");
+const { slackChannelEndpoints } = require("./endpoints/channels/slack");
 const { httpLogger } = require("./middleware/httpLogger");
 const app = express();
 const apiRouter = express.Router();
@@ -66,7 +67,18 @@ if (
 }
 app.use(cors({ origin: true }));
 app.use(bodyParser.text({ limit: FILE_LIMIT }));
-app.use(bodyParser.json({ limit: FILE_LIMIT }));
+app.use(
+  bodyParser.json({
+    limit: FILE_LIMIT,
+    verify: (req, _res, buf) => {
+      const url = req.originalUrl || req.url || "";
+      // Slack signing-secret checks need the exact raw body bytes.
+      if (url.includes("/channels/slack/events")) {
+        req.rawBody = buf.toString("utf8");
+      }
+    },
+  })
+);
 app.use(
   bodyParser.urlencoded({
     limit: FILE_LIMIT,
@@ -109,6 +121,7 @@ googleAgentSkillEndpoints(apiRouter);
 memoryEndpoints(apiRouter);
 fileSourcesEndpoints(apiRouter);
 slackEndpoints(apiRouter);
+slackChannelEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

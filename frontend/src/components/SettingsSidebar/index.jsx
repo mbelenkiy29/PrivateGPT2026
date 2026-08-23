@@ -399,6 +399,12 @@ const SidebarOptions = ({ user = null, t }) => (
               flex: true,
               hidden: !!user,
             },
+            {
+              btnText: t("settings.available-channels.slack"),
+              href: paths.settings.slackBot(),
+              flex: true,
+              roles: ["admin"],
+            },
           ]}
         />
         <Option

@@ -9,7 +9,7 @@ const SLACK_AUTHORIZE = "https://slack.com/oauth/v2/authorize";
 const SLACK_OAUTH_ACCESS = "https://slack.com/api/oauth.v2.access";
 const SLACK_API = "https://slack.com/api";
 const BOT_SCOPES =
-  "channels:history,channels:read,channels:join,files:read,groups:read,groups:history";
+  "app_mentions:read,channels:history,channels:read,channels:join,chat:write,chat:write.public,files:read,groups:read,groups:history";
 const USER_SCOPES =
   "channels:history,channels:read,files:read,groups:read,groups:history";
 const SCOPES = BOT_SCOPES;

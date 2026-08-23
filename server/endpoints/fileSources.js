@@ -16,6 +16,8 @@ const {
 } = require("../utils/fileSources/credentials");
 const { OneDriveSource } = require("../utils/fileSources/onedrive");
 const { GoogleDriveSource } = require("../utils/fileSources/googleDrive");
+const { SharePointSource } = require("../utils/fileSources/sharepoint");
+const { TeamsFilesSource } = require("../utils/fileSources/teamsFiles");
 const { indexRemoteFiles } = require("../utils/fileSources/indexFiles");
 
 const pendingOAuth = new Map();
@@ -24,7 +26,16 @@ const OAUTH_TTL_MS = 10 * 60 * 1000;
 const ADAPTERS = {
   onedrive: OneDriveSource,
   "google-drive": GoogleDriveSource,
+  sharepoint: SharePointSource,
+  "teams-files": TeamsFilesSource,
 };
+
+const WATCHABLE_PROVIDERS = [
+  "google-drive",
+  "onedrive",
+  "sharepoint",
+  "teams-files",
+];
 
 function getRedirectUri(request, provider) {
   const protocol = request.headers["x-forwarded-proto"] || request.protocol;
@@ -67,7 +78,7 @@ function fileSourcesEndpoints(app) {
           ])
         );
         const watches = await KnowledgeSource.where({
-          provider: { in: ["google-drive", "onedrive"] },
+          provider: { in: WATCHABLE_PROVIDERS },
         });
         response.status(200).json({
           sources: {
@@ -78,6 +89,14 @@ function fileSourcesEndpoints(app) {
             },
             "google-drive": byProvider["google-drive"] || {
               provider: "google-drive",
+              connected: false,
+            },
+            sharepoint: byProvider.sharepoint || {
+              provider: "sharepoint",
+              connected: false,
+            },
+            "teams-files": byProvider["teams-files"] || {
+              provider: "teams-files",
               connected: false,
             },
           },
@@ -312,6 +331,16 @@ function fileSourcesEndpoints(app) {
                     record,
                     folder.id
                   );
+                } else if (record.provider === "sharepoint") {
+                  sync_cursor = await SharePointSource.getDeltaLink(
+                    record,
+                    folder
+                  );
+                } else if (record.provider === "teams-files") {
+                  sync_cursor = await TeamsFilesSource.getDeltaLink(
+                    record,
+                    folder
+                  );
                 }
               } catch (e) {
                 console.error(e);
@@ -326,6 +355,11 @@ function fileSourcesEndpoints(app) {
                 config: {
                   connectedFileSourceId: record.id,
                   folderIds: [folder.id, ...(folder.folderIds || [])],
+                  driveId: folder.driveId || null,
+                  itemId: folder.itemId || null,
+                  siteId: folder.siteId || null,
+                  teamId: folder.teamId || null,
+                  channelId: folder.channelId || null,
                 },
               });
             }

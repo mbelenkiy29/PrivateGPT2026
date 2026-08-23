@@ -7,6 +7,8 @@ const ConnectedFileSource = {
   providers: {
     onedrive: "onedrive",
     googleDrive: "google-drive",
+    sharepoint: "sharepoint",
+    teamsFiles: "teams-files",
   },
 
   encrypt(value) {

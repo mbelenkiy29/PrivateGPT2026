@@ -64,8 +64,9 @@ export default function CloudDrivesSettings() {
               Cloud drives
             </p>
             <p className="text-xs leading-[18px] text-theme-text-secondary">
-              Connect OneDrive and Google Drive so you can browse company files
-              in Manage Documents and index them into a workspace.
+              Connect OneDrive, SharePoint, Teams channel files, and Google
+              Drive so you can browse company files in Manage Documents and
+              index them into a workspace.
             </p>
           </div>
 
@@ -77,10 +78,22 @@ export default function CloudDrivesSettings() {
               title="OneDrive / Microsoft"
               description={
                 <>
-                  Azure app registration. Redirect URI:{" "}
+                  Azure app registration used for OneDrive, SharePoint
+                  libraries, and Teams channel files. Redirect URIs:{" "}
                   <code className="text-theme-text-primary">
                     http://localhost:3002/api/file-sources/onedrive/callback
                   </code>
+                  {", "}
+                  <code className="text-theme-text-primary">
+                    /api/file-sources/sharepoint/callback
+                  </code>
+                  {", "}
+                  <code className="text-theme-text-primary">
+                    /api/file-sources/teams-files/callback
+                  </code>
+                  . Graph consent (Sites.Read.All, Team.ReadBasic.All,
+                  Channel.ReadBasic.All, Files.Read.All) indexes files. A Teams
+                  bot is a separate consent and is not required for file ingest.
                 </>
               }
             >
@@ -153,9 +166,12 @@ export default function CloudDrivesSettings() {
                   key={watch.id}
                   title={watch.displayName || watch.remoteId || "Folder"}
                   description={
-                    watch.provider === "google-drive"
-                      ? "Google Drive"
-                      : "OneDrive"
+                    {
+                      "google-drive": "Google Drive",
+                      onedrive: "OneDrive",
+                      sharepoint: "SharePoint",
+                      "teams-files": "Teams files",
+                    }[watch.provider] || watch.provider
                   }
                 >
                   {watch.lastError ? (

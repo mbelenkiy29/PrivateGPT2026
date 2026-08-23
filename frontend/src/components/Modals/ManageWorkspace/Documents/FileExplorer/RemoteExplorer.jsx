@@ -18,12 +18,35 @@ import SearchInput from "@/components/ui/21st/SearchInput";
 import Breadcrumb from "@/components/ui/21st/Breadcrumb";
 import ExplorerPanel from "@/components/ui/21st/ExplorerPanel";
 
-export default function RemoteExplorer({
-  source,
-  workspace,
-  onIndexed,
-}) {
-  const [parentStack, setParentStack] = useState([{ id: "root", name: "Home" }]);
+const PROVIDER_LABELS = {
+  "google-drive": "Google Drive",
+  onedrive: "OneDrive",
+  sharepoint: "SharePoint",
+  "teams-files": "Teams files",
+};
+
+function providerLabel(provider) {
+  return PROVIDER_LABELS[provider] || "cloud drive";
+}
+
+function homeLabelFor(provider) {
+  if (provider === "sharepoint") return "Sites";
+  if (provider === "teams-files") return "Teams";
+  return "Home";
+}
+
+function connectCopy(provider) {
+  if (provider === "sharepoint")
+    return "Pick a site, then a document library. Uses Microsoft Graph (Sites.Read.All) with the same Azure app as OneDrive. A Teams bot is a separate consent and is not required to index files.";
+  if (provider === "teams-files")
+    return "Pick a team, then a channel files folder. Graph consent indexes files; the Teams chat bot is a separate install and is not used here.";
+  return "Browse folders, pick files, and index them into this workspace so the model can use them in chat.";
+}
+
+export default function RemoteExplorer({ source, workspace, onIndexed }) {
+  const [parentStack, setParentStack] = useState([
+    { id: "root", name: "Home" },
+  ]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [indexing, setIndexing] = useState(false);
@@ -33,6 +56,9 @@ export default function RemoteExplorer({
 
   const current = parentStack[parentStack.length - 1];
   const connected = !!source?.connected;
+  const driveName = providerLabel(source?.provider);
+  const homeLabel = homeLabelFor(source?.provider);
+  const connectDescription = connectCopy(source?.provider);
 
   const load = useCallback(
     async (parentId, search = "") => {
@@ -49,12 +75,12 @@ export default function RemoteExplorer({
   );
 
   useEffect(() => {
-    setParentStack([{ id: "root", name: "Home" }]);
+    setParentStack([{ id: "root", name: homeLabel }]);
     setSelected(new Set());
     setQuery("");
     if (connected) load("root");
     else setItems([]);
-  }, [source?.id, connected, load]);
+  }, [source?.id, connected, load, homeLabel]);
 
   const toggle = (id) => {
     setSelected((prev) => {
@@ -91,7 +117,7 @@ export default function RemoteExplorer({
     setConnecting(false);
     if (!result.success)
       return showToast(result.error || "Could not connect.", "error");
-    showToast("Drive connected.", "success");
+    showToast(`${driveName} connected.`, "success");
     onIndexed?.(true);
   };
 
@@ -130,15 +156,12 @@ export default function RemoteExplorer({
     [items]
   );
 
-  const driveName =
-    source?.provider === "google-drive" ? "Google Drive" : "OneDrive";
-
   if (!connected) {
     return (
       <EmptyState
         className="h-[420px] rounded-xl"
         title={`Connect ${driveName}`}
-        description="Browse folders, pick files, and index them into this workspace so the model can use them in chat."
+        description={connectDescription}
         icons={[
           <FolderNotch key="f" size={18} />,
           <Cloud key="c" size={20} />,

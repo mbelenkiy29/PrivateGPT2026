@@ -32,20 +32,49 @@ jest.mock("../../../utils/fileSources/onedrive", () => ({
   },
 }));
 
+jest.mock("../../../utils/fileSources/sharepoint", () => ({
+  SharePointSource: {
+    listChildren: jest.fn(),
+    download: jest.fn(),
+    delta: jest.fn(),
+    getDeltaLink: jest.fn(),
+  },
+}));
+
+jest.mock("../../../utils/fileSources/teamsFiles", () => ({
+  TeamsFilesSource: {
+    listChildren: jest.fn(),
+    download: jest.fn(),
+    delta: jest.fn(),
+    getDeltaLink: jest.fn(),
+  },
+}));
+
 jest.mock("../../../models/connectedFileSource", () => ({
   ConnectedFileSource: {
-    providers: { googleDrive: "google-drive", onedrive: "onedrive" },
+    providers: {
+      googleDrive: "google-drive",
+      onedrive: "onedrive",
+      sharepoint: "sharepoint",
+      teamsFiles: "teams-files",
+    },
     get: jest.fn(),
   },
 }));
 
 const { GoogleDriveSource } = require("../../../utils/fileSources/googleDrive");
 const { OneDriveSource } = require("../../../utils/fileSources/onedrive");
+const { SharePointSource } = require("../../../utils/fileSources/sharepoint");
+const { TeamsFilesSource } = require("../../../utils/fileSources/teamsFiles");
 const gdrive = require("../../../utils/knowledgeSources/adapters/gdrive");
 const onedrive = require("../../../utils/knowledgeSources/adapters/onedrive");
+const sharepoint = require("../../../utils/knowledgeSources/adapters/sharepoint");
+const teamsFiles = require("../../../utils/knowledgeSources/adapters/teams-files");
 
 const driveRecord = { id: 1, provider: "google-drive" };
 const oneRecord = { id: 2, provider: "onedrive" };
+const spRecord = { id: 3, provider: "sharepoint" };
+const teamsRecord = { id: 4, provider: "teams-files" };
 
 function fileItems(count, prefix, folderId = "folder-1") {
   return Array.from({ length: count }, (_, i) => ({
@@ -330,5 +359,199 @@ describe("onedrive knowledge source adapter", () => {
   it("toChunkSource and watchHint match the contract", () => {
     expect(onedrive.toChunkSource({ id: "item-1" })).toBe("onedrive://item-1");
     expect(onedrive.watchHint()).toEqual({ staleAfterMs: 3600000 });
+  });
+});
+
+describe("sharepoint knowledge source adapter", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("lists libraries and maps next to cursor", async () => {
+    SharePointSource.listChildren.mockResolvedValue({
+      items: [{ id: "drive:d1", name: "Documents", type: "folder" }],
+      next: null,
+    });
+    const result = await sharepoint.list({
+      folderId: "site:abc",
+      record: spRecord,
+    });
+    expect(SharePointSource.listChildren).toHaveBeenCalledWith(
+      spRecord,
+      "site:abc"
+    );
+    expect(result.items[0].id).toBe("drive:d1");
+  });
+
+  it("delta with no cursor snapshots a deltaLink and returns no items", async () => {
+    SharePointSource.getDeltaLink.mockResolvedValue(
+      "https://graph.microsoft.com/delta-link"
+    );
+    const result = await sharepoint.delta(null, {
+      record: spRecord,
+      folderId: "drive:d1",
+      config: { driveId: "d1", itemId: "root" },
+    });
+    expect(result).toEqual({
+      items: [],
+      cursor: "https://graph.microsoft.com/delta-link",
+    });
+    expect(SharePointSource.delta).not.toHaveBeenCalled();
+  });
+
+  it("delta maps Graph library delta including deleted items and caps at 200", async () => {
+    SharePointSource.delta.mockResolvedValue({
+      items: [
+        { id: "drive:d1:item:a", name: "a.txt", type: "file" },
+        { id: "drive:d1:item:b", name: "gone.docx", deleted: true },
+      ],
+      nextLink: null,
+      deltaLink: "https://graph.microsoft.com/delta-link",
+    });
+    const result = await sharepoint.delta("https://graph.microsoft.com/start", {
+      record: spRecord,
+      folderId: "drive:d1",
+    });
+    expect(result.cursor).toBe("https://graph.microsoft.com/delta-link");
+    expect(result.items.map((item) => item.id)).toEqual([
+      "drive:d1:item:a",
+      "drive:d1:item:b",
+    ]);
+  });
+
+  it("does not persist deltaLink after dropping the rest of a page", async () => {
+    SharePointSource.delta
+      .mockResolvedValueOnce({
+        items: fileItems(150, "a", "drive:d1"),
+        nextLink: "https://graph.microsoft.com/page-2",
+        deltaLink: null,
+      })
+      .mockResolvedValueOnce({
+        items: fileItems(80, "b", "drive:d1"),
+        nextLink: null,
+        deltaLink: "https://graph.microsoft.com/delta-link",
+      });
+
+    const result = await sharepoint.delta("https://graph.microsoft.com/start", {
+      record: spRecord,
+      folderId: "drive:d1",
+    });
+    expect(result.items).toHaveLength(150);
+    expect(result.cursor).toBe("https://graph.microsoft.com/page-2");
+  });
+
+  it("resets an expired Graph deltaLink without returning library contents", async () => {
+    const err = new Error("resyncRequired");
+    err.status = 410;
+    SharePointSource.delta.mockRejectedValue(err);
+    SharePointSource.getDeltaLink.mockResolvedValue(
+      "https://graph.microsoft.com/fresh-delta"
+    );
+
+    const result = await sharepoint.delta("https://graph.microsoft.com/stale", {
+      record: spRecord,
+      folderId: "drive:d1",
+    });
+    expect(result).toEqual({
+      items: [],
+      cursor: "https://graph.microsoft.com/fresh-delta",
+    });
+  });
+
+  it("download wraps SharePointSource.download", async () => {
+    SharePointSource.download.mockResolvedValue({
+      kind: "file",
+      name: "policy.docx",
+      buffer: Buffer.from("hi"),
+    });
+    const file = await sharepoint.download(
+      { id: "drive:d1:item:i1" },
+      { record: spRecord }
+    );
+    expect(SharePointSource.download).toHaveBeenCalledWith(
+      spRecord,
+      "drive:d1:item:i1"
+    );
+    expect(file.kind).toBe("file");
+  });
+
+  it("toChunkSource and watchHint match the contract", () => {
+    expect(sharepoint.toChunkSource({ id: "drive:d1:item:i1" })).toBe(
+      "sharepoint://drive:d1:item:i1"
+    );
+    expect(sharepoint.watchHint()).toEqual({ staleAfterMs: 3600000 });
+  });
+});
+
+describe("teams-files knowledge source adapter", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("lists channel files and maps next to cursor", async () => {
+    TeamsFilesSource.listChildren.mockResolvedValue({
+      items: [{ id: "drive:d1:item:f1", name: "notes.md", type: "file" }],
+      next: null,
+    });
+    const result = await teamsFiles.list({
+      folderId: "team:t1:channel:c1",
+      record: teamsRecord,
+    });
+    expect(TeamsFilesSource.listChildren).toHaveBeenCalledWith(
+      teamsRecord,
+      "team:t1:channel:c1"
+    );
+    expect(result.items[0].id).toBe("drive:d1:item:f1");
+  });
+
+  it("delta with no cursor snapshots a deltaLink and returns no items", async () => {
+    TeamsFilesSource.getDeltaLink.mockResolvedValue(
+      "https://graph.microsoft.com/delta-link"
+    );
+    const result = await teamsFiles.delta(null, {
+      record: teamsRecord,
+      folderId: "team:t1:channel:c1",
+      config: { driveId: "d1", itemId: "folder-1" },
+    });
+    expect(result).toEqual({
+      items: [],
+      cursor: "https://graph.microsoft.com/delta-link",
+    });
+    expect(TeamsFilesSource.delta).not.toHaveBeenCalled();
+  });
+
+  it("delta maps Graph channel-folder delta including deleted items", async () => {
+    TeamsFilesSource.delta.mockResolvedValue({
+      items: [
+        { id: "drive:d1:item:a", name: "a.txt", type: "file" },
+        { id: "drive:d1:item:b", name: "gone.docx", deleted: true },
+      ],
+      nextLink: null,
+      deltaLink: "https://graph.microsoft.com/delta-link",
+    });
+    const result = await teamsFiles.delta("https://graph.microsoft.com/start", {
+      record: teamsRecord,
+      folderId: "team:t1:channel:c1",
+    });
+    expect(result.cursor).toBe("https://graph.microsoft.com/delta-link");
+    expect(result.items).toHaveLength(2);
+  });
+
+  it("download wraps TeamsFilesSource.download", async () => {
+    TeamsFilesSource.download.mockResolvedValue({
+      kind: "file",
+      name: "standup.md",
+      buffer: Buffer.from("notes"),
+    });
+    const file = await teamsFiles.download(
+      { id: "drive:d1:item:i1" },
+      { record: teamsRecord }
+    );
+    expect(TeamsFilesSource.download).toHaveBeenCalledWith(
+      teamsRecord,
+      "drive:d1:item:i1"
+    );
+    expect(file.name).toBe("standup.md");
+  });
+
+  it("toChunkSource and watchHint match the contract", () => {
+    expect(teamsFiles.toChunkSource({ id: "ch-1" })).toBe("teams-files://ch-1");
+    expect(teamsFiles.watchHint()).toEqual({ staleAfterMs: 3600000 });
   });
 });

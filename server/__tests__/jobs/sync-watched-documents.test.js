@@ -86,7 +86,12 @@ jest.mock("../../models/documentSyncRun", () => ({
 }));
 jest.mock("../../models/connectedFileSource", () => ({
   ConnectedFileSource: {
-    providers: { googleDrive: "google-drive", onedrive: "onedrive" },
+    providers: {
+      googleDrive: "google-drive",
+      onedrive: "onedrive",
+      sharepoint: "sharepoint",
+      teamsFiles: "teams-files",
+    },
     get: jest.fn(),
   },
 }));
@@ -95,6 +100,12 @@ jest.mock("../../utils/fileSources/googleDrive", () => ({
 }));
 jest.mock("../../utils/fileSources/onedrive", () => ({
   OneDriveSource: {},
+}));
+jest.mock("../../utils/fileSources/sharepoint", () => ({
+  SharePointSource: {},
+}));
+jest.mock("../../utils/fileSources/teamsFiles", () => ({
+  TeamsFilesSource: {},
 }));
 
 // A pinned document is de-duplicated out of the RAG results by comparing the `sourceIdentifier` of

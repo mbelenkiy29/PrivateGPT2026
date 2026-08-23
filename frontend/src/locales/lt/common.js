@@ -97,6 +97,7 @@ const TRANSLATIONS = {
     "event-logs": "Įvykių žurnalas",
     privacy: "Privatumas ir duomenys",
     "ai-providers": "DI tiekėjai",
+    "knowledge-sources": null,
     "agent-skills": "Agento įgūdžiai",
     "community-hub": {
       title: "Bendruomenės centras",

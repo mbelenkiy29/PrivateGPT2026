@@ -86,6 +86,7 @@ const TRANSLATIONS = {
     "event-logs": "سجلات الأحداث",
     privacy: "الخصوصية والبيانات",
     "ai-providers": "موفرو الذكاء الاصطناعي",
+    "knowledge-sources": null,
     "agent-skills": "مهارات الوكيل",
     admin: "مشرف",
     tools: "أدوات",

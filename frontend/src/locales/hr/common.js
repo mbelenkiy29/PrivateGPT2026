@@ -99,6 +99,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Zakazani zadaci",
     privacy: "Privatnost i podaci",
     "ai-providers": "AI pružatelji usluga",
+    "knowledge-sources": null,
     "agent-skills": "Vještine agenta",
     "model-router": "Usmjerivač modela",
     "community-hub": {

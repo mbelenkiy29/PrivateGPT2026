@@ -89,6 +89,7 @@ const TRANSLATIONS = {
     "event-logs": "گزارش رویدادها",
     privacy: "حریم خصوصی و داده‌ها",
     "ai-providers": "ارائه‌دهندگان هوش مصنوعی",
+    "knowledge-sources": null,
     "agent-skills": "مهارت‌های عامل",
     admin: "مدیریت",
     tools: "ابزارها",

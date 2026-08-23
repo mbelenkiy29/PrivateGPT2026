@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "event-logs": "Nhật ký sự kiện",
     privacy: "Quyền riêng tư & Dữ liệu",
     "ai-providers": "Nhà cung cấp AI",
+    "knowledge-sources": null,
     "agent-skills": "Kỹ năng của Agent",
     admin: "Quản trị viên",
     tools: "Công cụ",

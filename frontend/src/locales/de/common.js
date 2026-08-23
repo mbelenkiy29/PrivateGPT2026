@@ -91,6 +91,7 @@ const TRANSLATIONS = {
     "event-logs": "Ereignisprotokolle",
     privacy: "Datenschutz & Datenverarbeitung",
     "ai-providers": "KI-Anbieter",
+    "knowledge-sources": null,
     "agent-skills": "Agentenfähigkeiten",
     admin: "Administrator",
     tools: "Werkzeuge",

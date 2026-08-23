@@ -98,6 +98,7 @@ const TRANSLATIONS = {
     "event-logs": "Registres d'esdeveniments",
     privacy: "Privadesa i dades",
     "ai-providers": "Proveïdors d'IA",
+    "knowledge-sources": null,
     "agent-skills": "Habilitats de l'agent",
     "community-hub": {
       title: "Centre de la comunitat",

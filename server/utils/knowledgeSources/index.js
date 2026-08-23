@@ -12,6 +12,8 @@ require("./adapters/slack");
 require("./adapters/imap");
 require("./adapters/gmail-mail");
 require("./adapters/outlook-mail");
+require("./adapters/notion");
+require("./adapters/dropbox");
 
 module.exports = {
   REQUIRED_METHODS,

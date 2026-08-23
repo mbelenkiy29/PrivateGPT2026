@@ -19,6 +19,7 @@ function makeFakeAdapter(overrides = {}) {
         items: [
           { id: "abc", title: "Changed doc" },
           { id: "def", title: "Another doc" },
+          { id: "gone", title: "Removed", deleted: true },
         ],
         cursor: "c1",
       };
@@ -56,7 +57,11 @@ describe("KnowledgeSourceAdapter contract", () => {
     const { items } = await adapter.delta();
     expect(items.length).toBeGreaterThan(0);
 
-    const documents = items.map((item) => ({
+    const removed = items.filter((item) => item.deleted);
+    const live = items.filter((item) => !item.deleted);
+    expect(removed.map((item) => item.id)).toEqual(["gone"]);
+
+    const documents = live.map((item) => ({
       ...item,
       chunkSource: adapter.toChunkSource(item),
     }));
@@ -66,6 +71,12 @@ describe("KnowledgeSourceAdapter contract", () => {
     expect(documents.every((doc) => typeof doc.chunkSource === "string")).toBe(
       true
     );
+  });
+
+  it("delta items with deleted:true are removals the job must honor", async () => {
+    const adapter = makeFakeAdapter();
+    const { items } = await adapter.delta();
+    expect(items.some((item) => item.deleted === true)).toBe(true);
   });
 
   it("toChunkSource returns strings like fake://id", () => {
@@ -115,5 +126,19 @@ describe("KnowledgeSourceAdapter contract", () => {
 
   it("getAdapter returns null for unknown providers", () => {
     expect(getAdapter("does-not-exist")).toBeNull();
+  });
+
+  it("barrel self-registers notion and dropbox adapters", () => {
+    expect(listProviders()).toEqual(
+      expect.arrayContaining(["notion", "dropbox"])
+    );
+    expect(getAdapter("notion").toChunkSource({ id: "p1" })).toBe(
+      "notion://p1"
+    );
+    expect(
+      getAdapter("dropbox").toChunkSource({ path_display: "/Inbox/a.pdf" })
+    ).toBe("dropbox://Inbox/a.pdf");
+    expect(getAdapter("notion").watchHint().staleAfterMs).toBe(3600000);
+    expect(getAdapter("dropbox").watchHint().staleAfterMs).toBe(3600000);
   });
 });

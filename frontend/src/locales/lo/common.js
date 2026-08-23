@@ -99,6 +99,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "ວຽກທີ່ຕັ້ງເວລາໄວ້",
     privacy: "ຄວາມເປັນສ່ວນຕົວ & ຂໍ້ມູນ",
     "ai-providers": "ຜູ້ໃຫ້ບໍລິການ AI",
+    "knowledge-sources": null,
     "agent-skills": "ທັກສະເອເຈນ",
     "model-router": "ຕົວກຳນົດເສັ້ນທາງແບບຈຳລອງ (Model Router)",
     "community-hub": {

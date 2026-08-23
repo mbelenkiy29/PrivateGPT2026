@@ -107,6 +107,8 @@ const SystemSettings = {
     "file_source_oauth_config",
     "slack_oauth_config",
     "slack_connection_meta",
+    "notion_integration",
+    "dropbox_oauth_config",
   ],
   validations: {
     footer_data: (updates) => {
@@ -467,6 +469,14 @@ const SystemSettings = {
     },
     slack_connection_meta: (update) => {
       if (!update) return "";
+      return String(update);
+    },
+    notion_integration: (update) => {
+      if (update == null || update === "") return null;
+      return String(update);
+    },
+    dropbox_oauth_config: (update) => {
+      if (update == null || update === "") return null;
       return String(update);
     },
     default_system_prompt: (prompt) => {

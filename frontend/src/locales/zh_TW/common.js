@@ -84,6 +84,7 @@ const TRANSLATIONS = {
     "event-logs": "事件記錄",
     privacy: "隱私與資料",
     "ai-providers": "AI 服務提供者",
+    "knowledge-sources": null,
     "agent-skills": "智慧代理人技能",
     admin: "管理",
     tools: "工具",

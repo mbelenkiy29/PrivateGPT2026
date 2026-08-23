@@ -149,6 +149,8 @@ model workspaces {
   prompt_history               prompt_history[]
   workspace_parsed_files       workspace_parsed_files[]
   memories                     memories[]
+  knowledge_sources            knowledge_sources[]
+  channel_workspace_bindings   channel_workspace_bindings[]
 }
 
 model workspace_threads {
@@ -244,12 +246,21 @@ model embed_configs {
   max_chats_per_day          Int?
   max_chats_per_session      Int?
   message_limit              Int?          @default(20)
+  ai_disclosure              Boolean       @default(true)
+  show_handoff               Boolean       @default(false)
+  handoff_email              String?
+  lead_capture               Boolean       @default(false)
+  business_hours_json        String?
+  grounded_only              Boolean       @default(false)
   workspace_id               Int
   createdBy                  Int?
   usersId                    Int?
   createdAt                  DateTime      @default(now())
   workspace                  workspaces    @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   embed_chats                embed_chats[]
+  embed_leads                embed_leads[]
+  embed_handoffs             embed_handoffs[]
+  embed_unanswered           embed_unanswered[]
   users                      users?        @relation(fields: [usersId], references: [id])
 }
 
@@ -498,5 +509,95 @@ model connected_file_sources {
   createdAt             DateTime @default(now())
   lastUpdatedAt         DateTime @default(now())
 
-  @@unique([provider])
+  @@unique([provider, account_email])
+}
+
+model knowledge_sources {
+  id               Int      @id @default(autoincrement())
+  provider         String
+  workspaceId      Int
+  display_name     String
+  remote_id        String?
+  encrypted_config String?
+  sync_cursor      String?
+  watch_enabled    Boolean  @default(true)
+  last_synced_at   DateTime?
+  last_error       String?
+  createdAt        DateTime @default(now())
+  lastUpdatedAt    DateTime @default(now())
+  workspace        workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sync_runs        knowledge_source_sync_runs[]
+
+  @@index([workspaceId])
+  @@index([provider])
+}
+
+model knowledge_source_sync_runs {
+  id        Int               @id @default(autoincrement())
+  sourceId  Int
+  status    String            @default("unknown")
+  result    String?
+  createdAt DateTime          @default(now())
+  source    knowledge_sources @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+}
+
+model usage_events {
+  id                Int      @id @default(autoincrement())
+  workspaceId       Int?
+  userId            Int?
+  provider          String?
+  model             String?
+  local             Boolean  @default(false)
+  prompt_tokens     Int      @default(0)
+  completion_tokens Int      @default(0)
+  cost_usd          Float    @default(0)
+  source            String // chat|embed|agent|channel
+  createdAt         DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([userId])
+}
+
+model embed_leads {
+  id            Int           @id @default(autoincrement())
+  embed_id      Int
+  name          String?
+  email         String?
+  last_question String?
+  session_id    String?
+  createdAt     DateTime      @default(now())
+  embed_config  embed_configs @relation(fields: [embed_id], references: [id], onDelete: Cascade)
+}
+
+model embed_handoffs {
+  id           Int           @id @default(autoincrement())
+  embed_id     Int
+  session_id   String
+  email_to     String?
+  transcript   String?
+  status       String        @default("open")
+  createdAt    DateTime      @default(now())
+  embed_config embed_configs @relation(fields: [embed_id], references: [id], onDelete: Cascade)
+}
+
+model embed_unanswered {
+  id           Int           @id @default(autoincrement())
+  embed_id     Int
+  session_id   String?
+  question     String
+  createdAt    DateTime      @default(now())
+  embed_config embed_configs @relation(fields: [embed_id], references: [id], onDelete: Cascade)
+}
+
+model channel_workspace_bindings {
+  id              Int        @id @default(autoincrement())
+  connector_type  String
+  external_id     String
+  workspaceId     Int
+  threadSlug      String?
+  createdAt       DateTime   @default(now())
+  lastUpdatedAt   DateTime   @default(now())
+  workspace       workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([connector_type, external_id])
 }

@@ -19,6 +19,19 @@ const DocumentSyncQueue = {
     "gitea",
     "drupalwiki",
   ],
+  extraFileTypes: [],
+  /**
+   * Register an additional watched document type without a schema change.
+   * @param {string} type
+   * @returns {boolean}
+   */
+  registerFileType: function (type) {
+    if (!type || typeof type !== "string") return false;
+    if (this.validFileTypes.includes(type)) return false;
+    this.validFileTypes.push(type);
+    this.extraFileTypes.push(type);
+    return true;
+  },
   /**
    * The default time (in milliseconds) a watched document waits before it is
    * considered "stale" and re-synced by the background worker.
@@ -80,6 +93,9 @@ const DocumentSyncQueue = {
     if (chunkSource.startsWith("gitlab://")) return true; // If is a GitLab file reference
     if (chunkSource.startsWith("gitea://")) return true; // If is a Gitea file reference
     if (chunkSource.startsWith("drupalwiki://")) return true; // If is a DrupalWiki document link
+    for (const type of this.extraFileTypes) {
+      if (chunkSource.startsWith(`${type}://`)) return true;
+    }
     return false;
   },
 

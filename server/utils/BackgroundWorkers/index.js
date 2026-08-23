@@ -41,6 +41,10 @@ class BackgroundService {
       timeout: "6m",
       interval: "9hr",
     },
+    {
+      name: "sync-knowledge-sources",
+      interval: "1hr",
+    },
   ];
 
   #memoryJobs = [

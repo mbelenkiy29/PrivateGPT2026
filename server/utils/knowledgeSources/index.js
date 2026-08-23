@@ -7,6 +7,10 @@ const {
   unregisterAdapter,
 } = require("./adapter");
 
+require("./adapters/imap");
+require("./adapters/gmail-mail");
+require("./adapters/outlook-mail");
+
 module.exports = {
   REQUIRED_METHODS,
   assertAdapter,

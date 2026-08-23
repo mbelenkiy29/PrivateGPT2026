@@ -169,6 +169,9 @@ export default {
     cloudDrives: () => {
       return "/settings/cloud-drives";
     },
+    emailInbox: () => {
+      return "/settings/email-inbox";
+    },
     embedChatWidgets: () => {
       return `/settings/embed-chat-widgets`;
     },

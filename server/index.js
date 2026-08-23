@@ -47,6 +47,7 @@ const {
 } = require("./endpoints/utils/googleAgentSkillEndpoints");
 const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
+const { emailInboxEndpoints } = require("./endpoints/emailInbox");
 const { httpLogger } = require("./middleware/httpLogger");
 const app = express();
 const apiRouter = express.Router();
@@ -107,6 +108,7 @@ outlookAgentEndpoints(apiRouter);
 googleAgentSkillEndpoints(apiRouter);
 memoryEndpoints(apiRouter);
 fileSourcesEndpoints(apiRouter);
+emailInboxEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

@@ -275,6 +275,12 @@ const SidebarOptions = ({ user = null, t }) => (
               flex: true,
               roles: ["admin"],
             },
+            {
+              btnText: "Email inbox",
+              href: paths.settings.emailInbox(),
+              flex: true,
+              roles: ["admin"],
+            },
           ]}
         />
         <Option

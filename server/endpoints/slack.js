@@ -21,6 +21,7 @@ const {
   saveSlackOAuthConfig,
   getSlackConnection,
   tokenConfigFromConnection,
+  clearConnectionMeta,
   PAGE_SIZE,
 } = require("../utils/knowledgeSources/adapters/slack");
 
@@ -69,11 +70,24 @@ function publicSource(record, workspacesById = {}) {
   };
 }
 
+function slackErrorMessage(error) {
+  if (!error) return "Ingest failed";
+  if (error.slackError) return error.slackError;
+  return error.message || "Ingest failed";
+}
+
 async function ingestChannel({ source, workspace, bound }) {
-  const listed = await bound.list({
-    source,
-    folderId: source.remote_id,
-  });
+  let listed;
+  try {
+    listed = await bound.list({
+      source,
+      folderId: source.remote_id,
+    });
+  } catch (e) {
+    const message = slackErrorMessage(e);
+    await KnowledgeSource.update(source.id, { last_error: message });
+    throw e;
+  }
   const items = (listed.items || []).slice(0, MAX_INGEST);
   if (items.length === 0) {
     await KnowledgeSource.update(source.id, {
@@ -94,6 +108,7 @@ async function ingestChannel({ source, workspace, bound }) {
 
   const locations = [];
   let failed = 0;
+  let lastError = null;
   let newest = source.sync_cursor || null;
 
   for (const item of items) {
@@ -109,6 +124,7 @@ async function ingestChannel({ source, workspace, bound }) {
       });
       if (!processed?.success || !processed.documents?.length) {
         failed += 1;
+        lastError = processed?.reason || lastError || "Ingest failed";
         continue;
       }
       for (const doc of processed.documents) {
@@ -116,8 +132,9 @@ async function ingestChannel({ source, workspace, bound }) {
       }
       const ts = item.thread_ts || item.ts;
       if (ts && (!newest || Number(ts) > Number(newest))) newest = ts;
-    } catch {
+    } catch (e) {
       failed += 1;
+      lastError = slackErrorMessage(e);
     }
   }
 
@@ -128,7 +145,10 @@ async function ingestChannel({ source, workspace, bound }) {
   await KnowledgeSource.update(source.id, {
     sync_cursor: newest,
     last_synced_at: new Date(),
-    last_error: failed > 0 && locations.length === 0 ? "Ingest failed" : null,
+    last_error:
+      failed > 0 && locations.length === 0
+        ? lastError || "Ingest failed"
+        : null,
   });
 
   return { indexed: locations.length, failed };
@@ -140,10 +160,13 @@ function slackEndpoints(app) {
   app.get(
     "/slack/oauth-config",
     [validatedRequest, flexUserRoleValid([ROLES.admin])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
         const config = publicSlackOAuthConfig(await getSlackOAuthConfig());
-        response.status(200).json({ config });
+        response.status(200).json({
+          config,
+          redirectUri: getRedirectUri(request),
+        });
       } catch (e) {
         console.error(e);
         response.status(500).json({ error: e.message });
@@ -222,7 +245,7 @@ function slackEndpoints(app) {
   app.get(
     "/slack/status",
     [validatedRequest, flexUserRoleValid([ROLES.admin])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
         const [oauth, connection, sources, workspaces] = await Promise.all([
           getSlackOAuthConfig(),
@@ -235,6 +258,7 @@ function slackEndpoints(app) {
         );
         response.status(200).json({
           oauth: publicSlackOAuthConfig(oauth),
+          redirectUri: getRedirectUri(request),
           connected: Boolean(connection),
           team: connection
             ? { id: connection.account_email, name: connection.account_name }
@@ -292,7 +316,7 @@ function slackEndpoints(app) {
             .json({ success: false, error: "Workspace not found." });
 
         const connection = await getSlackConnection();
-        const tokenConfig = tokenConfigFromConnection(connection);
+        const tokenConfig = await tokenConfigFromConnection(connection);
         if (!tokenConfig)
           return response
             .status(400)
@@ -327,6 +351,7 @@ function slackEndpoints(app) {
               ...tokenConfig,
               channel_id: channelId,
               channel_name: channel.name || displayName,
+              is_private: Boolean(channel.isPrivate),
             },
           });
           if (!source) {
@@ -338,14 +363,22 @@ function slackEndpoints(app) {
 
           const bound = createSlackAdapter({
             accessToken: tokenConfig.access_token,
+            botToken: tokenConfig.bot_token,
+            userToken: tokenConfig.user_token,
             channelId,
             source,
           });
           try {
             ingest.push(await ingestChannel({ source, workspace, bound }));
           } catch (e) {
-            await KnowledgeSource.update(source.id, { last_error: e.message });
-            ingest.push({ indexed: 0, failed: 1, error: e.message });
+            await KnowledgeSource.update(source.id, {
+              last_error: slackErrorMessage(e),
+            });
+            ingest.push({
+              indexed: 0,
+              failed: 1,
+              error: slackErrorMessage(e),
+            });
           }
         }
 
@@ -398,6 +431,7 @@ function slackEndpoints(app) {
         for (const source of sources) await KnowledgeSource.delete(source.id);
         const connection = await getSlackConnection();
         if (connection) await ConnectedFileSource.delete(connection.id);
+        await clearConnectionMeta();
         response.status(200).json({ success: true });
       } catch (e) {
         console.error(e);

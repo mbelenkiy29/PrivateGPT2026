@@ -8,12 +8,25 @@ const { safeJsonParse } = require("../../http");
 const SLACK_AUTHORIZE = "https://slack.com/oauth/v2/authorize";
 const SLACK_OAUTH_ACCESS = "https://slack.com/api/oauth.v2.access";
 const SLACK_API = "https://slack.com/api";
-const SCOPES = "channels:history,files:read,channels:read";
+const BOT_SCOPES =
+  "channels:history,channels:read,channels:join,files:read,groups:read,groups:history";
+const USER_SCOPES =
+  "channels:history,channels:read,files:read,groups:read,groups:history";
+const SCOPES = BOT_SCOPES;
 const PAGE_SIZE = 200;
+const MAX_DELTA_PAGES = 10;
 const CONFIG_LABEL = "slack_oauth_config";
+const SESSION_LABEL = "slack_connection_meta";
 const PROVIDER = "slack";
 const STALE_AFTER_MS = 3_600_000;
 const MIME_MARKDOWN = "text/markdown";
+const JOIN_IGNORABLE = new Set([
+  "already_in_channel",
+  "method_not_supported_for_channel_type",
+  "channel_not_found",
+  "restricted_action",
+  "missing_scope",
+]);
 
 function envFallback() {
   return {
@@ -117,8 +130,8 @@ function decryptSourceConfig(source) {
 
 function tokenFromConfig(config = {}) {
   return (
-    config.access_token ||
     config.bot_token ||
+    config.access_token ||
     config.user_token ||
     config.token ||
     null
@@ -132,6 +145,22 @@ function resolveContext(defaults = {}, opts = {}, item = null) {
     ...(defaults.config || {}),
     ...(opts.config || {}),
   };
+  const botToken =
+    opts.botToken ||
+    defaults.botToken ||
+    config.bot_token ||
+    (typeof config.access_token === "string" &&
+    config.access_token.startsWith("xoxb-")
+      ? config.access_token
+      : null);
+  const userToken =
+    opts.userToken ||
+    defaults.userToken ||
+    config.user_token ||
+    (typeof config.access_token === "string" &&
+    config.access_token.startsWith("xoxp-")
+      ? config.access_token
+      : null);
   const accessToken =
     opts.accessToken ||
     defaults.accessToken ||
@@ -148,7 +177,45 @@ function resolveContext(defaults = {}, opts = {}, item = null) {
     item?.channelId ||
     item?.channel ||
     null;
-  return { accessToken, channelId, config, source };
+  return { accessToken, botToken, userToken, channelId, config, source };
+}
+
+async function joinChannel(token, channelId) {
+  if (!token || !channelId) return false;
+  try {
+    await slackApi("conversations.join", token, { channel: channelId });
+    return true;
+  } catch (e) {
+    if (JOIN_IGNORABLE.has(e.slackError)) return false;
+    throw e;
+  }
+}
+
+async function historyWithJoin(ctx, { cursor, oldest } = {}) {
+  if (!ctx.channelId)
+    throw new Error("Slack adapter requires a channel id (remote_id)");
+  const joinToken = ctx.botToken || ctx.accessToken;
+  await joinChannel(joinToken, ctx.channelId);
+
+  const params = {
+    channel: ctx.channelId,
+    limit: PAGE_SIZE,
+    cursor: cursor || undefined,
+    oldest: oldest || undefined,
+  };
+  try {
+    return await slackApi("conversations.history", ctx.accessToken, params);
+  } catch (e) {
+    const fallback = ctx.userToken;
+    if (
+      e.slackError === "not_in_channel" &&
+      fallback &&
+      fallback !== ctx.accessToken
+    ) {
+      return slackApi("conversations.history", fallback, params);
+    }
+    throw e;
+  }
 }
 
 function formatTs(ts) {
@@ -160,8 +227,9 @@ function formatTs(ts) {
 function newestTs(messages = []) {
   let max = null;
   for (const message of messages) {
-    if (!message?.ts) continue;
-    if (!max || Number(message.ts) > Number(max)) max = message.ts;
+    const ts = typeof message === "string" ? message : message?.ts;
+    if (!ts) continue;
+    if (!max || Number(ts) > Number(max)) max = ts;
   }
   return max;
 }
@@ -180,6 +248,7 @@ function messagesToItems(messages = [], channelId) {
       user: message.user || message.username || "unknown",
       files: message.files || [],
       reply_count: message.reply_count || 0,
+      latest_reply: message.latest_reply || null,
       name: `${channelId}-${ts}`,
     };
   });
@@ -243,14 +312,28 @@ async function loadThreadMessages(token, channelId, item) {
   }
 
   const threadTs = item.thread_ts || item.ts;
-  if (item.reply_count > 0 && threadTs && token) {
+  const shouldFetchReplies =
+    Boolean(token && threadTs) &&
+    (item.reply_count > 0 || Boolean(item.latest_reply));
+  if (shouldFetchReplies) {
     try {
-      const data = await slackApi("conversations.replies", token, {
-        channel: channelId,
-        ts: threadTs,
-        limit: PAGE_SIZE,
-      });
-      return (data.messages || []).sort((a, b) => Number(a.ts) - Number(b.ts));
+      const messages = [];
+      let cursor;
+      do {
+        const data = await slackApi("conversations.replies", token, {
+          channel: channelId,
+          ts: threadTs,
+          limit: PAGE_SIZE,
+          cursor,
+        });
+        messages.push(...(data.messages || []));
+        cursor = data.has_more
+          ? data.response_metadata?.next_cursor || null
+          : null;
+      } while (cursor);
+      if (messages.length > 0) {
+        return messages.sort((a, b) => Number(a.ts) - Number(b.ts));
+      }
     } catch {
       // Fall through to the parent message from history
     }
@@ -267,25 +350,50 @@ async function loadThreadMessages(token, channelId, item) {
   ];
 }
 
-async function historyPage(token, channelId, { cursor, oldest } = {}) {
-  if (!channelId)
-    throw new Error("Slack adapter requires a channel id (remote_id)");
-  return slackApi("conversations.history", token, {
-    channel: channelId,
-    limit: PAGE_SIZE,
-    cursor: cursor || undefined,
-    oldest: oldest || undefined,
-  });
+function tsNewer(a, b) {
+  if (!a) return false;
+  if (!b) return true;
+  return Number(a) > Number(b);
+}
+
+function includeHistoryMessage(message, oldest) {
+  if (message.thread_ts && message.thread_ts !== message.ts) return false;
+  if (!oldest) return true;
+  if (tsNewer(message.ts, oldest)) return true;
+  // Parent may predate the cursor while replies do not.
+  if (tsNewer(message.latest_reply, oldest)) return true;
+  return false;
+}
+
+async function collectHistory(ctx, { oldest, cursor } = {}) {
+  const messages = [];
+  let pageCursor = cursor || undefined;
+  let pages = 0;
+  do {
+    const data = await historyWithJoin(ctx, {
+      cursor: pageCursor,
+      oldest: oldest || undefined,
+    });
+    messages.push(...(data.messages || []));
+    pageCursor = data.has_more
+      ? data.response_metadata?.next_cursor || null
+      : null;
+    pages += 1;
+  } while (pageCursor && pages < MAX_DELTA_PAGES);
+  return messages;
 }
 
 function createSlackAdapter(defaults = {}) {
   return {
     async list(opts = {}) {
       const ctx = resolveContext(defaults, opts);
-      const data = await historyPage(ctx.accessToken, ctx.channelId, {
-        cursor: opts.cursor,
-      });
-      const items = messagesToItems(data.messages || [], ctx.channelId);
+      const data = await historyWithJoin(ctx, { cursor: opts.cursor });
+      const items = messagesToItems(
+        (data.messages || []).filter((message) =>
+          includeHistoryMessage(message, null)
+        ),
+        ctx.channelId
+      );
       for (const item of items) {
         item.source = ctx.source;
       }
@@ -338,19 +446,25 @@ function createSlackAdapter(defaults = {}) {
           ? cursor
           : cursorOpts.cursor || opts.cursor || null;
       const ctx = resolveContext(defaults, cursorOpts);
-      const data = await historyPage(ctx.accessToken, ctx.channelId, {
-        oldest: oldest || undefined,
-      });
-      const messages = (data.messages || []).filter(
-        (message) => !oldest || message.ts !== oldest
+      const messages = await collectHistory(ctx, { oldest });
+      const changed = messages.filter((message) =>
+        includeHistoryMessage(message, oldest)
       );
-      const items = messagesToItems(messages, ctx.channelId);
+      const items = messagesToItems(changed, ctx.channelId);
       for (const item of items) {
         item.source = ctx.source;
       }
+      const nextCursor =
+        newestTs(
+          messages.flatMap((message) =>
+            [message.ts, message.latest_reply].filter(Boolean)
+          )
+        ) ||
+        oldest ||
+        null;
       return {
         items,
-        cursor: newestTs(messages) || oldest || null,
+        cursor: nextCursor,
       };
     },
 
@@ -383,8 +497,8 @@ async function authUrl(redirectUri, state) {
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: redirectUri,
-    scope: SCOPES,
-    user_scope: SCOPES,
+    scope: BOT_SCOPES,
+    user_scope: USER_SCOPES,
     state,
   });
   return { success: true, url: `${SLACK_AUTHORIZE}?${params.toString()}` };
@@ -415,7 +529,9 @@ async function exchangeCode(code, redirectUri) {
     };
   }
 
-  const accessToken = data.access_token || data.authed_user?.access_token;
+  const botToken = data.access_token || null;
+  const userToken = data.authed_user?.access_token || null;
+  const accessToken = botToken || userToken;
   if (!accessToken)
     return { success: false, error: "Slack did not return an access token." };
 
@@ -424,6 +540,8 @@ async function exchangeCode(code, redirectUri) {
   );
   const tokenConfig = {
     access_token: accessToken,
+    bot_token: botToken,
+    user_token: userToken,
     refresh_token:
       data.refresh_token || data.authed_user?.refresh_token || null,
     team_id: data.team?.id || null,
@@ -437,6 +555,12 @@ async function exchangeCode(code, redirectUri) {
       : null,
     account_email: tokenConfig.team_id,
     account_name: tokenConfig.team_name,
+  });
+  await saveConnectionMeta({
+    user_token: userToken,
+    bot_token: botToken,
+    team_id: tokenConfig.team_id,
+    team_name: tokenConfig.team_name,
   });
 
   // Watched channels store their own copy of the token; refresh them too.
@@ -501,13 +625,33 @@ async function getSlackConnection() {
   return ConnectedFileSource.get({ provider: PROVIDER });
 }
 
-function tokenConfigFromConnection(record) {
+async function saveConnectionMeta(meta = {}) {
+  await SystemSettings._updateSettings({
+    [SESSION_LABEL]: JSON.stringify(meta || {}),
+  });
+}
+
+async function getConnectionMeta() {
+  return safeJsonParse(
+    (await SystemSettings.get({ label: SESSION_LABEL }))?.value,
+    {}
+  );
+}
+
+async function clearConnectionMeta() {
+  await saveConnectionMeta({});
+}
+
+async function tokenConfigFromConnection(record) {
   if (!record) return null;
   const tokens = ConnectedFileSource.tokens(record);
   if (!tokens.accessToken) return null;
+  const meta = await getConnectionMeta();
   return {
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken || null,
+    bot_token: meta.bot_token || tokens.accessToken,
+    user_token: meta.user_token || null,
     team_id: record.account_email || null,
     team_name: record.account_name || null,
   };
@@ -545,6 +689,8 @@ async function listChannels() {
 module.exports = {
   PROVIDER,
   SCOPES,
+  BOT_SCOPES,
+  USER_SCOPES,
   PAGE_SIZE,
   STALE_AFTER_MS,
   CONFIG_LABEL,
@@ -561,4 +707,6 @@ module.exports = {
   tokenConfigFromConnection,
   refreshSlackAccess,
   messagesToItems,
+  joinChannel,
+  clearConnectionMeta,
 };

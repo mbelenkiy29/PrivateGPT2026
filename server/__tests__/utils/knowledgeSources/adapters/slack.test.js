@@ -13,6 +13,8 @@ const {
   createSlackAdapter,
   PROVIDER,
   STALE_AFTER_MS,
+  BOT_SCOPES,
+  USER_SCOPES,
 } = require("../../../../utils/knowledgeSources/adapters/slack");
 
 const CHANNEL = "C123ABC";
@@ -111,11 +113,15 @@ describe("Slack knowledge source adapter", () => {
       `slack://${CHANNEL}/${MESSAGE_A.ts}`,
     ]);
 
-    const historyUrl = fetchMock.mock.calls
-      .map(([url]) => String(url))
-      .find((url) => url.includes("conversations.history"));
-    expect(historyUrl).toContain(`channel=${CHANNEL}`);
-    expect(historyUrl).toContain("limit=200");
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    const joinAt = urls.findIndex((url) => url.includes("conversations.join"));
+    const historyAt = urls.findIndex((url) =>
+      url.includes("conversations.history")
+    );
+    expect(joinAt).toBeGreaterThan(-1);
+    expect(historyAt).toBeGreaterThan(joinAt);
+    expect(urls[historyAt]).toContain(`channel=${CHANNEL}`);
+    expect(urls[historyAt]).toContain("limit=200");
   });
 
   it("downloads a two-message thread as markdown including files.info", async () => {
@@ -161,6 +167,88 @@ describe("Slack knowledge source adapter", () => {
       .map(([url]) => String(url))
       .find((url) => url.includes("conversations.history"));
     expect(historyUrl).toContain(`oldest=${cursor}`);
+  });
+
+  it("delta keeps paging newest-first until has_more is false", async () => {
+    const older = {
+      type: "message",
+      user: "U3",
+      text: "earlier new message",
+      ts: "1710000000.000050",
+    };
+    fetchMock.mockImplementation(async (url) => {
+      const href = String(url);
+      if (href.includes("conversations.join")) return jsonResponse({ ok: true });
+      if (href.includes("conversations.history")) {
+        if (!href.includes("cursor=")) {
+          return jsonResponse({
+            ok: true,
+            has_more: true,
+            messages: [MESSAGE_B],
+            response_metadata: { next_cursor: "page2" },
+          });
+        }
+        return jsonResponse({
+          ok: true,
+          has_more: false,
+          messages: [older, MESSAGE_A],
+        });
+      }
+      return jsonResponse({ ok: true });
+    });
+
+    const bound = createSlackAdapter({
+      accessToken: TOKEN,
+      channelId: CHANNEL,
+    });
+    const result = await bound.delta("1700000000.000000");
+    expect(result.items.map((item) => item.ts).sort()).toEqual(
+      [older.ts, MESSAGE_A.ts, MESSAGE_B.ts].sort()
+    );
+    const historyCalls = fetchMock.mock.calls
+      .map(([url]) => String(url))
+      .filter((url) => url.includes("conversations.history"));
+    expect(historyCalls.length).toBe(2);
+    expect(historyCalls[1]).toContain("cursor=page2");
+  });
+
+  it("delta includes a thread whose latest_reply is newer than the cursor", async () => {
+    const parent = {
+      type: "message",
+      user: "U1",
+      text: "old thread",
+      ts: "1600000000.000001",
+      reply_count: 2,
+      latest_reply: "1710000999.000001",
+    };
+    fetchMock.mockImplementation(async (url) => {
+      const href = String(url);
+      if (href.includes("conversations.history")) {
+        return jsonResponse({ ok: true, has_more: false, messages: [parent] });
+      }
+      return jsonResponse({ ok: true });
+    });
+
+    const bound = createSlackAdapter({
+      accessToken: TOKEN,
+      channelId: CHANNEL,
+    });
+    const result = await bound.delta("1700000000.000000");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].ts).toBe(parent.ts);
+    expect(result.items[0].latest_reply).toBe(parent.latest_reply);
+    expect(bound.toChunkSource(result.items[0])).toBe(
+      `slack://${CHANNEL}/${parent.ts}`
+    );
+    expect(result.cursor).toBe(parent.latest_reply);
+  });
+
+  it("requests join and groups scopes for public and private channels", () => {
+    expect(BOT_SCOPES).toContain("channels:join");
+    expect(BOT_SCOPES).toContain("groups:read");
+    expect(BOT_SCOPES).toContain("groups:history");
+    expect(USER_SCOPES).toContain("groups:read");
+    expect(USER_SCOPES).toContain("groups:history");
   });
 
   it("watchHint uses a 1 hour stale window", () => {

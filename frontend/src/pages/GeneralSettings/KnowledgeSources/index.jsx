@@ -25,10 +25,12 @@ export default function KnowledgeSourcesSettings() {
   const [connecting, setConnecting] = useState(false);
   const [loadingChannels, setLoadingChannels] = useState(false);
   const [indexing, setIndexing] = useState(false);
+  const [redirectUri, setRedirectUri] = useState("");
 
   const loadStatus = async () => {
     const data = await Slack.status();
     if (data?.oauth) setOauth(data.oauth);
+    if (data?.redirectUri) setRedirectUri(data.redirectUri);
     setConnected(Boolean(data?.connected));
     setTeam(data?.team || null);
     setSources(data?.sources || []);
@@ -91,6 +93,7 @@ export default function KnowledgeSourcesSettings() {
       channels: selectedChannels.map((channel) => ({
         id: channel.id,
         name: channel.name,
+        isPrivate: channel.isPrivate,
       })),
     });
     setIndexing(false);
@@ -151,13 +154,15 @@ export default function KnowledgeSourcesSettings() {
               }
               description={
                 <>
-                  Slack app OAuth. Scopes:{" "}
+                  Slack app OAuth. Bot scopes:{" "}
                   <code className="text-theme-text-primary">
-                    channels:history, files:read, channels:read
+                    channels:history, channels:read, channels:join, files:read,
+                    groups:read, groups:history
                   </code>
                   . Redirect URI:{" "}
                   <code className="text-theme-text-primary">
-                    http://localhost:3002/api/slack/callback
+                    {redirectUri ||
+                      `${window.location.origin}/api/slack/callback`}
                   </code>
                 </>
               }
@@ -226,7 +231,7 @@ export default function KnowledgeSourcesSettings() {
             {connected && (
               <Card
                 title="Watch channels"
-                description="Pick a workspace and the public or private channels to ingest. Each channel becomes a watched knowledge source."
+                description="Pick a workspace and the public or private channels to ingest. Public channels are joined automatically; invite the app to private channels."
               >
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-theme-text-secondary">

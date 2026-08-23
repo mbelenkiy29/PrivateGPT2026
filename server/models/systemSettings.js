@@ -105,6 +105,8 @@ const SystemSettings = {
     "memory_enabled",
     "memory_auto_extraction",
     "file_source_oauth_config",
+    "slack_oauth_config",
+    "slack_connection_meta",
   ],
   validations: {
     footer_data: (updates) => {
@@ -452,6 +454,20 @@ const SystemSettings = {
       } catch {
         return JSON.stringify({});
       }
+    },
+    slack_oauth_config: (update) => {
+      try {
+        if (!update) return JSON.stringify({});
+        const parsed =
+          typeof update === "string" ? safeJsonParse(update, {}) : update;
+        return JSON.stringify(parsed || {});
+      } catch {
+        return JSON.stringify({});
+      }
+    },
+    slack_connection_meta: (update) => {
+      if (!update) return "";
+      return String(update);
     },
     default_system_prompt: (prompt) => {
       if (typeof prompt !== "string" || !prompt) return null;

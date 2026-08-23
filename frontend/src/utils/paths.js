@@ -172,6 +172,9 @@ export default {
     cloudDrives: () => {
       return "/settings/cloud-drives";
     },
+    knowledgeSources: () => {
+      return "/settings/knowledge-sources";
+    },
     embedChatWidgets: () => {
       return `/settings/embed-chat-widgets`;
     },

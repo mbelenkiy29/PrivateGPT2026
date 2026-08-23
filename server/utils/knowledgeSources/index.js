@@ -7,6 +7,9 @@ const {
   unregisterAdapter,
 } = require("./adapter");
 
+// Side-effect register so the Bree worker sees adapters without HTTP routes.
+require("./adapters/slack");
+
 module.exports = {
   REQUIRED_METHODS,
   assertAdapter,

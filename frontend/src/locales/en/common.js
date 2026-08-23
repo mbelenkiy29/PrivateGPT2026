@@ -118,6 +118,12 @@ const TRANSLATIONS = {
     "available-channels": {
       telegram: "Telegram",
     },
+    "knowledge-sources": "Knowledge sources",
+    slack: {
+      title: "Slack",
+      description:
+        "Watch Slack channels as markdown transcripts in a workspace.",
+    },
   },
   login: {
     "multi-user": {

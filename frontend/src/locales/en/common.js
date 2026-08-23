@@ -118,6 +118,7 @@ const TRANSLATIONS = {
     channels: "Channels",
     "available-channels": {
       telegram: "Telegram",
+      slack: "Slack",
     },
     "knowledge-sources": "Knowledge sources",
     slack: {
@@ -1268,6 +1269,38 @@ const TRANSLATIONS = {
         "Users waiting to be verified. Match the pairing code shown here with the one displayed in their Telegram chat.",
       unknown: "Unknown",
     },
+  },
+  "slack-bot": {
+    title: "Slack Bot",
+    description:
+      "Let teammates @mention PrivateAI in Slack. Replies come from the bound workspace's knowledge, in-thread, with citations.",
+    "events-url": "Events Request URL",
+    "events-url-hint":
+      "Paste this into your Slack app under Event Subscriptions. Subscribe to the bot event app_mention.",
+    "signing-secret": "Signing secret",
+    "signing-secret-hint":
+      "From your Slack app's Basic Information page. Stored encrypted.",
+    "default-workspace": "Default workspace",
+    "default-workspace-hint":
+      "Used until someone runs /switch in a Slack channel.",
+    enable: "Enable Slack bot",
+    disable: "Disable bot",
+    enabling: "Saving…",
+    copy: "Copy",
+    copied: "Copied",
+    "connect-slack-first":
+      "Connect Slack under Settings → Knowledge sources first, then come back to enable the bot.",
+    "open-knowledge-sources": "Open Knowledge sources",
+    "reconnect-scopes":
+      "If @mentions fail to post, reconnect Slack so the app has chat:write and app_mentions:read.",
+    "toast-secret-required": "Enter the Slack signing secret.",
+    "toast-saved": "Slack bot enabled. Set the Events Request URL in Slack.",
+    "toast-save-failed": "Could not enable the Slack bot.",
+    "toast-disabled": "Slack bot disabled.",
+    "toast-disable-failed": "Could not disable the Slack bot.",
+    status: "Enabled",
+    "slack-workspace": "Slack workspace",
+    "not-connected": "Slack is not connected",
   },
   security: {
     title: "Security",

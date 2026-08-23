@@ -53,6 +53,7 @@ const { slackEndpoints } = require("./endpoints/slack");
 const { emailInboxEndpoints } = require("./endpoints/emailInbox");
 const { knowledgeSourcesEndpoints } = require("./endpoints/knowledgeSources");
 const { trustEndpoints } = require("./endpoints/trust");
+const { slackChannelEndpoints } = require("./endpoints/channels/slack");
 const { httpLogger } = require("./middleware/httpLogger");
 const app = express();
 const apiRouter = express.Router();
@@ -71,7 +72,21 @@ if (
 }
 app.use(cors({ origin: true }));
 app.use(bodyParser.text({ limit: FILE_LIMIT }));
-app.use(bodyParser.json({ limit: FILE_LIMIT }));
+app.use(
+  bodyParser.json({
+    limit: FILE_LIMIT,
+    verify: (req, _res, buf) => {
+      const path = String(req.originalUrl || req.url || "").split("?")[0];
+      // Slack signing-secret checks need the exact raw body bytes.
+      if (
+        path === "/api/channels/slack/events" ||
+        path === "/channels/slack/events"
+      ) {
+        req.rawBody = buf.toString("utf8");
+      }
+    },
+  })
+);
 app.use(
   bodyParser.urlencoded({
     limit: FILE_LIMIT,
@@ -118,6 +133,7 @@ slackEndpoints(apiRouter);
 emailInboxEndpoints(apiRouter);
 knowledgeSourcesEndpoints(apiRouter);
 trustEndpoints(apiRouter);
+slackChannelEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

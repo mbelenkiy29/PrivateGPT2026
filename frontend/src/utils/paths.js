@@ -196,6 +196,9 @@ export default {
     telegram: () => {
       return `/settings/external-connections/telegram`;
     },
+    slackBot: () => {
+      return `/settings/external-connections/slack`;
+    },
     scheduledJobs: () => {
       return `/settings/scheduled-jobs`;
     },

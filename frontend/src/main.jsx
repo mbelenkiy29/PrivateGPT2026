@@ -440,6 +440,15 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: "/settings/external-connections/slack",
+        lazy: async () => {
+          const { default: SlackBotSettings } = await import(
+            "@/pages/GeneralSettings/Connections/SlackBot"
+          );
+          return { element: <AdminRoute Component={SlackBotSettings} /> };
+        },
+      },
+      {
         path: "/settings/scheduled-jobs",
         lazy: async () => {
           const { default: ScheduledJobs } = await import(

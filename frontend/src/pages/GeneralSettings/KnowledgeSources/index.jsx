@@ -313,7 +313,8 @@ export default function KnowledgeSourcesSettings() {
                 <>
                   Slack app OAuth. Bot scopes:{" "}
                   <code className="text-theme-text-primary">
-                    channels:history, channels:read, channels:join, files:read,
+                    app_mentions:read, channels:history, channels:read,
+                    channels:join, chat:write, chat:write.public, files:read,
                     groups:read, groups:history
                   </code>
                   . Redirect URI:{" "}

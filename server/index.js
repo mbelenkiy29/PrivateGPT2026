@@ -50,6 +50,7 @@ const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
 require("./utils/knowledgeSources/register");
 const { slackEndpoints } = require("./endpoints/slack");
+const { emailInboxEndpoints } = require("./endpoints/emailInbox");
 const { httpLogger } = require("./middleware/httpLogger");
 const app = express();
 const apiRouter = express.Router();
@@ -112,6 +113,7 @@ googleAgentSkillEndpoints(apiRouter);
 memoryEndpoints(apiRouter);
 fileSourcesEndpoints(apiRouter);
 slackEndpoints(apiRouter);
+emailInboxEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

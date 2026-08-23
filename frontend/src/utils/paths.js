@@ -175,6 +175,9 @@ export default {
     knowledgeSources: () => {
       return "/settings/knowledge-sources";
     },
+    emailInbox: () => {
+      return "/settings/email-inbox";
+    },
     embedChatWidgets: () => {
       return `/settings/embed-chat-widgets`;
     },

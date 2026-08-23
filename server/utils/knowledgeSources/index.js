@@ -9,6 +9,9 @@ const {
 
 // Side-effect register so the Bree worker sees adapters without HTTP routes.
 require("./adapters/slack");
+require("./adapters/imap");
+require("./adapters/gmail-mail");
+require("./adapters/outlook-mail");
 
 module.exports = {
   REQUIRED_METHODS,

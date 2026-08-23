@@ -233,6 +233,15 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: "/settings/email-inbox",
+        lazy: async () => {
+          const { default: EmailInbox } = await import(
+            "@/pages/GeneralSettings/EmailInbox"
+          );
+          return { element: <AdminRoute Component={EmailInbox} /> };
+        },
+      },
+      {
         path: "/settings/interface",
         lazy: async () => {
           const { default: InterfaceSettings } = await import(

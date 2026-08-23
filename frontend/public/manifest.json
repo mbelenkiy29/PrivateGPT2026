@@ -1,0 +1,13 @@
+{
+  "name": "PrivateGPT",
+  "short_name": "PrivateGPT",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any"
+    }
+  ]
+}

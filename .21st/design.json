@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "project": {
+    "name": "PrivateGPT",
+    "productType": "document-chat",
+    "stack": ["react", "vite", "tailwind"]
+  },
+  "sources": {
+    "tokens": [],
+    "components": [],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "unknown",
+    "colors": {},
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    {
+      "id": "file-explorer-dual-pane",
+      "date": "2026-08-22",
+      "choice": "21st dual-pane explorer",
+      "references": ["18106 Scroll Area File Explorer", "24877 File Tree View", "7878 Pill Morph Tabs", "19201 File Dropzone"],
+      "notes": "Manage Documents is a compact dual-pane explorer. Left: source pills + local/cloud tree + compact dropzone. Right: workspace embeddings. Transfer is a circular arrow, not a full-screen stretch."
+    }
+  ],
+  "evidence": [],
+  "generatedAt": "2026-08-22T20:43:27.097Z"
+}

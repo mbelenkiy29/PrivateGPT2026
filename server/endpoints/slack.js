@@ -76,6 +76,20 @@ function slackErrorMessage(error) {
   return error.message || "Ingest failed";
 }
 
+function mergeThreadIds(source, items = []) {
+  const existing = KnowledgeSource.decryptConfig(source) || {};
+  const ids = [
+    ...(existing.thread_ids || []),
+    ...items.map((item) => item.thread_ts || item.ts),
+  ]
+    .map(String)
+    .filter(Boolean);
+  return {
+    ...existing,
+    thread_ids: [...new Set(ids)].slice(-500),
+  };
+}
+
 async function ingestChannel({ source, workspace, bound }) {
   let listed;
   try {
@@ -89,8 +103,10 @@ async function ingestChannel({ source, workspace, bound }) {
     throw e;
   }
   const items = (listed.items || []).slice(0, MAX_INGEST);
+  const config = mergeThreadIds(source, items);
   if (items.length === 0) {
     await KnowledgeSource.update(source.id, {
+      config,
       sync_cursor: listed.cursor || source.sync_cursor,
       last_synced_at: new Date(),
       last_error: null,
@@ -101,6 +117,7 @@ async function ingestChannel({ source, workspace, bound }) {
   const collector = new CollectorApi();
   if (!(await collector.online())) {
     await KnowledgeSource.update(source.id, {
+      config,
       last_error: "Collector unavailable; watch enabled for later sync.",
     });
     return { indexed: 0, failed: 0 };
@@ -143,6 +160,7 @@ async function ingestChannel({ source, workspace, bound }) {
   }
 
   await KnowledgeSource.update(source.id, {
+    config,
     sync_cursor: newest,
     last_synced_at: new Date(),
     last_error:

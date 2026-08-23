@@ -15,6 +15,7 @@ const USER_SCOPES =
 const SCOPES = BOT_SCOPES;
 const PAGE_SIZE = 200;
 const MAX_DELTA_PAGES = 10;
+const MAX_WATCHED_THREADS = 500;
 const CONFIG_LABEL = "slack_oauth_config";
 const SESSION_LABEL = "slack_connection_meta";
 const PROVIDER = "slack";
@@ -359,10 +360,72 @@ function tsNewer(a, b) {
 function includeHistoryMessage(message, oldest) {
   if (message.thread_ts && message.thread_ts !== message.ts) return false;
   if (!oldest) return true;
-  if (tsNewer(message.ts, oldest)) return true;
-  // Parent may predate the cursor while replies do not.
-  if (tsNewer(message.latest_reply, oldest)) return true;
-  return false;
+  return tsNewer(message.ts, oldest);
+}
+
+function knownThreadIds(ctx = {}) {
+  const ids = ctx.config?.thread_ids || ctx.threadIds || [];
+  return [
+    ...new Set((Array.isArray(ids) ? ids : []).map(String).filter(Boolean)),
+  ];
+}
+
+async function fetchThreadMessages(ctx, threadTs, { oldest } = {}) {
+  const token = ctx.accessToken || ctx.userToken || ctx.botToken;
+  if (!token || !ctx.channelId || !threadTs) return [];
+  const messages = [];
+  let cursor;
+  do {
+    const data = await slackApi("conversations.replies", token, {
+      channel: ctx.channelId,
+      ts: threadTs,
+      limit: PAGE_SIZE,
+      oldest: oldest || undefined,
+      inclusive: true,
+      cursor,
+    });
+    messages.push(...(data.messages || []));
+    cursor = data.has_more ? data.response_metadata?.next_cursor || null : null;
+  } while (cursor);
+  return messages;
+}
+
+async function collectUpdatedThreads(ctx, oldest) {
+  if (!oldest) return [];
+  const threadIds = knownThreadIds(ctx).slice(0, MAX_WATCHED_THREADS);
+  const items = [];
+  for (const threadTs of threadIds) {
+    let messages = [];
+    try {
+      messages = await fetchThreadMessages(ctx, threadTs, { oldest });
+    } catch {
+      continue;
+    }
+    const replies = messages.filter(
+      (message) => message.ts !== threadTs && tsNewer(message.ts, oldest)
+    );
+    if (replies.length === 0) continue;
+    const parent = messages.find((message) => message.ts === threadTs) || {
+      ts: threadTs,
+      thread_ts: threadTs,
+      text: "",
+      reply_count: replies.length,
+      latest_reply: newestTs(replies),
+    };
+    const [item] = messagesToItems(
+      [
+        {
+          ...parent,
+          reply_count: parent.reply_count || replies.length,
+          latest_reply: newestTs(replies) || parent.latest_reply,
+        },
+      ],
+      ctx.channelId
+    );
+    item.messages = messages;
+    items.push(item);
+  }
+  return items;
 }
 
 async function collectHistory(ctx, { oldest, cursor } = {}) {
@@ -451,15 +514,24 @@ function createSlackAdapter(defaults = {}) {
         includeHistoryMessage(message, oldest)
       );
       const items = messagesToItems(changed, ctx.channelId);
+      const replyItems = await collectUpdatedThreads(ctx, oldest);
+      const seen = new Set(items.map((item) => item.thread_ts || item.ts));
+      for (const item of replyItems) {
+        const id = item.thread_ts || item.ts;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        items.push(item);
+      }
       for (const item of items) {
         item.source = ctx.source;
       }
       const nextCursor =
-        newestTs(
-          messages.flatMap((message) =>
+        newestTs([
+          ...messages.flatMap((message) =>
             [message.ts, message.latest_reply].filter(Boolean)
-          )
-        ) ||
+          ),
+          ...replyItems.map((item) => item.latest_reply || item.ts),
+        ]) ||
         oldest ||
         null;
       return {
@@ -626,16 +698,26 @@ async function getSlackConnection() {
 }
 
 async function saveConnectionMeta(meta = {}) {
+  const { KnowledgeSource } = require("../../../models/knowledgeSource");
+  const encrypted = KnowledgeSource.encryptConfig(meta || {});
   await SystemSettings._updateSettings({
-    [SESSION_LABEL]: JSON.stringify(meta || {}),
+    [SESSION_LABEL]: encrypted || "",
   });
 }
 
 async function getConnectionMeta() {
-  return safeJsonParse(
-    (await SystemSettings.get({ label: SESSION_LABEL }))?.value,
-    {}
-  );
+  const raw = (await SystemSettings.get({ label: SESSION_LABEL }))?.value;
+  if (!raw) return {};
+  const { KnowledgeSource } = require("../../../models/knowledgeSource");
+  const decrypted = KnowledgeSource.decryptConfig(raw);
+  if (decrypted && typeof decrypted === "object") return decrypted;
+  // Migrate a leftover plaintext blob, then re-encrypt.
+  const legacy = safeJsonParse(raw, null);
+  if (legacy && typeof legacy === "object") {
+    await saveConnectionMeta(legacy);
+    return legacy;
+  }
+  return {};
 }
 
 async function clearConnectionMeta() {
@@ -694,6 +776,7 @@ module.exports = {
   PAGE_SIZE,
   STALE_AFTER_MS,
   CONFIG_LABEL,
+  SESSION_LABEL,
   adapter,
   createSlackAdapter,
   slackApi,
@@ -709,4 +792,6 @@ module.exports = {
   messagesToItems,
   joinChannel,
   clearConnectionMeta,
+  saveConnectionMeta,
+  getConnectionMeta,
 };

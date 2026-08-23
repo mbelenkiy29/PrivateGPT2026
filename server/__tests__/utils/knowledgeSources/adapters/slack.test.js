@@ -212,19 +212,34 @@ describe("Slack knowledge source adapter", () => {
     expect(historyCalls[1]).toContain("cursor=page2");
   });
 
-  it("delta includes a thread whose latest_reply is newer than the cursor", async () => {
+  it("delta fetches conversations.replies for known threads newer than the cursor", async () => {
     const parent = {
       type: "message",
       user: "U1",
       text: "old thread",
       ts: "1600000000.000001",
-      reply_count: 2,
-      latest_reply: "1710000999.000001",
+    };
+    const reply = {
+      type: "message",
+      user: "U2",
+      text: "new reply",
+      ts: "1710000999.000001",
+      thread_ts: parent.ts,
     };
     fetchMock.mockImplementation(async (url) => {
       const href = String(url);
+      if (href.includes("conversations.join")) return jsonResponse({ ok: true });
       if (href.includes("conversations.history")) {
-        return jsonResponse({ ok: true, has_more: false, messages: [parent] });
+        // Slack history + oldest never returns the old parent.
+        return jsonResponse({ ok: true, has_more: false, messages: [] });
+      }
+      if (href.includes("conversations.replies")) {
+        expect(href).toContain(`ts=${parent.ts}`);
+        expect(href).toContain("oldest=1700000000.000000");
+        return jsonResponse({
+          ok: true,
+          messages: [parent, reply],
+        });
       }
       return jsonResponse({ ok: true });
     });
@@ -232,15 +247,20 @@ describe("Slack knowledge source adapter", () => {
     const bound = createSlackAdapter({
       accessToken: TOKEN,
       channelId: CHANNEL,
+      config: { thread_ids: [parent.ts] },
     });
     const result = await bound.delta("1700000000.000000");
     expect(result.items).toHaveLength(1);
     expect(result.items[0].ts).toBe(parent.ts);
-    expect(result.items[0].latest_reply).toBe(parent.latest_reply);
+    expect(result.items[0].latest_reply).toBe(reply.ts);
     expect(bound.toChunkSource(result.items[0])).toBe(
       `slack://${CHANNEL}/${parent.ts}`
     );
-    expect(result.cursor).toBe(parent.latest_reply);
+    expect(result.cursor).toBe(reply.ts);
+    const replyCalls = fetchMock.mock.calls
+      .map(([url]) => String(url))
+      .filter((url) => url.includes("conversations.replies"));
+    expect(replyCalls.length).toBeGreaterThan(0);
   });
 
   it("requests join and groups scopes for public and private channels", () => {
@@ -249,6 +269,41 @@ describe("Slack knowledge source adapter", () => {
     expect(BOT_SCOPES).toContain("groups:history");
     expect(USER_SCOPES).toContain("groups:read");
     expect(USER_SCOPES).toContain("groups:history");
+  });
+
+  it("encrypts slack connection meta tokens at rest", async () => {
+    const { SystemSettings } = require("../../../../models/systemSettings");
+    const {
+      saveConnectionMeta,
+      getConnectionMeta,
+      SESSION_LABEL,
+    } = require("../../../../utils/knowledgeSources/adapters/slack");
+    let saved = null;
+    const update = jest
+      .spyOn(SystemSettings, "_updateSettings")
+      .mockImplementation(async (updates) => {
+        saved = updates[SESSION_LABEL];
+        return { success: true };
+      });
+    const get = jest
+      .spyOn(SystemSettings, "get")
+      .mockImplementation(async () =>
+        saved ? { label: SESSION_LABEL, value: saved } : null
+      );
+
+    await saveConnectionMeta({
+      user_token: "xoxp-secret",
+      bot_token: "xoxb-secret",
+    });
+    expect(typeof saved).toBe("string");
+    expect(saved).not.toContain("xoxp-secret");
+    expect(saved).not.toContain("xoxb-secret");
+    const meta = await getConnectionMeta();
+    expect(meta.user_token).toBe("xoxp-secret");
+    expect(meta.bot_token).toBe("xoxb-secret");
+
+    update.mockRestore();
+    get.mockRestore();
   });
 
   it("watchHint uses a 1 hour stale window", () => {

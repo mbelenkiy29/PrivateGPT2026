@@ -5,9 +5,15 @@ const ChannelWorkspaceBinding = {
     connector_type,
     external_id,
     workspaceId,
-    threadSlug = null,
+    threadSlug,
   } = {}) {
     try {
+      const update = {
+        workspaceId: Number(workspaceId),
+        lastUpdatedAt: new Date(),
+      };
+      if (threadSlug !== undefined) update.threadSlug = threadSlug ?? null;
+
       return await prisma.channel_workspace_bindings.upsert({
         where: {
           connector_type_external_id: {
@@ -15,11 +21,7 @@ const ChannelWorkspaceBinding = {
             external_id: String(external_id),
           },
         },
-        update: {
-          workspaceId: Number(workspaceId),
-          threadSlug: threadSlug ?? null,
-          lastUpdatedAt: new Date(),
-        },
+        update,
         create: {
           connector_type: String(connector_type),
           external_id: String(external_id),

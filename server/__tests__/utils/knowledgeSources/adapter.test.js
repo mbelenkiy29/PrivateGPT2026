@@ -3,6 +3,7 @@ const {
   registerAdapter,
   getAdapter,
   listProviders,
+  unregisterAdapter,
 } = require("../../../utils/knowledgeSources");
 
 function makeFakeAdapter(overrides = {}) {
@@ -34,6 +35,11 @@ function makeFakeAdapter(overrides = {}) {
 
 describe("KnowledgeSourceAdapter contract", () => {
   const provider = "fake";
+
+  afterEach(() => {
+    unregisterAdapter(provider);
+    unregisterAdapter("broken");
+  });
 
   it("registers and returns a fake adapter that implements the contract", () => {
     const adapter = makeFakeAdapter();
@@ -67,6 +73,15 @@ describe("KnowledgeSourceAdapter contract", () => {
     expect(adapter.toChunkSource({ id: "xyz" })).toBe("fake://xyz");
   });
 
+  it("list, download, and watchHint are callable on a fake adapter", async () => {
+    const adapter = makeFakeAdapter();
+    const listed = await adapter.list({ cursor: "c0", folderId: "f1" });
+    expect(listed).toEqual({ items: [], cursor: "c0", folderId: "f1" });
+    const item = { id: "abc" };
+    expect(await adapter.download(item)).toBe(item);
+    expect(adapter.watchHint()).toEqual({ poll: true });
+  });
+
   it("assertAdapter rejects incomplete objects", () => {
     expect(() => assertAdapter(null)).toThrow(
       "Knowledge source adapter must be an object"
@@ -80,6 +95,15 @@ describe("KnowledgeSourceAdapter contract", () => {
         download: async (item) => item,
       })
     ).toThrow(/missing required methods: delta, watchHint, toChunkSource/);
+  });
+
+  it("assertAdapter rejects non-function methods", () => {
+    expect(() =>
+      assertAdapter({
+        ...makeFakeAdapter(),
+        list: "nope",
+      })
+    ).toThrow(/missing required methods: list/);
   });
 
   it("registerAdapter rejects incomplete adapters", () => {

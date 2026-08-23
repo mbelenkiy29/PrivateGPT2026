@@ -76,10 +76,18 @@ function listProviders() {
   return Array.from(adapters.keys());
 }
 
+/**
+ * @param {string} provider
+ */
+function unregisterAdapter(provider) {
+  adapters.delete(String(provider));
+}
+
 module.exports = {
   REQUIRED_METHODS,
   assertAdapter,
   registerAdapter,
   getAdapter,
   listProviders,
+  unregisterAdapter,
 };

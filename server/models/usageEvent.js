@@ -10,6 +10,12 @@ const UsageEvent = {
 
   async create(data = {}) {
     try {
+      if (!Object.values(this.sources).includes(data.source)) {
+        throw new Error(
+          `UsageEvent source ${data.source} is not a valid source.`
+        );
+      }
+
       return await prisma.usage_events.create({
         data: {
           workspaceId:
@@ -21,7 +27,7 @@ const UsageEvent = {
           prompt_tokens: Number(data.prompt_tokens) || 0,
           completion_tokens: Number(data.completion_tokens) || 0,
           cost_usd: Number(data.cost_usd) || 0,
-          source: String(data.source),
+          source: data.source,
         },
       });
     } catch (e) {
@@ -43,6 +49,10 @@ const UsageEvent = {
     }
   },
 
+  /**
+   * Sum tokens/cost since `since` (typically start of month). Not grouped by month.
+   * @param {{ workspaceId?: number, since?: Date|string }} opts
+   */
   async monthlySummary({ workspaceId, since } = {}) {
     try {
       const where = {};
@@ -56,14 +66,14 @@ const UsageEvent = {
           completion_tokens: true,
           cost_usd: true,
         },
-        _count: true,
+        _count: { _all: true },
       });
 
       return {
         prompt_tokens: summary._sum.prompt_tokens || 0,
         completion_tokens: summary._sum.completion_tokens || 0,
         cost_usd: summary._sum.cost_usd || 0,
-        count: summary._count || 0,
+        count: summary._count._all || 0,
       };
     } catch (e) {
       console.error(e);

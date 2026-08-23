@@ -21,6 +21,19 @@ const KnowledgeSource = {
     );
   },
 
+  decryptConfig(record) {
+    const encrypted =
+      typeof record === "string" ? record : record?.encrypted_config;
+    if (!encrypted) return null;
+    const decrypted = this.decrypt(encrypted);
+    if (!decrypted) return null;
+    try {
+      return JSON.parse(decrypted);
+    } catch {
+      return decrypted;
+    }
+  },
+
   async get(clause = {}) {
     try {
       return await prisma.knowledge_sources.findFirst({ where: clause });

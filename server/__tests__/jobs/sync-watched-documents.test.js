@@ -55,6 +55,7 @@ jest.mock("../../models/documents", () => ({
 jest.mock("../../models/documentSyncQueue", () => ({
   DocumentSyncQueue: {
     validFileTypes: ["link"],
+    extraFileTypes: [],
     staleDocumentQueues: jest.fn().mockResolvedValue([
       {
         id: 1,

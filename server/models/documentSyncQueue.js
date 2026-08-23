@@ -21,14 +21,15 @@ const DocumentSyncQueue = {
   ],
   extraFileTypes: [],
   /**
-   * Register an additional watched document type without a schema change.
+   * Register a watched type for canWatch without adding a fetch path.
+   * Kept off validFileTypes so sync-watched-documents will skip it.
    * @param {string} type
    * @returns {boolean}
    */
   registerFileType: function (type) {
     if (!type || typeof type !== "string") return false;
-    if (this.validFileTypes.includes(type)) return false;
-    this.validFileTypes.push(type);
+    if (this.validFileTypes.includes(type) || this.extraFileTypes.includes(type))
+      return false;
     this.extraFileTypes.push(type);
     return true;
   },

@@ -45,7 +45,7 @@ function historyIsAgentic(chatMode, chatHistory) {
  * Query mode is also not supported in this flow - as it would be pretty useless.
  *
  * @param {object} context - The context object.
- * @param {import("../commands").BotContext} context.ctx - The bot object.
+ * @param {import("../telegramBot/utils/commands").BotContext} context.ctx - The bot object.
  * @param {number} context.chatId - The chat ID.
  * @param {import('@prisma/client').workspaces} context.workspace - The workspace object.
  * @param {object|null} context.thread - The thread object.
@@ -364,7 +364,7 @@ function parseSSEChunk(data) {
  * Create a stream response handler for editing Telegram messages as tokens arrive.
  * Manages message splitting when content exceeds Telegram's length limit.
  * @param {object} options
- * @param {import("./commands").BotContext} options.ctx - Bot context
+ * @param {import("../telegramBot/utils/commands").BotContext} options.ctx - Bot context
  * @param {number} options.chatId - Telegram chat ID
  * @returns {{ responseHandler: object, flushEdit: function }}
  */

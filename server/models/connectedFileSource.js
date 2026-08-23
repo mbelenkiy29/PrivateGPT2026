@@ -37,6 +37,12 @@ const ConnectedFileSource = {
     }
   },
 
+  /**
+   * One connected account per provider. The schema unique is
+   * (provider, account_email) for a later multi-account path; this method still
+   * looks up by provider only and overwrites that row. Do not Prisma-upsert
+   * with account_email: null — SQLite UNIQUE does not match NULL.
+   */
   async upsertByProvider(provider, data = {}) {
     const existing = await this.get({ provider });
     const payload = {

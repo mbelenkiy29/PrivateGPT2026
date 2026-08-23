@@ -30,6 +30,13 @@ const { DocumentSyncRun } = require("../models/documentSyncRun.js");
       const { metadata, type, source } =
         Document.parseDocumentTypeAndSource(document);
 
+      if (DocumentSyncQueue.extraFileTypes?.includes(type)) {
+        log(
+          `Document ${document.filename} type ${type} has no fetch path here; skipping.`
+        );
+        continue;
+      }
+
       if (!metadata || !DocumentSyncQueue.validFileTypes.includes(type)) {
         // Document is either broken, invalid, or not supported so drop it from future queues.
         log(

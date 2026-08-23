@@ -4,6 +4,7 @@ const {
   registerAdapter,
   getAdapter,
   listProviders,
+  unregisterAdapter,
 } = require("./adapter");
 
 module.exports = {
@@ -12,4 +13,5 @@ module.exports = {
   registerAdapter,
   getAdapter,
   listProviders,
+  unregisterAdapter,
 };

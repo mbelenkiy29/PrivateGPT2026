@@ -327,26 +327,27 @@ async function streamChatWithWorkspace(
   }
 
   if (completeText?.length > 0) {
+    const decorated = await decorateChatResponse(
+      {
+        text: completeText,
+        sources,
+        type: chatMode,
+        attachments,
+        metrics,
+      },
+      {
+        routingMetadata,
+        workspace,
+        connector: LLMConnector,
+        source: UsageEvent.sources.chat,
+        workspaceId: workspace.id,
+        userId: user?.id,
+      }
+    );
     const { chat } = await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: message,
-      response: await decorateChatResponse(
-        {
-          text: completeText,
-          sources,
-          type: chatMode,
-          attachments,
-          metrics,
-        },
-        {
-          routingMetadata,
-          workspace,
-          connector: LLMConnector,
-          source: UsageEvent.sources.chat,
-          workspaceId: workspace.id,
-          userId: user?.id,
-        }
-      ),
+      response: decorated,
       threadId: thread?.id || null,
       user,
     });
@@ -358,6 +359,7 @@ async function streamChatWithWorkspace(
       error: false,
       chatId: chat.id,
       metrics,
+      provenance: decorated.provenance,
     });
     return;
   }

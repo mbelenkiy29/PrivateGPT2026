@@ -51,6 +51,7 @@ const HistoricalMessage = ({
   saveEditedMessage,
   forkThread,
   metrics = {},
+  provenance = null,
   outputs = [],
   clarifyingQuestions = [],
 }) => {
@@ -137,6 +138,8 @@ const HistoricalMessage = ({
             role={role}
             forkThread={forkThread}
             metrics={metrics}
+            provenance={provenance}
+            sources={sources}
           />
         </div>
       </div>
@@ -206,6 +209,8 @@ const HistoricalMessage = ({
               role={role}
               forkThread={forkThread}
               metrics={metrics}
+              provenance={provenance}
+              sources={sources}
             />
           </div>
         )}
@@ -230,6 +235,8 @@ export default memo(
       prevProps.chatId === nextProps.chatId &&
       JSON.stringify(prevProps.metrics) === JSON.stringify(nextProps.metrics) &&
       JSON.stringify(prevProps.sources) === JSON.stringify(nextProps.sources) &&
+      JSON.stringify(prevProps.provenance) ===
+        JSON.stringify(nextProps.provenance) &&
       JSON.stringify(prevProps.clarifyingQuestions) ===
         JSON.stringify(nextProps.clarifyingQuestions)
     );

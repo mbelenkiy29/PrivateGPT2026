@@ -231,6 +231,7 @@ function convertToChatHistory(history = []) {
         sentAt: moment(createdAt).unix(),
         feedbackScore,
         metrics: data?.metrics || {},
+        provenance: data?.provenance || null,
         ...(data?.outputs?.length > 0 ? { outputs: data.outputs } : {}),
         ...(data?.clarifyingQuestions?.length > 0
           ? { clarifyingQuestions: data.clarifyingQuestions }

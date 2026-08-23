@@ -323,6 +323,7 @@ function buildMessages({
           saveEditedMessage={saveEditedMessage}
           forkThread={forkThread}
           metrics={props.metrics}
+          provenance={props.provenance}
           outputs={props.outputs}
           clarifyingQuestions={props.clarifyingQuestions}
         />

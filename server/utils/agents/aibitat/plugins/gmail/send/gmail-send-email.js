@@ -14,7 +14,8 @@ module.exports.GmailSendEmail = {
           description:
             "Send an email immediately through Gmail. " +
             "This action sends the email right away and cannot be undone. " +
-            "For composing emails that need review before sending, use gmail-create-draft instead.",
+            "For composing emails that need review before sending, use gmail-create-draft instead. " +
+            "Humans should send reviewed drafts from the Pending drafts page.",
           examples: [
             {
               prompt: "Send an email to john@example.com about the project",

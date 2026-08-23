@@ -12,7 +12,8 @@ module.exports.OutlookSendDraft = {
           name: this.name,
           description:
             "Send an existing draft email from Outlook. " +
-            "This action sends the email immediately and cannot be undone.",
+            "This action sends the email immediately and cannot be undone. " +
+            "Humans should send reviewed drafts from the Pending drafts page.",
           examples: [
             {
               prompt: "Send the draft with ID AAMkAGI2...",

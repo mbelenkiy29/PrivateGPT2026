@@ -147,6 +147,9 @@ export default {
     agentSkills: () => {
       return "/settings/agents";
     },
+    mailDrafts: () => {
+      return "/settings/mail-drafts";
+    },
     chat: () => {
       return "/settings/chat";
     },

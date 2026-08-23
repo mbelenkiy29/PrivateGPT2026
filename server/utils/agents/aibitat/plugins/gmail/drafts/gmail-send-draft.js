@@ -12,7 +12,8 @@ module.exports.GmailSendDraft = {
           description:
             "Send an existing draft email from Gmail. " +
             "This will send the draft immediately and remove it from drafts. " +
-            "This action cannot be undone.",
+            "This action cannot be undone. " +
+            "Humans should send reviewed drafts from the Pending drafts page.",
           examples: [
             {
               prompt: "Send the draft with ID r123456",

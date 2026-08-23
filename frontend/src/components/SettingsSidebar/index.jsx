@@ -321,10 +321,21 @@ const SidebarOptions = ({ user = null, t }) => (
               className="h-5 w-5 flex-shrink-0 light:invert"
             />
           }
-          href={paths.settings.agentSkills()}
           user={user}
-          flex={true}
-          roles={["admin"]}
+          childOptions={[
+            {
+              btnText: t("settings.agent-skills"),
+              href: paths.settings.agentSkills(),
+              flex: true,
+              roles: ["admin"],
+            },
+            {
+              btnText: "Pending drafts",
+              href: paths.settings.mailDrafts(),
+              flex: true,
+              roles: ["admin"],
+            },
+          ]}
         />
         <Option
           btnText={t("settings.community-hub.title")}

@@ -215,6 +215,15 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: "/settings/knowledge-sources",
+        lazy: async () => {
+          const { default: KnowledgeSources } = await import(
+            "@/pages/GeneralSettings/KnowledgeSources"
+          );
+          return { element: <AdminRoute Component={KnowledgeSources} /> };
+        },
+      },
+      {
         path: "/settings/interface",
         lazy: async () => {
           const { default: InterfaceSettings } = await import(

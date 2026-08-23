@@ -98,6 +98,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Scheduled Jobs",
     privacy: "Privacy & Data",
     "ai-providers": "AI Providers",
+    "knowledge-sources": "Knowledge sources",
     "agent-skills": "Agent Skills",
     "model-router": "Model Router",
     "community-hub": {
@@ -790,8 +791,7 @@ const TRANSLATIONS = {
     },
     branding: {
       title: "Branding & Whitelabeling",
-      description:
-        "White-label your PrivateGPT instance with custom branding.",
+      description: "White-label your PrivateGPT instance with custom branding.",
     },
     chat: {
       title: "Chat",

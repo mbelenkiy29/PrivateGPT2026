@@ -105,6 +105,8 @@ const SystemSettings = {
     "memory_enabled",
     "memory_auto_extraction",
     "file_source_oauth_config",
+    "notion_integration",
+    "dropbox_oauth_config",
   ],
   validations: {
     footer_data: (updates) => {
@@ -452,6 +454,14 @@ const SystemSettings = {
       } catch {
         return JSON.stringify({});
       }
+    },
+    notion_integration: (update) => {
+      if (update == null || update === "") return null;
+      return String(update);
+    },
+    dropbox_oauth_config: (update) => {
+      if (update == null || update === "") return null;
+      return String(update);
     },
     default_system_prompt: (prompt) => {
       if (typeof prompt !== "string" || !prompt) return null;

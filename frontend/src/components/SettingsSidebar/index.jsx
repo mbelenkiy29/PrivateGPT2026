@@ -275,6 +275,12 @@ const SidebarOptions = ({ user = null, t }) => (
               flex: true,
               roles: ["admin"],
             },
+            {
+              btnText: t("settings.knowledge-sources"),
+              href: paths.settings.knowledgeSources(),
+              flex: true,
+              roles: ["admin"],
+            },
           ]}
         />
         <Option

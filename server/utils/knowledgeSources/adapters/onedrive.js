@@ -4,6 +4,7 @@ const { ConnectedFileSource } = require("../../../models/connectedFileSource");
 const { OneDriveSource } = require("../../fileSources/onedrive");
 const { resolveConnectedRecord } = require("../resolveRecord");
 const { MAX_ITEMS_PER_RUN, WATCH_STALE_AFTER_MS } = require("../constants");
+const { isExpiredDeltaError } = require("../expiredDelta");
 
 const PROVIDER = ConnectedFileSource.providers.onedrive;
 
@@ -33,27 +34,51 @@ const adapter = {
   async delta(cursor, opts = {}) {
     const record = await connected(opts);
     const folderId = folderIdFrom(opts);
-    const items = [];
-    let token = cursor || null;
-    let deltaLink = null;
 
-    while (items.length < MAX_ITEMS_PER_RUN) {
-      const page = await OneDriveSource.delta(record, folderId, token);
-      deltaLink = page.deltaLink || deltaLink;
-      const remaining = MAX_ITEMS_PER_RUN - items.length;
-      items.push(...(page.items || []).slice(0, remaining));
+    try {
+      if (!cursor) {
+        const link = await OneDriveSource.getDeltaLink(record, folderId);
+        return { items: [], cursor: link };
+      }
 
-      if (page.nextLink && items.length < MAX_ITEMS_PER_RUN) {
-        token = page.nextLink;
-        continue;
+      const items = [];
+      let token = cursor;
+
+      while (true) {
+        const page = await OneDriveSource.delta(record, folderId, token);
+        const pageItems = (page.items || []).filter((item) => {
+          if (item.deleted) return true;
+          if (item.type === "folder") return false;
+          return item.indexable !== false;
+        });
+
+        if (
+          items.length > 0 &&
+          items.length + pageItems.length > MAX_ITEMS_PER_RUN
+        ) {
+          // Resume on this unconsumed page; do not persist next/delta links.
+          return { items, cursor: token };
+        }
+
+        items.push(...pageItems);
+
+        if (page.nextLink) {
+          if (items.length >= MAX_ITEMS_PER_RUN) {
+            return { items, cursor: page.nextLink };
+          }
+          token = page.nextLink;
+          continue;
+        }
+
+        return { items, cursor: page.deltaLink || token || cursor || null };
       }
-      if (page.nextLink && items.length >= MAX_ITEMS_PER_RUN) {
-        return { items, cursor: page.nextLink };
+    } catch (e) {
+      if (cursor && isExpiredDeltaError(e)) {
+        const link = await OneDriveSource.getDeltaLink(record, folderId);
+        return { items: [], cursor: link };
       }
-      break;
+      throw e;
     }
-
-    return { items, cursor: deltaLink || token || cursor || null };
   },
 
   watchHint() {
@@ -67,6 +92,8 @@ const adapter = {
 };
 
 registerAdapter(PROVIDER, adapter);
-DocumentSyncQueue.registerFileType("onedrive");
+if (typeof DocumentSyncQueue.registerFileType === "function") {
+  DocumentSyncQueue.registerFileType("onedrive");
+}
 
 module.exports = adapter;

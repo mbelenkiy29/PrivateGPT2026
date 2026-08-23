@@ -304,9 +304,15 @@ function fileSourcesEndpoints(app) {
             for (const folder of result.folders) {
               let sync_cursor = null;
               try {
-                if (record.provider === "google-drive")
+                if (record.provider === "google-drive") {
                   sync_cursor =
                     await GoogleDriveSource.getStartPageToken(record);
+                } else if (record.provider === "onedrive") {
+                  sync_cursor = await OneDriveSource.getDeltaLink(
+                    record,
+                    folder.id
+                  );
+                }
               } catch (e) {
                 console.error(e);
               }

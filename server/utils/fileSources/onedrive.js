@@ -245,6 +245,25 @@ const OneDriveSource = {
       deltaLink: data["@odata.deltaLink"] || null,
     };
   },
+
+  /**
+   * Walk Graph delta pages until a deltaLink is returned so indexing can
+   * snapshot the stream without re-embedding the folder on the first job.
+   */
+  async getDeltaLink(record, folderId = "root") {
+    let cursor = null;
+    const seen = new Set();
+    for (let i = 0; i < 100; i++) {
+      const page = await this.delta(record, folderId, cursor);
+      if (page.deltaLink) return page.deltaLink;
+      if (!page.nextLink || seen.has(page.nextLink)) {
+        return page.nextLink || cursor;
+      }
+      seen.add(page.nextLink);
+      cursor = page.nextLink;
+    }
+    return cursor;
+  },
 };
 
 module.exports = { OneDriveSource };

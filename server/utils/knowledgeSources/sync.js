@@ -61,25 +61,25 @@ async function removeByChunkSource(workspace, chunkSource) {
   return matches.length;
 }
 
-async function fetchChanges(adapter, source, ctx) {
-  if (typeof adapter.delta === "function") {
-    try {
-      return await adapter.delta(source.sync_cursor, ctx);
-    } catch (e) {
-      ctx.log?.(
-        `Delta failed for knowledge source ${source.id} (${source.provider}): ${e.message}. Falling back to list.`
-      );
+function knownRemoteIdsFor(adapter, docs = []) {
+  const prefix = adapter.toChunkSource({ id: "" });
+  const ids = new Set();
+  if (!prefix) return ids;
+  for (const doc of docs) {
+    const chunk = parseMeta(doc.metadata)?.chunkSource;
+    if (typeof chunk === "string" && chunk.startsWith(prefix)) {
+      ids.add(chunk.slice(prefix.length));
     }
   }
-  return adapter.list({
-    cursor: source.sync_cursor,
-    folderId: source.remote_id,
-    ...ctx,
-  });
+  return ids;
+}
+
+async function fetchChanges(adapter, source, ctx) {
+  return adapter.delta(source.sync_cursor, ctx);
 }
 
 /**
- * Sync a single watched knowledge source: delta (or list), download, embed,
+ * Sync a single watched knowledge source: delta, download, embed,
  * handle remote deletes, and record the run.
  */
 async function syncKnowledgeSource(source, { log = () => {} } = {}) {
@@ -97,17 +97,24 @@ async function syncKnowledgeSource(source, { log = () => {} } = {}) {
     throw new Error(`Workspace ${source.workspaceId} not found.`);
   }
 
+  const workspaceDocs = await Document.where({
+    workspaceId: workspace.id,
+  });
   const ctx = {
     source,
     config,
     folderId: source.remote_id,
+    knownRemoteIds: knownRemoteIdsFor(adapter, workspaceDocs),
     log,
   };
   const result = await fetchChanges(adapter, source, ctx);
-  const items = (result.items || []).slice(0, MAX_ITEMS_PER_RUN);
+  const rawItems = result.items || [];
+  const overflowed = rawItems.length > MAX_ITEMS_PER_RUN;
+  const items = overflowed ? rawItems.slice(0, MAX_ITEMS_PER_RUN) : rawItems;
   const deleted = items.filter(isDeletedItem);
   const changed = items.filter(
-    (item) => !isDeletedItem(item) && !isFolderItem(item)
+    (item) =>
+      !isDeletedItem(item) && !isFolderItem(item) && item.indexable !== false
   );
 
   let removed = 0;
@@ -119,15 +126,23 @@ async function syncKnowledgeSource(source, { log = () => {} } = {}) {
   }
 
   const files = [];
+  let downloadFailed = 0;
   for (const item of changed) {
-    const downloaded = await adapter.download(item, ctx);
-    if (!downloaded || downloaded.kind === "folder" || !downloaded.buffer)
-      continue;
-    files.push({
-      ...downloaded,
-      id: item.id,
-      chunkSource: adapter.toChunkSource(item),
-    });
+    try {
+      const downloaded = await adapter.download(item, ctx);
+      if (!downloaded || downloaded.kind === "folder" || !downloaded.buffer)
+        continue;
+      files.push({
+        ...downloaded,
+        id: item.id,
+        chunkSource: adapter.toChunkSource(item),
+      });
+    } catch (e) {
+      downloadFailed++;
+      log(
+        `Failed to download ${item.id} from knowledge source ${source.id} (${source.provider}): ${e.message}`
+      );
+    }
   }
 
   for (const file of files) {
@@ -149,7 +164,10 @@ async function syncKnowledgeSource(source, { log = () => {} } = {}) {
     last_synced_at: new Date(),
     last_error: null,
   };
-  if (result.cursor !== undefined) updates.sync_cursor = result.cursor;
+  // Never persist a terminal cursor after dropping overflow items.
+  if (result.cursor !== undefined && !overflowed) {
+    updates.sync_cursor = result.cursor;
+  }
   if (result.config) updates.config = { ...config, ...result.config };
 
   await KnowledgeSource.update(source.id, updates);
@@ -159,17 +177,17 @@ async function syncKnowledgeSource(source, { log = () => {} } = {}) {
     {
       indexed: embedResult.indexed,
       removed,
-      failed: embedResult.failed,
+      failed: embedResult.failed + downloadFailed,
     }
   );
 
   log(
-    `Knowledge source ${source.id} (${source.provider}): indexed ${embedResult.indexed}, removed ${removed}, failed ${embedResult.failed}.`
+    `Knowledge source ${source.id} (${source.provider}): indexed ${embedResult.indexed}, removed ${removed}, failed ${embedResult.failed + downloadFailed}.`
   );
   return {
     indexed: embedResult.indexed,
     removed,
-    failed: embedResult.failed,
+    failed: embedResult.failed + downloadFailed,
   };
 }
 
@@ -229,6 +247,7 @@ async function syncWatchedKnowledgeSources({ log = () => {} } = {}) {
 module.exports = {
   MAX_ITEMS_PER_RUN,
   isDeletedItem,
+  knownRemoteIdsFor,
   syncKnowledgeSource,
   syncWatchedKnowledgeSources,
   markSourceFailed,

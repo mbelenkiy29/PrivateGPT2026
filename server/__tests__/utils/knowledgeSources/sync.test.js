@@ -135,6 +135,14 @@ describe("syncWatchedKnowledgeSources", () => {
     expect(src).not.toMatch(/sync not implemented/i);
   });
 
+  it("sync-watched-documents loads adapters so extraFileTypes skip gdrive/onedrive", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../../../jobs/sync-watched-documents.js"),
+      "utf8"
+    );
+    expect(src).toMatch(/knowledgeSources\/register/);
+  });
+
   it("skips sources with no adapter registered", async () => {
     mockGetAdapter.mockReturnValue(null);
     await syncWatchedKnowledgeSources({ log });
@@ -170,7 +178,12 @@ describe("syncWatchedKnowledgeSources", () => {
 
     await syncWatchedKnowledgeSources({ log });
 
-    expect(adapter.delta).toHaveBeenCalledWith("c1", expect.any(Object));
+    expect(adapter.delta).toHaveBeenCalledWith(
+      "c1",
+      expect.objectContaining({
+        knownRemoteIds: expect.any(Set),
+      })
+    );
     expect(adapter.download).toHaveBeenCalledWith(
       expect.objectContaining({ id: "abc" }),
       expect.any(Object)
@@ -206,7 +219,7 @@ describe("syncWatchedKnowledgeSources", () => {
     );
   });
 
-  it("caps processing at 200 items per run", async () => {
+  it("caps processing at 200 items per run and does not persist a terminal overflow cursor", async () => {
     const download = jest.fn().mockResolvedValue({
       kind: "file",
       name: "doc.txt",
@@ -220,7 +233,7 @@ describe("syncWatchedKnowledgeSources", () => {
             name: `f${i}.txt`,
             type: "file",
           })),
-          cursor: "c2",
+          cursor: "END",
         }),
         download,
       })
@@ -230,13 +243,84 @@ describe("syncWatchedKnowledgeSources", () => {
 
     expect(MAX_ITEMS_PER_RUN).toBe(200);
     expect(download).toHaveBeenCalledTimes(200);
+    const updatePayloads = KnowledgeSource.update.mock.calls.map(
+      ([, data]) => data
+    );
+    expect(updatePayloads.some((data) => data.sync_cursor === "END")).toBe(
+      false
+    );
+  });
+
+  it("continues after a per-item download error and skips non-indexable files", async () => {
+    const download = jest.fn().mockImplementation(async (item) => {
+      if (item.id === "bad") throw new Error("export failed");
+      return {
+        kind: "file",
+        name: `${item.id}.txt`,
+        buffer: Buffer.from("ok"),
+      };
+    });
+    mockGetAdapter.mockReturnValue(
+      makeAdapter({
+        delta: jest.fn().mockResolvedValue({
+          items: [
+            { id: "bad", name: "bad.pdf", type: "file" },
+            { id: "img", name: "pic.png", type: "file", indexable: false },
+            { id: "good", name: "good.txt", type: "file" },
+          ],
+          cursor: "c2",
+        }),
+        download,
+      })
+    );
+
+    await syncWatchedKnowledgeSources({ log });
+
+    expect(download).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: "img" }),
+      expect.anything()
+    );
+    expect(embedRemoteFileBuffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        files: [expect.objectContaining({ chunkSource: "gdrive://good" })],
+      })
+    );
+    expect(KnowledgeSource.update).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ sync_cursor: "c2", last_error: null })
+    );
+    expect(KnowledgeSourceSyncRun.save).toHaveBeenCalledWith(
+      7,
+      "success",
+      expect.objectContaining({ failed: 1, indexed: 1 })
+    );
+  });
+
+  it("does not fall back to list when delta throws", async () => {
+    const list = jest.fn();
+    mockGetAdapter.mockReturnValue(
+      makeAdapter({
+        delta: jest.fn().mockRejectedValue(new Error("Drive down")),
+        list,
+      })
+    );
+    KnowledgeSourceSyncRun.where.mockResolvedValue([]);
+
+    await syncWatchedKnowledgeSources({ log });
+
+    expect(list).not.toHaveBeenCalled();
+    expect(KnowledgeSourceSyncRun.save).toHaveBeenCalledWith(
+      7,
+      "failed",
+      expect.objectContaining({ reason: "Drive down" })
+    );
   });
 
   it("disables watch after 5 consecutive failed runs", async () => {
     mockGetAdapter.mockReturnValue(
       makeAdapter({
         delta: jest.fn().mockRejectedValue(new Error("Drive down")),
-        list: jest.fn().mockRejectedValue(new Error("Drive down")),
+        list: jest.fn(),
       })
     );
     KnowledgeSourceSyncRun.where.mockResolvedValue(

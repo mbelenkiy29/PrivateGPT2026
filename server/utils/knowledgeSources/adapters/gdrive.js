@@ -4,6 +4,7 @@ const { ConnectedFileSource } = require("../../../models/connectedFileSource");
 const { GoogleDriveSource } = require("../../fileSources/googleDrive");
 const { resolveConnectedRecord } = require("../resolveRecord");
 const { MAX_ITEMS_PER_RUN, WATCH_STALE_AFTER_MS } = require("../constants");
+const { isExpiredDeltaError } = require("../expiredDelta");
 
 const PROVIDER = ConnectedFileSource.providers.googleDrive;
 
@@ -28,6 +29,17 @@ function inWatchedFolder(item, folderIds, folderId) {
   return (item.parents || []).some((parent) => folderIds.has(parent));
 }
 
+function knownRemoteIdSet(opts = {}) {
+  if (opts.knownRemoteIds instanceof Set) return opts.knownRemoteIds;
+  if (Array.isArray(opts.knownRemoteIds)) return new Set(opts.knownRemoteIds);
+  return new Set();
+}
+
+function configPatch(addedFolders, folderIds) {
+  if (!addedFolders.length) return undefined;
+  return { folderIds: Array.from(folderIds) };
+}
+
 const adapter = {
   async list({ cursor, folderId, ...opts } = {}) {
     const record = await connected(opts);
@@ -47,50 +59,83 @@ const adapter = {
     const record = await connected(opts);
     const folderId = folderIdFrom(opts);
     const folderIds = watchedFolderIds(opts);
+    const knownRemoteIds = knownRemoteIdSet(opts);
     const addedFolders = [];
 
-    if (!cursor) {
-      const start = await GoogleDriveSource.getStartPageToken(record);
-      return { items: [], cursor: start };
-    }
+    try {
+      if (!cursor) {
+        const start = await GoogleDriveSource.getStartPageToken(record);
+        return { items: [], cursor: start };
+      }
 
-    const items = [];
-    let pageToken = cursor;
-    let newStart = null;
+      const items = [];
+      let pageToken = cursor;
 
-    while (pageToken && items.length < MAX_ITEMS_PER_RUN) {
-      const page = await GoogleDriveSource.listChanges(record, pageToken);
-      newStart = page.newStartPageToken || newStart;
-      const remaining = MAX_ITEMS_PER_RUN - items.length;
-
-      for (const item of page.items || []) {
-        if (items.length >= remaining) break;
-        if (item.deleted) {
-          items.push(item);
-          continue;
+      while (pageToken) {
+        const page = await GoogleDriveSource.listChanges(record, pageToken);
+        const relevant = [];
+        for (const item of page.items || []) {
+          if (item.deleted) {
+            if (knownRemoteIds.has(item.id)) relevant.push(item);
+            continue;
+          }
+          if (item.type === "folder") {
+            if (inWatchedFolder(item, folderIds, folderId)) {
+              folderIds.add(item.id);
+              addedFolders.push(item.id);
+            }
+            continue;
+          }
+          if (!inWatchedFolder(item, folderIds, folderId)) continue;
+          if (item.indexable === false) continue;
+          relevant.push(item);
         }
-        if (item.type === "folder") {
-          if (inWatchedFolder(item, folderIds, folderId)) {
-            folderIds.add(item.id);
-            addedFolders.push(item.id);
+
+        // Do not consume this page (or advance past it) if it would overflow.
+        if (
+          items.length > 0 &&
+          items.length + relevant.length > MAX_ITEMS_PER_RUN
+        ) {
+          return {
+            items,
+            cursor: pageToken,
+            config: configPatch(addedFolders, folderIds),
+          };
+        }
+
+        items.push(...relevant);
+
+        if (page.nextPageToken) {
+          pageToken = page.nextPageToken;
+          if (items.length >= MAX_ITEMS_PER_RUN) {
+            return {
+              items,
+              cursor: pageToken,
+              config: configPatch(addedFolders, folderIds),
+            };
           }
           continue;
         }
-        if (!inWatchedFolder(item, folderIds, folderId)) continue;
-        items.push(item);
+
+        return {
+          items,
+          cursor: page.newStartPageToken || pageToken,
+          config: configPatch(addedFolders, folderIds),
+        };
       }
 
-      pageToken = page.nextPageToken || null;
-      if (!page.nextPageToken) break;
+      return {
+        items,
+        cursor: pageToken || cursor,
+        config: configPatch(addedFolders, folderIds),
+      };
+    } catch (e) {
+      if (cursor && isExpiredDeltaError(e)) {
+        const start = await GoogleDriveSource.getStartPageToken(record);
+        return { items: [], cursor: start };
+      }
+      throw e;
     }
-
-    return {
-      items,
-      cursor: pageToken || newStart || cursor,
-      config: addedFolders.length
-        ? { folderIds: Array.from(folderIds) }
-        : undefined,
-    };
   },
 
   watchHint() {
@@ -104,6 +149,8 @@ const adapter = {
 };
 
 registerAdapter(PROVIDER, adapter);
-DocumentSyncQueue.registerFileType("gdrive");
+if (typeof DocumentSyncQueue.registerFileType === "function") {
+  DocumentSyncQueue.registerFileType("gdrive");
+}
 
 module.exports = adapter;

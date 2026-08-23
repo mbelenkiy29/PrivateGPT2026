@@ -28,6 +28,7 @@ jest.mock("../../../utils/fileSources/onedrive", () => ({
     listChildren: jest.fn(),
     download: jest.fn(),
     delta: jest.fn(),
+    getDeltaLink: jest.fn(),
   },
 }));
 
@@ -45,6 +46,15 @@ const onedrive = require("../../../utils/knowledgeSources/adapters/onedrive");
 
 const driveRecord = { id: 1, provider: "google-drive" };
 const oneRecord = { id: 2, provider: "onedrive" };
+
+function fileItems(count, prefix, folderId = "folder-1") {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${prefix}${i}`,
+    name: `${prefix}${i}.txt`,
+    type: "file",
+    parents: [folderId],
+  }));
+}
 
 describe("google-drive knowledge source adapter", () => {
   beforeEach(() => jest.clearAllMocks());
@@ -86,7 +96,7 @@ describe("google-drive knowledge source adapter", () => {
     expect(GoogleDriveSource.listChanges).not.toHaveBeenCalled();
   });
 
-  it("delta maps changes.list including deleted remote ids in the watched folder", async () => {
+  it("delta maps changes.list including known deleted remote ids in the watched folder", async () => {
     GoogleDriveSource.listChanges.mockResolvedValue({
       items: [
         {
@@ -96,6 +106,7 @@ describe("google-drive knowledge source adapter", () => {
           parents: ["folder-1"],
         },
         { id: "gone", deleted: true },
+        { id: "unrelated-trash", deleted: true },
         {
           id: "other",
           name: "other.txt",
@@ -109,6 +120,7 @@ describe("google-drive knowledge source adapter", () => {
     const result = await gdrive.delta("token-1", {
       record: driveRecord,
       folderId: "folder-1",
+      knownRemoteIds: new Set(["gone"]),
     });
     expect(GoogleDriveSource.listChanges).toHaveBeenCalledWith(
       driveRecord,
@@ -119,6 +131,67 @@ describe("google-drive knowledge source adapter", () => {
       expect.objectContaining({ id: "keep" }),
       expect.objectContaining({ id: "gone", deleted: true }),
     ]);
+    expect(result.items.map((item) => item.id)).not.toContain(
+      "unrelated-trash"
+    );
+  });
+
+  it("walks a second changes.list page and saves newStartPageToken", async () => {
+    GoogleDriveSource.listChanges
+      .mockResolvedValueOnce({
+        items: fileItems(80, "a"),
+        nextPageToken: "page-2",
+        newStartPageToken: null,
+      })
+      .mockResolvedValueOnce({
+        items: fileItems(40, "b"),
+        nextPageToken: null,
+        newStartPageToken: "start-new",
+      });
+
+    const result = await gdrive.delta("page-1", {
+      record: driveRecord,
+      folderId: "folder-1",
+    });
+    expect(GoogleDriveSource.listChanges).toHaveBeenCalledTimes(2);
+    expect(result.items).toHaveLength(120);
+    expect(result.cursor).toBe("start-new");
+  });
+
+  it("does not skip later pages or persist the end token when the cap would overflow", async () => {
+    GoogleDriveSource.listChanges
+      .mockResolvedValueOnce({
+        items: fileItems(150, "a"),
+        nextPageToken: "page-2",
+        newStartPageToken: null,
+      })
+      .mockResolvedValueOnce({
+        items: fileItems(80, "b"),
+        nextPageToken: null,
+        newStartPageToken: "END",
+      });
+
+    const result = await gdrive.delta("page-1", {
+      record: driveRecord,
+      folderId: "folder-1",
+    });
+    expect(result.items).toHaveLength(150);
+    expect(result.items[0].id).toBe("a0");
+    expect(result.cursor).toBe("page-2");
+    expect(result.cursor).not.toBe("END");
+  });
+
+  it("resets an expired Drive page token instead of using a list cursor", async () => {
+    const err = new Error("The page token is invalid or has expired");
+    err.status = 410;
+    GoogleDriveSource.listChanges.mockRejectedValue(err);
+    GoogleDriveSource.getStartPageToken.mockResolvedValue("fresh-start");
+
+    const result = await gdrive.delta("stale-token", {
+      record: driveRecord,
+      folderId: "folder-1",
+    });
+    expect(result).toEqual({ items: [], cursor: "fresh-start" });
   });
 
   it("toChunkSource and watchHint match the contract", () => {
@@ -146,6 +219,21 @@ describe("onedrive knowledge source adapter", () => {
     expect(result.items[0].id).toBe("i1");
   });
 
+  it("delta with no cursor snapshots a deltaLink and returns no items", async () => {
+    OneDriveSource.getDeltaLink.mockResolvedValue(
+      "https://graph.microsoft.com/delta-link"
+    );
+    const result = await onedrive.delta(null, {
+      record: oneRecord,
+      folderId: "folder-9",
+    });
+    expect(result).toEqual({
+      items: [],
+      cursor: "https://graph.microsoft.com/delta-link",
+    });
+    expect(OneDriveSource.delta).not.toHaveBeenCalled();
+  });
+
   it("delta maps Graph folder delta including deleted items", async () => {
     OneDriveSource.delta.mockResolvedValue({
       items: [
@@ -155,20 +243,74 @@ describe("onedrive knowledge source adapter", () => {
       nextLink: null,
       deltaLink: "https://graph.microsoft.com/delta-link",
     });
-    const result = await onedrive.delta(null, {
+    const result = await onedrive.delta("https://graph.microsoft.com/start", {
       record: oneRecord,
       folderId: "folder-9",
     });
     expect(OneDriveSource.delta).toHaveBeenCalledWith(
       oneRecord,
       "folder-9",
-      null
+      "https://graph.microsoft.com/start"
     );
     expect(result.cursor).toBe("https://graph.microsoft.com/delta-link");
     expect(result.items).toEqual([
       expect.objectContaining({ id: "a" }),
       expect.objectContaining({ id: "b", deleted: true }),
     ]);
+  });
+
+  it("keeps nextLink when a full page hits the cap", async () => {
+    OneDriveSource.delta.mockResolvedValue({
+      items: fileItems(200, "p", "folder-9"),
+      nextLink: "https://graph.microsoft.com/next",
+      deltaLink: null,
+    });
+    const result = await onedrive.delta("https://graph.microsoft.com/start", {
+      record: oneRecord,
+      folderId: "folder-9",
+    });
+    expect(result.items).toHaveLength(200);
+    expect(result.cursor).toBe("https://graph.microsoft.com/next");
+  });
+
+  it("does not persist deltaLink after dropping the rest of a page", async () => {
+    OneDriveSource.delta
+      .mockResolvedValueOnce({
+        items: fileItems(150, "a", "folder-9"),
+        nextLink: "https://graph.microsoft.com/page-2",
+        deltaLink: null,
+      })
+      .mockResolvedValueOnce({
+        items: fileItems(80, "b", "folder-9"),
+        nextLink: null,
+        deltaLink: "https://graph.microsoft.com/delta-link",
+      });
+
+    const result = await onedrive.delta("https://graph.microsoft.com/start", {
+      record: oneRecord,
+      folderId: "folder-9",
+    });
+    expect(result.items).toHaveLength(150);
+    expect(result.cursor).toBe("https://graph.microsoft.com/page-2");
+    expect(result.cursor).not.toBe("https://graph.microsoft.com/delta-link");
+  });
+
+  it("resets an expired Graph deltaLink without returning folder contents", async () => {
+    const err = new Error("resyncRequired");
+    err.status = 410;
+    OneDriveSource.delta.mockRejectedValue(err);
+    OneDriveSource.getDeltaLink.mockResolvedValue(
+      "https://graph.microsoft.com/fresh-delta"
+    );
+
+    const result = await onedrive.delta("https://graph.microsoft.com/stale", {
+      record: oneRecord,
+      folderId: "folder-9",
+    });
+    expect(result).toEqual({
+      items: [],
+      cursor: "https://graph.microsoft.com/fresh-delta",
+    });
   });
 
   it("download wraps OneDriveSource.download", async () => {

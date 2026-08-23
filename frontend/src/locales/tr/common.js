@@ -112,6 +112,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Planlanan İşler",
     "model-router": "Model Router",
     "image-generation": "Görsel Oluşturma",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1337,8 +1338,7 @@ const TRANSLATIONS = {
     },
     branding: {
       title: "Marka & Beyaz Etiketleme",
-      description:
-        "PrivateGPT örneğinizi özel markalamayla beyaz etiketleyin.",
+      description: "PrivateGPT örneğinizi özel markalamayla beyaz etiketleyin.",
     },
     chat: {
       title: "Sohbet",
@@ -1981,6 +1981,37 @@ const TRANSLATIONS = {
       description:
         "Bu işlem biraz zaman alabilir. Hazır olduğunda burada görüntülenecektir.",
       aborted: "Görüntü oluşturma işlemi başarısız oldu.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

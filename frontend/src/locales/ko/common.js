@@ -110,6 +110,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "예정된 작업",
     "model-router": "모델 라우터",
     "image-generation": "이미지 생성",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1345,8 +1346,7 @@ const TRANSLATIONS = {
           '기억은 간결하고 명확한 문장으로 표현해야 합니다. 예: "사용자는 JavaScript보다 Python을 선호합니다"',
         edit_description: "이 메모의 내용을 업데이트하세요.",
         label: "기억",
-        placeholder:
-          "예: 사용자의 이름은 조, 사용자는 PrivateGPT에서 근무, 등",
+        placeholder: "예: 사용자의 이름은 조, 사용자는 PrivateGPT에서 근무, 등",
         create: "만들다",
         save: "저장",
         cancel: "취소",
@@ -1924,6 +1924,37 @@ const TRANSLATIONS = {
       description:
         "이 작업에는 시간이 걸릴 수 있습니다. 준비되면 바로 여기에서 확인하실 수 있습니다.",
       aborted: "이미지 생성 작업이 중단되었습니다.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

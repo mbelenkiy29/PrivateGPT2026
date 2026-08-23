@@ -108,6 +108,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "預約排定的工作",
     "model-router": "模型路由器",
     "image-generation": "圖像生成",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1847,6 +1848,37 @@ const TRANSLATIONS = {
       heading: "正在生成您的圖片…",
       description: "這可能需要一些時間。當內容準備好後，它就會在這裡顯示出來。",
       aborted: "圖像生成已取消。",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

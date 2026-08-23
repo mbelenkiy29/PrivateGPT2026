@@ -119,6 +119,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Tasques programades",
     "model-router": "Rúter de model",
     "image-generation": "Generació d'imatges",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1998,6 +1999,37 @@ const TRANSLATIONS = {
       description:
         "Aquest procés pot prendre un temps. Apareixerà aquí tan aviat com estigui disponible.",
       aborted: "La generació d'imatges va ser interrompuda.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

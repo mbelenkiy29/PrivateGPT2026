@@ -119,6 +119,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Naplánované úlohy",
     "model-router": "Modelový router",
     "image-generation": "Generování obrázků",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1969,6 +1970,37 @@ const TRANSLATIONS = {
       description:
         "To může trvat nějakou dobu. Jakmile bude k dispozici, zobrazí se zde.",
       aborted: "Generování obrázku bylo přerušeno.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

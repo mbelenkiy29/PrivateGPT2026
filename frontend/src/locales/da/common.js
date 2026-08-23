@@ -113,6 +113,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Planlagte opgaver",
     "model-router": "Model-router",
     "image-generation": "Billedgenerering",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1970,6 +1971,37 @@ const TRANSLATIONS = {
       description:
         "Det kan tage lidt tid. Det vil dukke op her, så snart det er klar.",
       aborted: "Genereringen af billedet blev afbrudt.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

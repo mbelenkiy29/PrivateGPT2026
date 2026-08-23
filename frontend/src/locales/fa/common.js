@@ -113,6 +113,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "وظایف برنامه‌ریزی شده",
     "model-router": "روتر نمونه",
     "image-generation": "تولید تصاویر",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1959,6 +1960,37 @@ const TRANSLATIONS = {
       description:
         "ممکن است مدتی طول بکشد. پس از آماده شدن، این اطلاعات در اینجا نمایش داده خواهد شد.",
       aborted: "تولید تصویر متوقف شد.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

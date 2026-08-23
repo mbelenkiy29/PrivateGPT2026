@@ -112,6 +112,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Công việc theo lịch trình",
     "model-router": "Router mẫu",
     "image-generation": "Tạo ảnh",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1969,6 +1970,37 @@ const TRANSLATIONS = {
       description:
         "Quá trình này có thể mất một khoảng thời gian. Nội dung sẽ hiển thị ngay khi hoàn thành.",
       aborted: "Việc tạo hình ảnh đã bị hủy bỏ.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

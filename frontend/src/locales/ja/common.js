@@ -111,6 +111,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "計画された作業",
     "model-router": "モデルルーター",
     "image-generation": "画像生成",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1958,6 +1959,37 @@ const TRANSLATIONS = {
       description:
         "これには少し時間がかかる場合があります。準備が整ったら、こちらに表示されます。",
       aborted: "画像の生成は中止されました。",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

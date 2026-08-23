@@ -111,6 +111,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Plānotas darba uzdevumi",
     "model-router": "Modeļa routers",
     "image-generation": "Attēlu ģenerēšana",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1983,6 +1984,37 @@ const TRANSLATIONS = {
       description:
         "Tam varbūt būs nepieciešams laiks. Tas tiks publicēts šeit, kad tas būs gatavs.",
       aborted: "Attēla izveide tika pārtraukta.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

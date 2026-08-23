@@ -108,6 +108,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "计划好的任务",
     "model-router": "型号路由器",
     "image-generation": "图像生成",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -958,8 +959,7 @@ const TRANSLATIONS = {
   },
   privacy: {
     title: "隐私和数据处理",
-    description:
-      "这是你对如何处理连接的第三方提供商和PrivateGPT的数据的配置。",
+    description: "这是你对如何处理连接的第三方提供商和PrivateGPT的数据的配置。",
     anonymous: "启用匿名遥测",
   },
   connectors: {
@@ -1288,8 +1288,7 @@ const TRANSLATIONS = {
           "记忆应该用简洁明了的语句表达。例如：“用户更喜欢使用 Python 而不是 JavaScript”。",
         edit_description: "更新此存储内容的资料。",
         label: "记忆",
-        placeholder:
-          "例如，用户的姓名是 Joe，用户在 PrivateGPT 上工作，等等。",
+        placeholder: "例如，用户的姓名是 Joe，用户在 PrivateGPT 上工作，等等。",
         create: "创造",
         save: "保存",
         cancel: "取消",
@@ -1853,6 +1852,37 @@ const TRANSLATIONS = {
       heading: "正在生成您的图像…",
       description: "这可能需要一些时间。一旦准备好，它就会在这里显示出来。",
       aborted: "图像生成已终止。",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

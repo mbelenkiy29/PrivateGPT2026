@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "event-logs": "יומני אירועים",
     privacy: "פרטיות ונתונים",
     "ai-providers": "ספקי בינה מלאכותית",
+    "knowledge-sources": null,
     "agent-skills": "כישורי סוכן",
     admin: "מנהל",
     tools: "כלים",

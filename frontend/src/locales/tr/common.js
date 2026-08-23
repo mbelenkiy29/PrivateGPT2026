@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "event-logs": "Olay Kayıtları",
     privacy: "Gizlilik & Veri",
     "ai-providers": "Yapay Zeka Sağlayıcıları",
+    "knowledge-sources": null,
     "agent-skills": "Ajan Becerileri",
     admin: "Yönetici",
     tools: "Araçlar",

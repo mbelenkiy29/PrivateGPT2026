@@ -7,6 +7,8 @@
 /**
  * @typedef {Object} KnowledgeSourceDeltaResult
  * @property {object[]} items - Changed remote items since the given cursor.
+ *   Entries with `deleted: true` were removed remotely and must be unembedded;
+ *   the rest are upserts. Adapters may also set `archived` on Notion pages.
  * @property {string|null} [cursor]
  */
 

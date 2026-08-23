@@ -90,6 +90,7 @@ const TRANSLATIONS = {
     "event-logs": "Sündmuste logid",
     privacy: "Privaatsus ja andmed",
     "ai-providers": "AI-pakkujad",
+    "knowledge-sources": null,
     "agent-skills": "Agendi oskused",
     admin: "Admin",
     tools: "Tööriistad",

@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "event-logs": "Hændelseslog",
     privacy: "Privatliv & Data",
     "ai-providers": "AI-udbydere",
+    "knowledge-sources": null,
     "agent-skills": "Agentfærdigheder",
     admin: "Administrator",
     tools: "Værktøjer",

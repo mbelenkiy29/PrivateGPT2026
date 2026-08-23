@@ -7,6 +7,8 @@ const {
   DropboxAdapter,
   mapEntry,
   normalizePath,
+  collectEntries,
+  storedTokens,
   ITEM_CAP,
   STALE_AFTER_MS,
   PROVIDER,
@@ -27,11 +29,13 @@ function file(path, extras = {}) {
 
 function mockClient({ folders = {}, continues = {}, downloads = {} } = {}) {
   const rpcCalls = [];
+  let includeDeleted = true;
   return {
     rpcCalls,
     async rpc(endpoint, body) {
       rpcCalls.push({ endpoint, body });
       if (endpoint === "files/list_folder") {
+        includeDeleted = body.include_deleted !== false;
         const key = body.path || "";
         const payload = folders[key];
         if (!payload) throw new Error(`no folder ${key}`);
@@ -40,7 +44,13 @@ function mockClient({ folders = {}, continues = {}, downloads = {} } = {}) {
       if (endpoint === "files/list_folder/continue") {
         const payload = continues[body.cursor];
         if (!payload) throw new Error(`no cursor ${body.cursor}`);
-        return payload;
+        if (includeDeleted) return payload;
+        return {
+          ...payload,
+          entries: (payload.entries || []).filter(
+            (entry) => entry[".tag"] !== "deleted"
+          ),
+        };
       }
       if (endpoint === "users/get_current_account") {
         return { email: "a@b.com", name: { display_name: "Ada" } };
@@ -135,10 +145,14 @@ describe("Dropbox knowledge source adapter", () => {
       accessToken: "tok",
       client,
     });
-    const { items, cursor, deleted } = await adapter.delta("c2");
+    const { items, cursor } = await adapter.delta("c2");
     expect(cursor).toBe("c3");
-    expect(items.map((i) => i.name)).toEqual(["four.txt"]);
-    expect(deleted.map((i) => i.path)).toEqual(["/Docs/two.txt"]);
+    expect(items.filter((i) => !i.deleted).map((i) => i.name)).toEqual([
+      "four.txt",
+    ]);
+    expect(items.filter((i) => i.deleted).map((i) => i.path)).toEqual([
+      "/Docs/two.txt",
+    ]);
   });
 
   it("downloads a file as a buffer for the collector", async () => {
@@ -230,5 +244,161 @@ describe("Dropbox knowledge source adapter", () => {
   it("list without a token fails closed", async () => {
     const adapter = createDropboxAdapter({});
     await expect(adapter.list()).rejects.toThrow(/access token is required/);
+  });
+
+  it("delta(null) sets include_deleted so later continue reports removals", async () => {
+    const client = mockClient({
+      folders: {
+        "/Docs": {
+          entries: [file("/Docs/one.txt")],
+          cursor: "c1",
+          has_more: true,
+        },
+      },
+      continues: {
+        c1: {
+          entries: [
+            {
+              ".tag": "deleted",
+              name: "gone.txt",
+              path_display: "/Docs/gone.txt",
+            },
+          ],
+          cursor: "c2",
+          has_more: false,
+        },
+      },
+    });
+    const adapter = createDropboxAdapter({
+      accessToken: "tok",
+      path: "/Docs",
+      client,
+    });
+    const { items, cursor } = await adapter.delta(null);
+    expect(client.rpcCalls[0].body.include_deleted).toBe(true);
+    expect(cursor).toBe("c2");
+    expect(items.filter((i) => i.deleted).map((i) => i.path)).toEqual([
+      "/Docs/gone.txt",
+    ]);
+  });
+
+  it("continue omits deletes when the original list_folder set include_deleted false", async () => {
+    const client = mockClient({
+      folders: {
+        "/Docs": {
+          entries: [file("/Docs/one.txt")],
+          cursor: "c1",
+          has_more: true,
+        },
+      },
+      continues: {
+        c1: {
+          entries: [
+            file("/Docs/two.txt"),
+            {
+              ".tag": "deleted",
+              name: "gone.txt",
+              path_display: "/Docs/gone.txt",
+            },
+          ],
+          cursor: "c2",
+          has_more: false,
+        },
+      },
+    });
+    const listed = await collectEntries(client, {
+      path: "/Docs",
+      recursive: true,
+      includeDeleted: false,
+    });
+    expect(client.rpcCalls[0].body.include_deleted).toBe(false);
+    expect(listed.items.map((i) => i.name)).toEqual(["one.txt", "two.txt"]);
+    expect(listed.items.some((i) => i.deleted)).toBe(false);
+  });
+
+  it("keeps deletions past the 200 live-file cap while draining the cursor", async () => {
+    const first = Array.from({ length: 150 }, (_, i) =>
+      file(`/Docs/f${i}.txt`)
+    );
+    const restFiles = Array.from({ length: 80 }, (_, i) =>
+      file(`/Docs/g${i}.txt`)
+    );
+    const restDeletes = Array.from({ length: 5 }, (_, i) => ({
+      ".tag": "deleted",
+      name: `old${i}.txt`,
+      path_display: `/Docs/old${i}.txt`,
+    }));
+    const client = mockClient({
+      folders: {
+        "/Docs": { entries: first, cursor: "c1", has_more: true },
+      },
+      continues: {
+        c1: {
+          entries: [...restFiles, ...restDeletes],
+          cursor: "c-final",
+          has_more: false,
+        },
+      },
+    });
+    const adapter = createDropboxAdapter({
+      accessToken: "tok",
+      path: "/Docs",
+      client,
+    });
+    const { items, cursor } = await adapter.delta(null);
+    expect(items.filter((i) => !i.deleted)).toHaveLength(ITEM_CAP);
+    expect(items.filter((i) => i.deleted)).toHaveLength(5);
+    expect(cursor).toBe("c-final");
+  });
+
+  it("refreshes using snake_case refresh_token from stored config", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => {
+      if (String(url).includes("oauth2/token")) {
+        return {
+          ok: true,
+          text: async () =>
+            JSON.stringify({ access_token: "fresh", expires_in: 14400 }),
+        };
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    });
+    const rpc = jest.fn(async () => ({
+      entries: [],
+      cursor: "c",
+      has_more: false,
+    }));
+    try {
+      const adapter = createDropboxAdapter({
+        access_token: "stale",
+        refresh_token: "rt",
+        token_expires_at: Date.now() - 1000,
+        clientId: "id",
+        clientSecret: "secret",
+        path: "/Docs",
+        client: { rpc, download: async () => ({}) },
+      });
+      await adapter.list({ folderId: "/Docs" });
+      expect(global.fetch).toHaveBeenCalled();
+      expect(rpc).toHaveBeenCalled();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("storedTokens reads snake_case knowledge_sources config", () => {
+    expect(
+      storedTokens({
+        access_token: "a",
+        refresh_token: "r",
+        token_expires_at: 1,
+      })
+    ).toEqual({
+      accessToken: "a",
+      refreshToken: "r",
+      expiresAt: 1,
+      clientId: null,
+      clientSecret: null,
+    });
   });
 });

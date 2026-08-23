@@ -137,6 +137,7 @@ function renderBlock(block, depth = 0) {
 
 function mapPage(page) {
   const id = page.id;
+  const archived = Boolean(page.archived);
   return {
     id,
     pageId: id,
@@ -146,7 +147,8 @@ function mapPage(page) {
     url: page.url || null,
     type: page.object === "database" ? "database" : "page",
     parentId: page.parent?.page_id || page.parent?.database_id || null,
-    archived: Boolean(page.archived),
+    archived,
+    deleted: archived,
   };
 }
 
@@ -242,14 +244,22 @@ async function queryDatabasePages(client, databaseId, cap) {
 }
 
 /**
- * Recursive page/database crawl. Stops at ITEM_CAP pages.
+ * Recursive page/database crawl. Stops at ITEM_CAP live pages.
+ * Archived pages are omitted unless `includeArchived` (delta); they do not
+ * count toward the live cap and are marked `deleted: true`.
  */
-async function crawlTree(client, rootId, cap = ITEM_CAP) {
+async function crawlTree(
+  client,
+  rootId,
+  cap = ITEM_CAP,
+  { includeArchived = false } = {}
+) {
   const items = [];
   const seen = new Set();
   const queue = [rootId];
+  let live = 0;
 
-  while (queue.length && items.length < cap) {
+  while (queue.length && live < cap) {
     const id = queue.shift();
     if (!id || seen.has(id)) continue;
     seen.add(id);
@@ -273,18 +283,19 @@ async function crawlTree(client, rootId, cap = ITEM_CAP) {
     }
 
     if (node.object === "database") {
-      const childPages = await queryDatabasePages(
-        client,
-        node.id,
-        cap - items.length
-      );
+      const childPages = await queryDatabasePages(client, node.id, cap - live);
       for (const page of childPages) queue.push(page.id);
       continue;
     }
 
-    if (node.archived) continue;
+    if (node.archived) {
+      if (includeArchived) items.push(mapPage(node));
+      continue;
+    }
+
     items.push(mapPage(node));
-    if (items.length >= cap) break;
+    live += 1;
+    if (live >= cap) break;
 
     const blocks = await collectChildren(client, node.id);
     for (const block of blocks) {
@@ -296,28 +307,37 @@ async function crawlTree(client, rootId, cap = ITEM_CAP) {
   return items;
 }
 
-async function searchPages(client, { cursor, since, cap = ITEM_CAP } = {}) {
+async function searchPages(
+  client,
+  { cursor, since, cap = ITEM_CAP, includeArchived = false } = {}
+) {
   const items = [];
+  let live = 0;
   let next = isTimestampCursor(cursor) ? undefined : cursor || undefined;
   let lastCursor = null;
   let hasMore = true;
 
-  while (hasMore && items.length < cap) {
+  while (hasMore && live < cap) {
     const body = {
       filter: { property: "object", value: "page" },
       sort: { direction: "descending", timestamp: "last_edited_time" },
-      page_size: Math.min(100, cap - items.length),
+      page_size: Math.min(100, cap - live),
     };
     if (next) body.start_cursor = next;
 
     const data = await client.request("POST", "/search", body);
     const results = data.results || [];
     for (const page of results) {
-      if (page.object !== "page" || page.archived) continue;
+      if (page.object !== "page") continue;
       if (since && page.last_edited_time && page.last_edited_time <= since)
         continue;
+      if (page.archived) {
+        if (includeArchived) items.push(mapPage(page));
+        continue;
+      }
       items.push(mapPage(page));
-      if (items.length >= cap) break;
+      live += 1;
+      if (live >= cap) break;
     }
 
     hasMore = Boolean(data.has_more);
@@ -396,6 +416,10 @@ function createNotionAdapter(config = {}) {
       };
     },
 
+    /**
+     * Remote removals are included in `items` with `deleted: true`
+     * (archived Notion pages). The sync job must unembed those.
+     */
     async delta(cursor) {
       const token = config.token;
       const client = resolveClient(config, token);
@@ -403,10 +427,14 @@ function createNotionAdapter(config = {}) {
       const since = isTimestampCursor(cursor) ? cursor : null;
 
       if (rootId) {
-        const crawled = await crawlTree(client, rootId, ITEM_CAP);
+        const crawled = await crawlTree(client, rootId, ITEM_CAP, {
+          includeArchived: true,
+        });
         const items = since
           ? crawled.filter(
-              (item) => item.last_edited_time && item.last_edited_time > since
+              (item) =>
+                item.deleted ||
+                (item.last_edited_time && item.last_edited_time > since)
             )
           : crawled;
         return { items, cursor: maxEditedTime(items, cursor) };
@@ -416,6 +444,7 @@ function createNotionAdapter(config = {}) {
         const searched = await searchPages(client, {
           since,
           cap: ITEM_CAP,
+          includeArchived: true,
         });
         return {
           items: searched.items,
@@ -426,6 +455,7 @@ function createNotionAdapter(config = {}) {
       const searched = await searchPages(client, {
         cursor: cursor || null,
         cap: ITEM_CAP,
+        includeArchived: true,
       });
       return {
         items: searched.items,

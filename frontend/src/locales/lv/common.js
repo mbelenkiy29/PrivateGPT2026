@@ -90,6 +90,7 @@ const TRANSLATIONS = {
     "event-logs": "Notikumu žurnāli",
     privacy: "Privātums un dati",
     "ai-providers": "AI pakalpojumu sniedzēji",
+    "knowledge-sources": null,
     "agent-skills": "Aģenta prasmes",
     admin: "Administrators",
     tools: "Rīki",

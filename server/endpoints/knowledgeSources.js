@@ -38,22 +38,58 @@ function getRedirectUri(request, provider) {
   return `${protocol}://${host}/api/knowledge-sources/${provider}/callback`;
 }
 
-function popupHtml({ success, error, provider }) {
+function originFromUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:")
+      return url.origin;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function openerOrigin(request) {
+  const header = request.headers.origin;
+  if (header) return originFromUrl(header) || header;
+  return originFromUrl(request.headers.referer);
+}
+
+function callbackOrigin(request, provider) {
+  return originFromUrl(getRedirectUri(request, provider));
+}
+
+function popupHtml({ success, error, provider, targetOrigin }) {
   const payload = JSON.stringify({
     type: "knowledge-source-oauth",
     success,
-    error: error || null,
+    error: error ? String(error) : null,
     provider,
   });
+  // Never interpolate the error into HTML; JSON.stringify covers the script.
+  const visible = success
+    ? "Connected. You can close this window."
+    : "Could not connect. You can close this window.";
+  const origin = JSON.stringify(targetOrigin || "null");
   return `<!DOCTYPE html>
 <html><head><title>PrivateGPT</title></head>
 <body>
-<p>${success ? "Connected. You can close this window." : `Could not connect: ${error || "unknown error"}`}</p>
+<p>${visible}</p>
 <script>
-  try { window.opener && window.opener.postMessage(${payload}, "*"); } catch (e) {}
+  try { window.opener && window.opener.postMessage(${payload}, ${origin}); } catch (e) {}
   setTimeout(function () { window.close(); }, 400);
 </script>
 </body></html>`;
+}
+
+async function updateProviderConfigs(provider, patch) {
+  const rows = await KnowledgeSource.where({ provider });
+  for (const row of rows) {
+    const config = KnowledgeSource.decryptConfig(row) || {};
+    await KnowledgeSource.update(row.id, {
+      config: { ...config, ...patch },
+    });
+  }
 }
 
 function toPublicSource(record, workspacesById = {}) {
@@ -140,14 +176,13 @@ function knowledgeSourcesEndpoints(app) {
       try {
         const { token } = reqBody(request) || {};
         if (!token)
-          return response
-            .status(400)
-            .json({
-              success: false,
-              error: "Notion integration token is required.",
-            });
+          return response.status(400).json({
+            success: false,
+            error: "Notion integration token is required.",
+          });
         await verifyToken(token);
         await saveNotionToken(token);
+        await updateProviderConfigs("notion", { token });
         response.status(200).json({ success: true, connected: true });
       } catch (e) {
         console.error(e);
@@ -230,12 +265,10 @@ function knowledgeSourcesEndpoints(app) {
           config: { token, pageId },
         });
         if (!source)
-          return response
-            .status(500)
-            .json({
-              success: false,
-              error: "Could not create knowledge source.",
-            });
+          return response.status(500).json({
+            success: false,
+            error: "Could not create knowledge source.",
+          });
 
         const byId = await workspacesById();
         response.status(200).json({
@@ -288,7 +321,11 @@ function knowledgeSourcesEndpoints(app) {
       try {
         const config = await getDropboxOAuthConfig();
         const state = crypto.randomBytes(16).toString("hex");
-        pendingOAuth.set(state, { provider: "dropbox", createdAt: Date.now() });
+        pendingOAuth.set(state, {
+          provider: "dropbox",
+          createdAt: Date.now(),
+          openerOrigin: openerOrigin(request),
+        });
         const result = dropboxAuthUrl(
           getRedirectUri(request, "dropbox"),
           state,
@@ -296,7 +333,10 @@ function knowledgeSourcesEndpoints(app) {
         );
         if (!result.success)
           return response.status(400).json({ error: result.error });
-        response.status(200).json({ url: result.url });
+        response.status(200).json({
+          url: result.url,
+          origin: callbackOrigin(request, "dropbox"),
+        });
       } catch (e) {
         console.error(e);
         response.status(500).json({ error: e.message });
@@ -306,33 +346,26 @@ function knowledgeSourcesEndpoints(app) {
 
   app.get("/knowledge-sources/dropbox/callback", async (request, response) => {
     const { code, state, error, error_description } = request.query;
-    if (error)
-      return response.send(
-        popupHtml({
-          success: false,
-          error: error_description || error,
-          provider: "dropbox",
-        })
-      );
-
     const pending = pendingOAuth.get(state);
     pendingOAuth.delete(state);
+    const html = (opts) =>
+      popupHtml({
+        ...opts,
+        provider: "dropbox",
+        targetOrigin: pending?.openerOrigin || null,
+      });
+
+    if (error)
+      return response.send(
+        html({ success: false, error: error_description || error })
+      );
+
     if (!pending || pending.provider !== "dropbox")
       return response.send(
-        popupHtml({
-          success: false,
-          error: "Invalid or expired OAuth state.",
-          provider: "dropbox",
-        })
+        html({ success: false, error: "Invalid or expired OAuth state." })
       );
     if (Date.now() - pending.createdAt > OAUTH_TTL_MS)
-      return response.send(
-        popupHtml({
-          success: false,
-          error: "OAuth timed out.",
-          provider: "dropbox",
-        })
-      );
+      return response.send(html({ success: false, error: "OAuth timed out." }));
 
     try {
       const config = await getDropboxOAuthConfig();
@@ -342,31 +375,30 @@ function knowledgeSourcesEndpoints(app) {
         { clientId: config.clientId, clientSecret: config.clientSecret }
       );
       if (!result.success)
-        return response.send(
-          popupHtml({
-            success: false,
-            error: result.error,
-            provider: "dropbox",
-          })
-        );
+        return response.send(html({ success: false, error: result.error }));
 
+      const tokenExpiresAt = result.expires_in
+        ? new Date(Date.now() + (result.expires_in - 60) * 1000)
+        : null;
       await ConnectedFileSource.upsertByProvider("dropbox", {
         access_token: result.access_token,
         refresh_token: result.refresh_token,
-        token_expires_at: result.expires_in
-          ? new Date(Date.now() + (result.expires_in - 60) * 1000)
-          : null,
+        token_expires_at: tokenExpiresAt,
         account_email: result.account_email,
         account_name: result.account_name,
       });
-      return response.send(
-        popupHtml({ success: true, error: null, provider: "dropbox" })
-      );
+      const configPatch = {
+        access_token: result.access_token,
+        token_expires_at: tokenExpiresAt,
+        account_email: result.account_email,
+      };
+      if (result.refresh_token)
+        configPatch.refresh_token = result.refresh_token;
+      await updateProviderConfigs("dropbox", configPatch);
+      return response.send(html({ success: true, error: null }));
     } catch (e) {
       console.error(e);
-      return response.send(
-        popupHtml({ success: false, error: e.message, provider: "dropbox" })
-      );
+      return response.send(html({ success: false, error: e.message }));
     }
   });
 
@@ -447,12 +479,10 @@ function knowledgeSourcesEndpoints(app) {
           },
         });
         if (!source)
-          return response
-            .status(500)
-            .json({
-              success: false,
-              error: "Could not create knowledge source.",
-            });
+          return response.status(500).json({
+            success: false,
+            error: "Could not create knowledge source.",
+          });
 
         const byId = await workspacesById();
         response.status(200).json({

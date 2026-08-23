@@ -91,6 +91,7 @@ const TRANSLATIONS = {
     "event-logs": "Jurnale de evenimente",
     privacy: "Confidențialitate & Date",
     "ai-providers": "Furnizori AI",
+    "knowledge-sources": null,
     "agent-skills": "Abilități agent",
     admin: "Administrator",
     tools: "Instrumente",

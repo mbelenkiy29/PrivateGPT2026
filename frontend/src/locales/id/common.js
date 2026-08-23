@@ -100,6 +100,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Pekerjaan Terjadwal",
     privacy: "Privasi & Data",
     "ai-providers": "Penyedia AI",
+    "knowledge-sources": null,
     "agent-skills": "Keterampilan Agen",
     "model-router": "Router Model",
     "community-hub": {

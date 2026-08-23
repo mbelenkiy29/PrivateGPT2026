@@ -98,6 +98,7 @@ const TRANSLATIONS = {
     "event-logs": "Protokoly událostí",
     privacy: "Soukromí a data",
     "ai-providers": "Poskytovatelé AI",
+    "knowledge-sources": null,
     "agent-skills": "Dovednosti agenta",
     admin: "Správce",
     tools: "Nástroje",

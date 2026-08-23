@@ -108,12 +108,22 @@ const KnowledgeSources = {
   },
 
   connectDropboxPopup: async () => {
-    const { url, error } = await KnowledgeSources.dropboxAuthUrl();
+    const {
+      url,
+      origin: callbackOrigin,
+      error,
+    } = await KnowledgeSources.dropboxAuthUrl();
     if (!url)
       return {
         success: false,
         error: error || "Could not start Dropbox login.",
       };
+
+    const trustedOrigins = new Set([window.location.origin]);
+    try {
+      trustedOrigins.add(new URL(API_BASE, window.location.origin).origin);
+    } catch {}
+    if (callbackOrigin) trustedOrigins.add(callbackOrigin);
 
     return await new Promise((resolve) => {
       const popup = window.open(
@@ -122,6 +132,7 @@ const KnowledgeSources = {
         "width=520,height=720"
       );
       const onMessage = (event) => {
+        if (!trustedOrigins.has(event.origin)) return;
         if (event.data?.type !== "knowledge-source-oauth") return;
         if (event.data.provider && event.data.provider !== "dropbox") return;
         window.removeEventListener("message", onMessage);

@@ -189,41 +189,75 @@ async function refreshAccessToken(
   return result;
 }
 
-async function collectEntries(client, { path, cursor, recursive, deleted }) {
+function takeEntry(items, liveCount, entry, cap) {
+  const mapped = mapEntry(entry);
+  // Removals never consume ITEM_CAP so a burst of new files cannot hide deletes.
+  if (mapped.deleted) {
+    items.push(mapped);
+    return liveCount;
+  }
+  if (liveCount < cap) {
+    items.push(mapped);
+    return liveCount + 1;
+  }
+  return liveCount;
+}
+
+/**
+ * Walk list_folder / continue. Live files are capped at ITEM_CAP; `.tag ===
+ * "deleted"` entries are always kept. The native cursor is still drained so
+ * the next watch only sees later changes — remaining live files past the cap
+ * are skipped (ingest cap), but deletions in that window are not.
+ *
+ * `include_deleted` is set on the *original* list_folder call. Dropbox
+ * continue inherits that flag; passing it only on continue is a no-op.
+ */
+async function collectEntries(
+  client,
+  { path, cursor, recursive, includeDeleted = true } = {}
+) {
   const items = [];
+  let liveCount = 0;
   let next = cursor || null;
   let hasMore = true;
+  const withDeletes = includeDeleted !== false;
 
   if (!next) {
     const data = await client.rpc("files/list_folder", {
       path: normalizePath(path),
       recursive: Boolean(recursive),
-      // include_deleted so the native cursor later reports removals.
-      include_deleted: deleted !== false,
+      include_deleted: withDeletes,
       limit: ITEM_CAP,
     });
     for (const entry of data.entries || []) {
-      const mapped = mapEntry(entry);
-      if (items.length < ITEM_CAP) items.push(mapped);
+      liveCount = takeEntry(items, liveCount, entry, ITEM_CAP);
     }
     next = data.cursor || null;
     hasMore = Boolean(data.has_more);
   }
 
-  // Drain native cursor so watch deltas only see later changes, even if we cap items.
   while (hasMore && next) {
     const data = await client.rpc("files/list_folder/continue", {
       cursor: next,
     });
     for (const entry of data.entries || []) {
-      const mapped = mapEntry(entry);
-      if (items.length < ITEM_CAP) items.push(mapped);
+      liveCount = takeEntry(items, liveCount, entry, ITEM_CAP);
     }
     next = data.cursor || next;
     hasMore = Boolean(data.has_more);
   }
 
   return { items, cursor: next };
+}
+
+function storedTokens(config = {}) {
+  return {
+    accessToken: config.accessToken || config.access_token || null,
+    refreshToken: config.refreshToken || config.refresh_token || null,
+    expiresAt: config.expiresAt || config.token_expires_at || null,
+    clientId: config.clientId || config.client_id || null,
+    clientSecret: config.clientSecret || config.client_secret || null,
+  };
 }
 
 function createDropboxAdapter(config = {}) {
@@ -237,25 +271,32 @@ function createDropboxAdapter(config = {}) {
   }
 
   async function withClient() {
-    let accessToken = config.accessToken || config.access_token;
-    const expiresAt = config.expiresAt || config.token_expires_at;
+    const tokens = storedTokens(config);
+    let accessToken = tokens.accessToken;
     const expired =
-      expiresAt && Number(new Date(expiresAt)) - 30_000 < Date.now();
-    if ((!accessToken || expired) && config.refreshToken) {
-      const refreshed = await refreshAccessToken(config.refreshToken, {
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
+      tokens.expiresAt &&
+      Number(new Date(tokens.expiresAt)) - 30_000 < Date.now();
+    if ((!accessToken || expired) && tokens.refreshToken) {
+      const refreshed = await refreshAccessToken(tokens.refreshToken, {
+        clientId: tokens.clientId,
+        clientSecret: tokens.clientSecret,
       });
       accessToken = refreshed.access_token;
       config.accessToken = accessToken;
-      if (refreshed.expires_in)
-        config.expiresAt = new Date(
+      config.access_token = accessToken;
+      config.refreshToken = tokens.refreshToken;
+      config.refresh_token = tokens.refreshToken;
+      if (refreshed.expires_in) {
+        const nextExpiry = new Date(
           Date.now() + (refreshed.expires_in - 60) * 1000
         );
+        config.expiresAt = nextExpiry;
+        config.token_expires_at = nextExpiry;
+      }
       if (typeof config.onTokens === "function") {
         await config.onTokens({
           access_token: accessToken,
-          refresh_token: config.refreshToken,
+          refresh_token: tokens.refreshToken,
           token_expires_at: config.expiresAt,
         });
       }
@@ -267,14 +308,15 @@ function createDropboxAdapter(config = {}) {
     async list(opts = {}) {
       const client = await withClient();
       const recursive = opts.recursive !== false;
+      const includeDeleted = opts.includeDeleted !== false;
       const listed = await collectEntries(client, {
         path: pathOf(opts),
         cursor: opts.cursor || null,
         recursive,
-        deleted: true,
+        includeDeleted,
       });
       return {
-        items: listed.items.filter((item) => item.type !== "deleted"),
+        items: listed.items.filter((item) => !item.deleted),
         cursor: listed.cursor,
       };
     },
@@ -312,23 +354,20 @@ function createDropboxAdapter(config = {}) {
       };
     },
 
+    /**
+     * Remote removals stay in `items` with `deleted: true`. The sync job
+     * must unembed those and not download them. Always starts/continues with
+     * include_deleted so Dropbox continue inherits deletions.
+     */
     async delta(cursor) {
       const client = await withClient();
-      if (!cursor) {
-        const listed = await collectEntries(client, {
-          path: pathOf({}),
-          recursive: true,
-          deleted: false,
-        });
-        return { items: listed.items, cursor: listed.cursor, deleted: [] };
-      }
       const listed = await collectEntries(client, {
-        cursor,
-        deleted: true,
+        path: pathOf({}),
+        cursor: cursor || null,
+        recursive: true,
+        includeDeleted: true,
       });
-      const deleted = listed.items.filter((item) => item.deleted);
-      const items = listed.items.filter((item) => !item.deleted);
-      return { items, cursor: listed.cursor, deleted };
+      return { items: listed.items, cursor: listed.cursor };
     },
 
     watchHint() {
@@ -423,6 +462,8 @@ module.exports = {
   mapEntry,
   normalizePath,
   isDocument,
+  collectEntries,
+  storedTokens,
   ITEM_CAP,
   STALE_AFTER_MS,
   PROVIDER,

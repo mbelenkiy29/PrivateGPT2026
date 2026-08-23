@@ -259,6 +259,46 @@ describe("Notion knowledge source adapter", () => {
     const adapter = createNotionAdapter({});
     await expect(adapter.list()).rejects.toThrow(/token is required/);
   });
+
+  it("delta includes archived pages as deleted:true", async () => {
+    const search = [
+      page({
+        id: "live",
+        title: "Live",
+        last_edited_time: "2024-07-01T00:00:00.000Z",
+      }),
+      page({
+        id: "gone",
+        title: "Gone",
+        last_edited_time: "2024-07-02T00:00:00.000Z",
+        archived: true,
+      }),
+    ];
+    const adapter = createNotionAdapter({
+      token: "tok",
+      client: mockClient({ search }),
+    });
+    const { items } = await adapter.delta("2024-06-01T00:00:00.000Z");
+    expect(items.find((i) => i.id === "gone")).toMatchObject({
+      id: "gone",
+      deleted: true,
+      archived: true,
+    });
+    expect(items.find((i) => i.id === "live").deleted).toBe(false);
+  });
+
+  it("list omits archived pages", async () => {
+    const search = [
+      page({ id: "live", title: "Live" }),
+      page({ id: "gone", title: "Gone", archived: true }),
+    ];
+    const adapter = createNotionAdapter({
+      token: "tok",
+      client: mockClient({ search }),
+    });
+    const { items } = await adapter.list();
+    expect(items.map((i) => i.id)).toEqual(["live"]);
+  });
 });
 
 afterAll(() => {

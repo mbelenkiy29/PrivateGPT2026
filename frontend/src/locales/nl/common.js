@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "event-logs": "Gebeurtenislogboeken",
     privacy: "Privacy & Gegevens",
     "ai-providers": "AI Providers",
+    "knowledge-sources": null,
     "agent-skills": "Agent Vaardigheden",
     admin: "Beheerder",
     tools: "Hulpmiddelen",

@@ -16,7 +16,10 @@ const {
 } = require("../utils/fileSources/credentials");
 const { OneDriveSource } = require("../utils/fileSources/onedrive");
 const { GoogleDriveSource } = require("../utils/fileSources/googleDrive");
+const { SharePointSource } = require("../utils/fileSources/sharepoint");
+const { TeamsFilesSource } = require("../utils/fileSources/teamsFiles");
 const { indexRemoteFiles } = require("../utils/fileSources/indexFiles");
+const { canWatchGraphFolder } = require("../utils/fileSources/graphLocators");
 
 const pendingOAuth = new Map();
 const OAUTH_TTL_MS = 10 * 60 * 1000;
@@ -24,7 +27,16 @@ const OAUTH_TTL_MS = 10 * 60 * 1000;
 const ADAPTERS = {
   onedrive: OneDriveSource,
   "google-drive": GoogleDriveSource,
+  sharepoint: SharePointSource,
+  "teams-files": TeamsFilesSource,
 };
+
+const WATCHABLE_PROVIDERS = [
+  "google-drive",
+  "onedrive",
+  "sharepoint",
+  "teams-files",
+];
 
 function getRedirectUri(request, provider) {
   const protocol = request.headers["x-forwarded-proto"] || request.protocol;
@@ -67,7 +79,7 @@ function fileSourcesEndpoints(app) {
           ])
         );
         const watches = await KnowledgeSource.where({
-          provider: { in: ["google-drive", "onedrive"] },
+          provider: { in: WATCHABLE_PROVIDERS },
         });
         response.status(200).json({
           sources: {
@@ -78,6 +90,14 @@ function fileSourcesEndpoints(app) {
             },
             "google-drive": byProvider["google-drive"] || {
               provider: "google-drive",
+              connected: false,
+            },
+            sharepoint: byProvider.sharepoint || {
+              provider: "sharepoint",
+              connected: false,
+            },
+            "teams-files": byProvider["teams-files"] || {
+              provider: "teams-files",
               connected: false,
             },
           },
@@ -302,6 +322,11 @@ function fileSourcesEndpoints(app) {
           const workspace = await Workspace.get({ slug: workspaceSlug });
           if (workspace) {
             for (const folder of result.folders) {
+              const graphWatch =
+                record.provider === "sharepoint" ||
+                record.provider === "teams-files";
+              if (graphWatch && !canWatchGraphFolder(folder)) continue;
+
               let sync_cursor = null;
               try {
                 if (record.provider === "google-drive") {
@@ -312,9 +337,20 @@ function fileSourcesEndpoints(app) {
                     record,
                     folder.id
                   );
+                } else if (record.provider === "sharepoint") {
+                  sync_cursor = await SharePointSource.getDeltaLink(
+                    record,
+                    folder
+                  );
+                } else if (record.provider === "teams-files") {
+                  sync_cursor = await TeamsFilesSource.getDeltaLink(
+                    record,
+                    folder
+                  );
                 }
               } catch (e) {
                 console.error(e);
+                if (graphWatch) continue;
               }
               await KnowledgeSource.upsertByRemote({
                 workspaceId: workspace.id,
@@ -326,6 +362,11 @@ function fileSourcesEndpoints(app) {
                 config: {
                   connectedFileSourceId: record.id,
                   folderIds: [folder.id, ...(folder.folderIds || [])],
+                  driveId: folder.driveId || null,
+                  itemId: folder.itemId || null,
+                  siteId: folder.siteId || null,
+                  teamId: folder.teamId || null,
+                  channelId: folder.channelId || null,
                 },
               });
             }
@@ -335,7 +376,10 @@ function fileSourcesEndpoints(app) {
         response.status(200).json({ success: true, ...result });
       } catch (e) {
         console.error(e);
-        response.status(500).json({ success: false, error: e.message });
+        const status = Number(e.status);
+        response
+          .status(status >= 400 && status < 600 ? status : 500)
+          .json({ success: false, error: e.message });
       }
     }
   );

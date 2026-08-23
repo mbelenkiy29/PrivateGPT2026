@@ -127,6 +127,11 @@ async function indexRemoteFiles({ adapter, record, fileIds, workspaceSlug }) {
         id: fileId,
         name: downloaded.name,
         folderIds: nestedFolderIds,
+        driveId: downloaded.driveId || null,
+        itemId: downloaded.itemId || null,
+        siteId: downloaded.siteId || null,
+        teamId: downloaded.teamId || null,
+        channelId: downloaded.channelId || null,
       });
       const nested = await collectFileIds(
         adapter,

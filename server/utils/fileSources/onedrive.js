@@ -51,21 +51,48 @@ async function graph(accessToken, path, { method = "GET", raw = false } = {}) {
   });
   if (raw) return res;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      data?.error?.message || data?.error_description || `Graph ${res.status}`;
-    const err = new Error(msg);
-    err.status = res.status;
-    throw err;
-  }
+  if (!res.ok) throw graphError(res, data);
   return data;
 }
 
+function graphError(res, data = {}) {
+  const msg =
+    data?.error?.message || data?.error_description || `Graph ${res.status}`;
+  const err = new Error(msg);
+  err.status = res.status;
+  err.code = data?.error?.code || null;
+  err.graph = data?.error || null;
+  return err;
+}
+
+function driveItemPath(driveId, itemId = "root") {
+  if (driveId) {
+    if (!itemId || itemId === "root")
+      return `/drives/${encodeURIComponent(driveId)}/root`;
+    return `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`;
+  }
+  if (!itemId || itemId === "root") return "/me/drive/root";
+  return `/me/drive/items/${encodeURIComponent(itemId)}`;
+}
+
+function sortItems(items) {
+  items.sort((a, b) => {
+    if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+  return items;
+}
+
+/**
+ * Refresh a Microsoft Graph token. Scope is omitted so Azure keeps the
+ * originally granted set (SharePoint/Teams add Sites.Read.All etc.).
+ */
 async function refreshIfNeeded(record) {
   const tokens = ConnectedFileSource.tokens(record);
   if (tokens.accessToken && Date.now() < tokens.expiresAt - 30_000)
     return tokens.accessToken;
 
+  const provider = record?.provider || "onedrive";
   const config = await getFileSourceOAuthConfig();
   if (!config.onedrive.clientId || !config.onedrive.clientSecret)
     throw new Error("OneDrive is not configured. Add client ID and secret.");
@@ -77,7 +104,6 @@ async function refreshIfNeeded(record) {
     client_secret: config.onedrive.clientSecret,
     refresh_token: tokens.refreshToken,
     grant_type: "refresh_token",
-    scope: SCOPES,
   });
   const res = await fetch(`${AUTH_URL}/token`, {
     method: "POST",
@@ -90,7 +116,7 @@ async function refreshIfNeeded(record) {
       data.error_description || data.error || "Failed to refresh OneDrive token"
     );
 
-  await ConnectedFileSource.upsertByProvider("onedrive", {
+  await ConnectedFileSource.upsertByProvider(provider, {
     access_token: data.access_token,
     refresh_token: data.refresh_token || tokens.refreshToken,
     token_expires_at: new Date(Date.now() + (data.expires_in - 60) * 1000),
@@ -98,6 +124,100 @@ async function refreshIfNeeded(record) {
     account_name: record.account_name,
   });
   return data.access_token;
+}
+
+const CHILDREN_SELECT =
+  "$top=200&$select=id,name,folder,file,size,lastModifiedDateTime,webUrl,parentReference";
+
+async function listDriveChildren(record, driveId, itemId = "root") {
+  const token = await refreshIfNeeded(record);
+  const data = await graph(
+    token,
+    `${driveItemPath(driveId, itemId)}/children?${CHILDREN_SELECT}`
+  );
+  const items = sortItems((data.value || []).map(mapItem));
+  return { items, next: data["@odata.nextLink"] || null };
+}
+
+async function downloadDriveItem(record, itemId, driveId = null) {
+  const token = await refreshIfNeeded(record);
+  const base = driveItemPath(driveId, itemId);
+  const meta = await graph(
+    token,
+    `${base}?$select=id,name,file,folder,size,parentReference`
+  );
+  if (meta.folder) {
+    const children = await listDriveChildren(record, driveId, itemId);
+    return {
+      kind: "folder",
+      name: meta.name,
+      children: children.items,
+      driveId: driveId || meta.parentReference?.driveId || null,
+      itemId: meta.id,
+    };
+  }
+  const res = await graph(token, `${base}/content`, { raw: true });
+  if (!res.ok) throw new Error(`Failed to download ${meta.name}`);
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return {
+    kind: "file",
+    name: meta.name,
+    buffer,
+    driveId: driveId || meta.parentReference?.driveId || null,
+    itemId: meta.id,
+  };
+}
+
+function mapDeltaItem(item) {
+  if (item.deleted || item["@removed"]) {
+    return { id: item.id, name: item.name, deleted: true };
+  }
+  return mapItem(item);
+}
+
+/**
+ * One page of Graph delta for a drive item. `cursor` is a deltaLink or
+ * nextLink URL from a previous page, or null to start from the item.
+ */
+async function deltaDriveItem(
+  record,
+  { driveId = null, itemId = "root", cursor = null, map = mapDeltaItem } = {}
+) {
+  const token = await refreshIfNeeded(record);
+  let data;
+  if (cursor && /^https?:\/\//i.test(cursor)) {
+    const res = await fetch(cursor, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    data = await res.json().catch(() => ({}));
+    if (!res.ok) throw graphError(res, data);
+  } else {
+    data = await graph(
+      token,
+      `${driveItemPath(driveId, itemId)}/delta?$top=200`
+    );
+  }
+
+  return {
+    items: (data.value || []).map(map),
+    nextLink: data["@odata.nextLink"] || null,
+    deltaLink: data["@odata.deltaLink"] || null,
+  };
+}
+
+async function getDeltaLinkForDrive(record, opts = {}) {
+  let cursor = null;
+  const seen = new Set();
+  for (let i = 0; i < 100; i++) {
+    const page = await deltaDriveItem(record, { ...opts, cursor });
+    if (page.deltaLink) return page.deltaLink;
+    if (!page.nextLink || seen.has(page.nextLink)) {
+      return page.nextLink || cursor;
+    }
+    seen.add(page.nextLink);
+    cursor = page.nextLink;
+  }
+  return cursor;
 }
 
 const OneDriveSource = {
@@ -160,18 +280,7 @@ const OneDriveSource = {
   },
 
   async listChildren(record, parentId = "root") {
-    const token = await refreshIfNeeded(record);
-    const path =
-      !parentId || parentId === "root"
-        ? "/me/drive/root/children?$top=200&$select=id,name,folder,file,size,lastModifiedDateTime,webUrl"
-        : `/me/drive/items/${encodeURIComponent(parentId)}/children?$top=200&$select=id,name,folder,file,size,lastModifiedDateTime,webUrl`;
-    const data = await graph(token, path);
-    const items = (data.value || []).map(mapItem);
-    items.sort((a, b) => {
-      if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-    return { items, next: data["@odata.nextLink"] || null };
+    return listDriveChildren(record, null, parentId);
   },
 
   async search(record, query) {
@@ -185,23 +294,7 @@ const OneDriveSource = {
   },
 
   async download(record, fileId) {
-    const token = await refreshIfNeeded(record);
-    const meta = await graph(
-      token,
-      `/me/drive/items/${encodeURIComponent(fileId)}?$select=id,name,file,folder,size`
-    );
-    if (meta.folder) {
-      const children = await this.listChildren(record, fileId);
-      return { kind: "folder", name: meta.name, children: children.items };
-    }
-    const res = await graph(
-      token,
-      `/me/drive/items/${encodeURIComponent(fileId)}/content`,
-      { raw: true }
-    );
-    if (!res.ok) throw new Error(`Failed to download ${meta.name}`);
-    const buffer = Buffer.from(await res.arrayBuffer());
-    return { kind: "file", name: meta.name, buffer };
+    return downloadDriveItem(record, fileId);
   },
 
   /**
@@ -209,41 +302,7 @@ const OneDriveSource = {
    * URL from a previous page, or null to start from the folder.
    */
   async delta(record, folderId = "root", cursor = null) {
-    const token = await refreshIfNeeded(record);
-    let data;
-    if (cursor && /^https?:\/\//i.test(cursor)) {
-      const res = await fetch(cursor, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg =
-          data?.error?.message ||
-          data?.error_description ||
-          `Graph ${res.status}`;
-        const err = new Error(msg);
-        err.status = res.status;
-        throw err;
-      }
-    } else {
-      const path =
-        !folderId || folderId === "root"
-          ? "/me/drive/root/delta?$top=200"
-          : `/me/drive/items/${encodeURIComponent(folderId)}/delta?$top=200`;
-      data = await graph(token, path);
-    }
-
-    const items = (data.value || []).map((item) => {
-      if (item.deleted || item["@removed"]) {
-        return { id: item.id, name: item.name, deleted: true };
-      }
-      return mapItem(item);
-    });
-    return {
-      items,
-      nextLink: data["@odata.nextLink"] || null,
-      deltaLink: data["@odata.deltaLink"] || null,
-    };
+    return deltaDriveItem(record, { itemId: folderId, cursor });
   },
 
   /**
@@ -251,19 +310,22 @@ const OneDriveSource = {
    * snapshot the stream without re-embedding the folder on the first job.
    */
   async getDeltaLink(record, folderId = "root") {
-    let cursor = null;
-    const seen = new Set();
-    for (let i = 0; i < 100; i++) {
-      const page = await this.delta(record, folderId, cursor);
-      if (page.deltaLink) return page.deltaLink;
-      if (!page.nextLink || seen.has(page.nextLink)) {
-        return page.nextLink || cursor;
-      }
-      seen.add(page.nextLink);
-      cursor = page.nextLink;
-    }
-    return cursor;
+    return getDeltaLinkForDrive(record, { itemId: folderId });
   },
 };
 
-module.exports = { OneDriveSource };
+module.exports = {
+  OneDriveSource,
+  AUTH_URL,
+  GRAPH,
+  SCOPES,
+  graph,
+  mapItem,
+  isDocument,
+  refreshIfNeeded,
+  listDriveChildren,
+  downloadDriveItem,
+  deltaDriveItem,
+  getDeltaLinkForDrive,
+  driveItemPath,
+};

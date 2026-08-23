@@ -21,6 +21,12 @@ const EmbedConfig = {
     "chat_mode",
     "workspace_id",
     "message_limit",
+    "ai_disclosure",
+    "show_handoff",
+    "handoff_email",
+    "lead_capture",
+    "business_hours_json",
+    "grounded_only",
   ],
 
   new: async function (data, creatorId = null) {
@@ -208,6 +214,10 @@ const BOOLEAN_KEYS = [
   "allow_temperature_override",
   "allow_prompt_override",
   "enabled",
+  "ai_disclosure",
+  "show_handoff",
+  "lead_capture",
+  "grounded_only",
 ];
 
 const NUMBER_KEYS = [
@@ -256,6 +266,32 @@ function validatedCreationData(value, field) {
 
   if (NUMBER_KEYS.includes(field)) {
     return isNaN(value) || Number(value) <= 0 ? null : Number(value);
+  }
+
+  if (field === "handoff_email") {
+    if (!value) return null;
+    const email = String(value).trim();
+    return email.length ? email : null;
+  }
+
+  if (field === "business_hours_json") {
+    if (!value) return null;
+    if (typeof value === "object") {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "string") {
+      try {
+        JSON.parse(value);
+        return value;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   return null;

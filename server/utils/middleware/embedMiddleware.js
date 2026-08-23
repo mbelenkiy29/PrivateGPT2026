@@ -95,8 +95,19 @@ async function canRespond(request, response, next) {
       return;
     }
 
-    const { sessionId, message } = reqBody(request);
-    if (typeof sessionId !== "string" || !validate(String(sessionId))) {
+    const body = reqBody(request) || {};
+    const sessionId = body.sessionId || body.session_id;
+    const message = body.message;
+    const isStreamChat = String(request.path || request.url || "").includes(
+      "stream-chat"
+    );
+    // Lead/handoff share this limiter but do not send a chat `message`.
+    const requiresChatPayload = isStreamChat;
+
+    if (
+      (requiresChatPayload || request.method !== "GET") &&
+      (typeof sessionId !== "string" || !validate(String(sessionId)))
+    ) {
       response.status(404).json({
         id: uuidv4(),
         type: "abort",
@@ -108,18 +119,20 @@ async function canRespond(request, response, next) {
       return;
     }
 
-    if (!message?.length || !VALID_CHAT_MODE.includes(embed.chat_mode)) {
-      response.status(400).json({
-        id: uuidv4(),
-        type: "abort",
-        textResponse: null,
-        sources: [],
-        close: true,
-        error: !message?.length
-          ? "Message is empty."
-          : `${embed.chat_mode} is not a valid mode.`,
-      });
-      return;
+    if (requiresChatPayload) {
+      if (!message?.length || !VALID_CHAT_MODE.includes(embed.chat_mode)) {
+        response.status(400).json({
+          id: uuidv4(),
+          type: "abort",
+          textResponse: null,
+          sources: [],
+          close: true,
+          error: !message?.length
+            ? "Message is empty."
+            : `${embed.chat_mode} is not a valid mode.`,
+        });
+        return;
+      }
     }
 
     if (
@@ -149,6 +162,7 @@ async function canRespond(request, response, next) {
     }
 
     if (
+      sessionId &&
       !isNaN(embed.max_chats_per_session) &&
       Number(embed.max_chats_per_session) > 0
     ) {

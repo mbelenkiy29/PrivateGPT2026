@@ -41,7 +41,21 @@ const Workspace = {
       body: JSON.stringify({ kitId, createEmbed }),
       headers: baseHeaders(),
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          return {
+            workspace: body.workspace || null,
+            embed: body.embed || null,
+            kit: body.kit || null,
+            message:
+              body.message ||
+              res.statusText ||
+              "Failed to install starter kit.",
+          };
+        }
+        return body;
+      })
       .catch((e) => {
         return {
           workspace: null,

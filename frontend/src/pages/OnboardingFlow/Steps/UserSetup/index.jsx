@@ -276,13 +276,12 @@ const MyTeam = ({ setMultiUserLoginValid, myTeamSubmitRef, navigate }) => {
       return;
     }
 
-    nextAfterUserSetup(navigate);
-    // Auto-request token with credentials that was just set so they
-    // are not redirected to login after completion.
+    // Token must be in localStorage before kit chat hits PrivateRoute.
     const { user, token } = await System.requestToken(data);
     window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
     window.localStorage.setItem(AUTH_TOKEN, token);
     window.localStorage.removeItem(AUTH_TIMESTAMP);
+    nextAfterUserSetup(navigate);
   };
 
   const setNewUsername = (e) => setUsername(e.target.value);

@@ -114,7 +114,7 @@ export default function DefaultChatContainer() {
       message,
     } = await Workspace.installKit(kit.id);
     setInstallingId(null);
-    if (!workspace) {
+    if (!workspace || message) {
       showToast(message || t("onboarding.starterKit.error"), "error");
       return;
     }

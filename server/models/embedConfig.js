@@ -64,6 +64,15 @@ const EmbedConfig = {
             data?.message_limit,
             "message_limit"
           ),
+          // Only persist when present so Prisma defaults (e.g. ai_disclosure true) stay.
+          ...optionalValidatedFields(data, [
+            "ai_disclosure",
+            "show_handoff",
+            "handoff_email",
+            "lead_capture",
+            "business_hours_json",
+            "grounded_only",
+          ]),
           createdBy: creatorId != null ? Number(creatorId) : null,
           workspace: {
             connect: { id: Number(data.workspace_id) },
@@ -295,6 +304,16 @@ function validatedCreationData(value, field) {
   }
 
   return null;
+}
+
+function optionalValidatedFields(data = {}, keys = []) {
+  const extras = {};
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+    if (data[key] === undefined) continue;
+    extras[key] = validatedCreationData(data[key], key);
+  }
+  return extras;
 }
 
 module.exports = { EmbedConfig };

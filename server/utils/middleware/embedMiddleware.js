@@ -135,7 +135,9 @@ async function canRespond(request, response, next) {
       }
     }
 
+    // GET smb-config must still load after the chat cap so disclosure/handoff/lead UI works.
     if (
+      request.method !== "GET" &&
       !isNaN(embed.max_chats_per_day) &&
       Number(embed.max_chats_per_day) > 0
     ) {
@@ -162,6 +164,7 @@ async function canRespond(request, response, next) {
     }
 
     if (
+      request.method !== "GET" &&
       sessionId &&
       !isNaN(embed.max_chats_per_session) &&
       Number(embed.max_chats_per_session) > 0

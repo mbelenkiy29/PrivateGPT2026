@@ -21,6 +21,12 @@ const EmbedConfig = {
     "chat_mode",
     "workspace_id",
     "message_limit",
+    "ai_disclosure",
+    "show_handoff",
+    "handoff_email",
+    "lead_capture",
+    "business_hours_json",
+    "grounded_only",
   ],
 
   new: async function (data, creatorId = null) {
@@ -58,6 +64,15 @@ const EmbedConfig = {
             data?.message_limit,
             "message_limit"
           ),
+          // Only persist when present so Prisma defaults (e.g. ai_disclosure true) stay.
+          ...optionalValidatedFields(data, [
+            "ai_disclosure",
+            "show_handoff",
+            "handoff_email",
+            "lead_capture",
+            "business_hours_json",
+            "grounded_only",
+          ]),
           createdBy: creatorId != null ? Number(creatorId) : null,
           workspace: {
             connect: { id: Number(data.workspace_id) },
@@ -208,6 +223,10 @@ const BOOLEAN_KEYS = [
   "allow_temperature_override",
   "allow_prompt_override",
   "enabled",
+  "ai_disclosure",
+  "show_handoff",
+  "lead_capture",
+  "grounded_only",
 ];
 
 const NUMBER_KEYS = [
@@ -258,7 +277,43 @@ function validatedCreationData(value, field) {
     return isNaN(value) || Number(value) <= 0 ? null : Number(value);
   }
 
+  if (field === "handoff_email") {
+    if (!value) return null;
+    const email = String(value).trim();
+    return email.length ? email : null;
+  }
+
+  if (field === "business_hours_json") {
+    if (!value) return null;
+    if (typeof value === "object") {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "string") {
+      try {
+        JSON.parse(value);
+        return value;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
   return null;
+}
+
+function optionalValidatedFields(data = {}, keys = []) {
+  const extras = {};
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+    if (data[key] === undefined) continue;
+    extras[key] = validatedCreationData(data[key], key);
+  }
+  return extras;
 }
 
 module.exports = { EmbedConfig };

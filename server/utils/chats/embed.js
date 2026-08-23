@@ -5,6 +5,7 @@ const { decorateChatResponse } = require("../helpers/chat/provenance");
 const { UsageEvent } = require("../../models/usageEvent");
 const { chatPrompt, sourceIdentifier } = require("./index");
 const { EmbedChats } = require("../../models/embedChats");
+const { EmbedUnanswered } = require("../../models/embedUnanswered");
 const {
   convertToPromptHistory,
   writeResponseChunk,
@@ -25,6 +26,8 @@ async function streamChatWithForEmbed(
   // Automatic mode is NOT valid for embeds, so we default to chat mode.
   let chatMode = embed.chat_mode ?? "chat";
   if (chatMode === "automatic") chatMode = "chat";
+  // Grounded-only embeds must not answer from model knowledge.
+  if (embed.grounded_only) chatMode = "query";
 
   const chatModel = embed.allow_model_override ? modelOverride : null;
 
@@ -71,14 +74,12 @@ async function streamChatWithForEmbed(
   // User is trying to query-mode chat a workspace that has no data in it - so
   // we should exit early as no information can be found under these conditions.
   if ((!hasVectorizedSpace || embeddingsCount === 0) && chatMode === "query") {
-    writeResponseChunk(response, {
-      id: uuid,
-      type: "textResponse",
-      textResponse:
-        "I do not have enough information to answer that. Try another question.",
-      sources: [],
-      close: true,
-      error: null,
+    await respondToEmptyEmbedRetrieval({
+      response,
+      uuid,
+      embed,
+      sessionId,
+      message,
     });
     return;
   }
@@ -163,15 +164,12 @@ async function streamChatWithForEmbed(
   // If in query mode and no sources are found in current search or backfilled from history, do not
   // let the LLM try to hallucinate a response or use general knowledge
   if (chatMode === "query" && contextTexts.length === 0) {
-    writeResponseChunk(response, {
-      id: uuid,
-      type: "textResponse",
-      textResponse:
-        embed.workspace?.queryRefusalResponse ??
-        "There is no relevant information in this workspace to answer your query.",
-      sources: [],
-      close: true,
-      error: null,
+    await respondToEmptyEmbedRetrieval({
+      response,
+      uuid,
+      embed,
+      sessionId,
+      message,
     });
     return;
   }
@@ -323,6 +321,31 @@ async function resolveLLMConnectorForEmbed({
       error: `Model router error: ${routerError.message}`,
     };
   }
+}
+
+async function respondToEmptyEmbedRetrieval({
+  response,
+  uuid,
+  embed,
+  sessionId,
+  message,
+}) {
+  await EmbedUnanswered.create({
+    embed_id: embed.id,
+    session_id: sessionId ?? null,
+    question: String(message),
+  });
+
+  writeResponseChunk(response, {
+    id: uuid,
+    type: "textResponse",
+    textResponse:
+      embed.workspace?.queryRefusalResponse ??
+      "There is no relevant information in this workspace to answer your query.",
+    sources: [],
+    close: true,
+    error: null,
+  });
 }
 
 module.exports = {

@@ -51,14 +51,18 @@ async function graph(accessToken, path, { method = "GET", raw = false } = {}) {
   });
   if (raw) return res;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      data?.error?.message || data?.error_description || `Graph ${res.status}`;
-    const err = new Error(msg);
-    err.status = res.status;
-    throw err;
-  }
+  if (!res.ok) throw graphError(res, data);
   return data;
+}
+
+function graphError(res, data = {}) {
+  const msg =
+    data?.error?.message || data?.error_description || `Graph ${res.status}`;
+  const err = new Error(msg);
+  err.status = res.status;
+  err.code = data?.error?.code || null;
+  err.graph = data?.error || null;
+  return err;
 }
 
 function driveItemPath(driveId, itemId = "root") {
@@ -186,15 +190,7 @@ async function deltaDriveItem(
       headers: { Authorization: `Bearer ${token}` },
     });
     data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg =
-        data?.error?.message ||
-        data?.error_description ||
-        `Graph ${res.status}`;
-      const err = new Error(msg);
-      err.status = res.status;
-      throw err;
-    }
+    if (!res.ok) throw graphError(res, data);
   } else {
     data = await graph(
       token,

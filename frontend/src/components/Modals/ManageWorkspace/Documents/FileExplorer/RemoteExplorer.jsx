@@ -244,9 +244,21 @@ export default function RemoteExplorer({ source, workspace, onIndexed }) {
             type={item.type}
             name={item.name}
             selected={selected.has(item.id)}
-            onToggle={() => toggle(item.id)}
+            onToggle={
+              item.type === "folder" && item.indexable === false
+                ? undefined
+                : () => toggle(item.id)
+            }
             onActivate={() => openFolder(item)}
-            meta={item.type === "folder" ? "Folder" : "File"}
+            meta={
+              item.type !== "folder"
+                ? "File"
+                : item.siteId && !item.driveId
+                  ? "Site"
+                  : item.teamId && !item.channelId
+                    ? "Team"
+                    : "Folder"
+            }
             badge={
               item.type === "file" && !item.indexable ? (
                 <span className="text-[10px] text-theme-text-secondary">

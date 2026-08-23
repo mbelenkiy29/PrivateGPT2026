@@ -16,7 +16,10 @@ const {
   getFileSourceOAuthConfig,
 } = require("../../../utils/fileSources/credentials");
 const { SharePointSource } = require("../../../utils/fileSources/sharepoint");
-const { parseLocator } = require("../../../utils/fileSources/graphLocators");
+const {
+  parseLocator,
+  canWatchGraphFolder,
+} = require("../../../utils/fileSources/graphLocators");
 const {
   SITES_CONSENT_MESSAGE,
 } = require("../../../utils/fileSources/microsoftConsent");
@@ -35,11 +38,11 @@ function jsonOk(body) {
   };
 }
 
-function jsonErr(status, message) {
+function jsonErr(status, message, code) {
   return {
     ok: false,
     status,
-    json: async () => ({ error: { message } }),
+    json: async () => ({ error: { message, code } }),
     arrayBuffer: async () => Buffer.from(""),
   };
 }
@@ -90,6 +93,20 @@ describe("SharePointSource", () => {
       driveId: "d1",
       itemId: "i9",
     });
+    expect(canWatchGraphFolder({ id: "site:site-1", driveId: "d1" })).toBe(
+      false
+    );
+    expect(canWatchGraphFolder({ id: "team:t1", driveId: "d1" })).toBe(false);
+    expect(
+      canWatchGraphFolder({
+        id: "team:t1:channel:c1",
+        driveId: "d1",
+        itemId: "folder-1",
+      })
+    ).toBe(true);
+    expect(
+      canWatchGraphFolder({ id: "drive:d1", driveId: "d1", itemId: "root" })
+    ).toBe(true);
   });
 
   it("lists sites at root via Graph search", async () => {
@@ -115,9 +132,21 @@ describe("SharePointSource", () => {
         id: "site:site-1",
         name: "HR",
         type: "folder",
+        indexable: false,
         siteId: "site-1",
       }),
     ]);
+    expect(canWatchGraphFolder(page.items[0])).toBe(false);
+  });
+
+  it("refuses to download a site as a watchable folder", async () => {
+    await expect(
+      SharePointSource.download(record, "site:site-1")
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("document library"),
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("lists document libraries for a site", async () => {
@@ -138,8 +167,10 @@ describe("SharePointSource", () => {
         name: "Documents",
         driveId: "d1",
         itemId: "root",
+        indexable: true,
       })
     );
+    expect(canWatchGraphFolder(page.items[0])).toBe(true);
   });
 
   it("lists library files with composite ids and reuses OneDrive download", async () => {
@@ -200,16 +231,37 @@ describe("SharePointSource", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("fails with a re-consent message when Graph returns 403 for sites", async () => {
+  it("fails with a re-consent message when Graph 403 looks like missing consent", async () => {
     ConnectedFileSource.tokens.mockReturnValue({
       accessToken: "opaque-token",
       refreshToken: "refresh-token",
       expiresAt: Date.now() + 60 * 60 * 1000,
     });
-    global.fetch.mockResolvedValue(jsonErr(403, "Access denied"));
+    global.fetch.mockResolvedValue(
+      jsonErr(
+        403,
+        "Either scp or roles claim need to be present in the token.",
+        "Authorization_RequestDenied"
+      )
+    );
 
     await expect(SharePointSource.listChildren(record, "root")).rejects.toThrow(
       SITES_CONSENT_MESSAGE
+    );
+  });
+
+  it("keeps the Graph message when 403 is an item ACL denial", async () => {
+    ConnectedFileSource.tokens.mockReturnValue({
+      accessToken: "opaque-token",
+      refreshToken: "refresh-token",
+      expiresAt: Date.now() + 60 * 60 * 1000,
+    });
+    global.fetch.mockResolvedValue(
+      jsonErr(403, "Access denied", "accessDenied")
+    );
+
+    await expect(SharePointSource.listChildren(record, "root")).rejects.toThrow(
+      "Access denied"
     );
   });
 

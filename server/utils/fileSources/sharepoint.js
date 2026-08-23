@@ -15,6 +15,7 @@ const {
   encodeDrive,
   encodeDriveItem,
   parseLocator,
+  isBrowseOnlyLocator,
 } = require("./graphLocators");
 const {
   SITES_CONSENT_MESSAGE,
@@ -51,7 +52,7 @@ function mapSite(site) {
     modifiedAt: null,
     mimeType: null,
     webUrl: site.webUrl || null,
-    indexable: true,
+    indexable: false,
     siteId: site.id,
   };
 }
@@ -93,8 +94,18 @@ function mapDelta(driveId) {
   };
 }
 
+function refuseBrowseOnly(fileId) {
+  if (!isBrowseOnlyLocator(fileId)) return;
+  const err = new Error(
+    "Pick a document library to index. SharePoint sites cannot be watched."
+  );
+  err.status = 400;
+  throw err;
+}
+
 async function graphWithSitesConsent(token, path, opts) {
   throwIfMissingScope(token, "Sites.Read.All", SITES_CONSENT_MESSAGE);
+  throwIfMissingScope(token, "Files.Read.All", SITES_CONSENT_MESSAGE);
   try {
     return await graph(token, path, opts);
   } catch (e) {
@@ -213,23 +224,20 @@ const SharePointSource = {
   },
 
   async download(record, fileId) {
+    refuseBrowseOnly(fileId);
     const loc = parseLocator(fileId);
-    if (loc.kind === "site" || loc.kind === "drive" || loc.kind === "root") {
+    if (loc.kind === "drive") {
       const listed = await this.listChildren(record, fileId);
-      let name = listed.items[0]?.name || "SharePoint";
-      if (loc.kind === "site") name = listed.items[0]?.name || "Site";
-      if (loc.kind === "drive") {
-        name = "Documents";
-        const token = await refreshIfNeeded(record);
-        try {
-          const drive = await graphWithSitesConsent(
-            token,
-            `/drives/${encodeURIComponent(loc.driveId)}?$select=id,name`
-          );
-          name = drive.name || name;
-        } catch (e) {
-          rethrowConsent(e, SITES_CONSENT_MESSAGE);
-        }
+      let name = "Documents";
+      const token = await refreshIfNeeded(record);
+      try {
+        const drive = await graphWithSitesConsent(
+          token,
+          `/drives/${encodeURIComponent(loc.driveId)}?$select=id,name`
+        );
+        name = drive.name || name;
+      } catch (e) {
+        rethrowConsent(e, SITES_CONSENT_MESSAGE);
       }
       return {
         kind: "folder",

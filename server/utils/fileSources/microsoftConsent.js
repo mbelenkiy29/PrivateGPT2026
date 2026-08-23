@@ -1,8 +1,8 @@
 const SITES_CONSENT_MESSAGE =
-  "SharePoint libraries need the Sites.Read.All Graph permission. Reconnect Microsoft and accept the SharePoint consent prompt. A Teams bot is not required to index files.";
+  "SharePoint libraries need the Sites.Read.All and Files.Read.All Graph permissions. Reconnect Microsoft and accept the SharePoint consent prompt. A Teams bot is not required to index files.";
 
 const TEAMS_CONSENT_MESSAGE =
-  "Teams channel files need Team.ReadBasic.All and Channel.ReadBasic.All Graph permissions. Reconnect Microsoft and accept the Graph consent prompt. A Teams bot (chat) is a separate consent and is not required to index files.";
+  "Teams channel files need Team.ReadBasic.All, Channel.ReadBasic.All, and Files.Read.All Graph permissions. Reconnect Microsoft and accept the Graph consent prompt. A Teams bot (chat) is a separate consent and is not required to index files.";
 
 function tokenHasScope(accessToken, scope) {
   try {
@@ -19,18 +19,17 @@ function tokenHasScope(accessToken, scope) {
 }
 
 function isConsentError(err) {
-  const status = Number(err?.status || err?.statusCode || 0);
-  if (status === 401 || status === 403) return true;
+  const code = String(err?.code || err?.graph?.code || "").toLowerCase();
   const msg = String(err?.message || "").toLowerCase();
+  const haystack = `${code} ${msg}`;
   return (
-    msg.includes("access denied") ||
-    msg.includes("access is denied") ||
-    msg.includes("insufficient privileges") ||
-    msg.includes("authorization_requestdenied") ||
-    msg.includes("sites.read.all") ||
-    msg.includes("team.readbasic.all") ||
-    msg.includes("channel.readbasic.all") ||
-    msg.includes("either scp or roles")
+    haystack.includes("authorization_requestdenied") ||
+    haystack.includes("either scp or roles") ||
+    haystack.includes("insufficient privileges") ||
+    haystack.includes("sites.read.all") ||
+    haystack.includes("team.readbasic.all") ||
+    haystack.includes("channel.readbasic.all") ||
+    haystack.includes("files.read.all")
   );
 }
 

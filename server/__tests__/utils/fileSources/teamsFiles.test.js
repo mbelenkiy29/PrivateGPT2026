@@ -17,6 +17,9 @@ const {
 } = require("../../../utils/fileSources/credentials");
 const { TeamsFilesSource } = require("../../../utils/fileSources/teamsFiles");
 const {
+  canWatchGraphFolder,
+} = require("../../../utils/fileSources/graphLocators");
+const {
   TEAMS_CONSENT_MESSAGE,
 } = require("../../../utils/fileSources/microsoftConsent");
 
@@ -34,11 +37,11 @@ function jsonOk(body) {
   };
 }
 
-function jsonErr(status, message) {
+function jsonErr(status, message, code) {
   return {
     ok: false,
     status,
-    json: async () => ({ error: { message } }),
+    json: async () => ({ error: { message, code } }),
     arrayBuffer: async () => Buffer.from(""),
   };
 }
@@ -94,8 +97,20 @@ describe("TeamsFilesSource", () => {
         id: "team:t1",
         name: "Engineering",
         type: "folder",
+        indexable: false,
       })
     );
+    expect(canWatchGraphFolder(page.items[0])).toBe(false);
+  });
+
+  it("refuses to download a team as a watchable folder", async () => {
+    await expect(
+      TeamsFilesSource.download(record, "team:t1")
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("channel files folder"),
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("lists channels then files in the channel filesFolder", async () => {
@@ -122,7 +137,15 @@ describe("TeamsFilesSource", () => {
             },
           ],
         })
-      );
+      )
+      .mockResolvedValueOnce(
+        jsonOk({
+          id: "folder-1",
+          name: "General",
+          parentReference: { driveId: "d1" },
+        })
+      )
+      .mockResolvedValueOnce(jsonOk({ value: [] }));
 
     const channels = await TeamsFilesSource.listChildren(record, "team:t1");
     expect(global.fetch).toHaveBeenCalledWith(
@@ -150,6 +173,14 @@ describe("TeamsFilesSource", () => {
         teamId: "t1",
         channelId: "c1",
       })
+    );
+
+    const folder = await TeamsFilesSource.download(
+      record,
+      "team:t1:channel:c1"
+    );
+    expect(canWatchGraphFolder({ id: "team:t1:channel:c1", ...folder })).toBe(
+      true
     );
   });
 
@@ -192,16 +223,37 @@ describe("TeamsFilesSource", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("fails with a re-consent message when Graph returns 403 for joinedTeams", async () => {
+  it("fails with a re-consent message when Graph 403 looks like missing consent", async () => {
     ConnectedFileSource.tokens.mockReturnValue({
       accessToken: "opaque-token",
       refreshToken: "refresh-token",
       expiresAt: Date.now() + 60 * 60 * 1000,
     });
-    global.fetch.mockResolvedValue(jsonErr(403, "Access denied"));
+    global.fetch.mockResolvedValue(
+      jsonErr(
+        403,
+        "Either scp or roles claim need to be present in the token.",
+        "Authorization_RequestDenied"
+      )
+    );
 
     await expect(TeamsFilesSource.listChildren(record, "root")).rejects.toThrow(
       TEAMS_CONSENT_MESSAGE
+    );
+  });
+
+  it("keeps the Graph message when 403 is an item ACL denial", async () => {
+    ConnectedFileSource.tokens.mockReturnValue({
+      accessToken: "opaque-token",
+      refreshToken: "refresh-token",
+      expiresAt: Date.now() + 60 * 60 * 1000,
+    });
+    global.fetch.mockResolvedValue(
+      jsonErr(403, "Access denied", "accessDenied")
+    );
+
+    await expect(TeamsFilesSource.listChildren(record, "root")).rejects.toThrow(
+      "Access denied"
     );
   });
 

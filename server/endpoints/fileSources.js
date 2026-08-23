@@ -19,6 +19,7 @@ const { GoogleDriveSource } = require("../utils/fileSources/googleDrive");
 const { SharePointSource } = require("../utils/fileSources/sharepoint");
 const { TeamsFilesSource } = require("../utils/fileSources/teamsFiles");
 const { indexRemoteFiles } = require("../utils/fileSources/indexFiles");
+const { canWatchGraphFolder } = require("../utils/fileSources/graphLocators");
 
 const pendingOAuth = new Map();
 const OAUTH_TTL_MS = 10 * 60 * 1000;
@@ -321,6 +322,11 @@ function fileSourcesEndpoints(app) {
           const workspace = await Workspace.get({ slug: workspaceSlug });
           if (workspace) {
             for (const folder of result.folders) {
+              const graphWatch =
+                record.provider === "sharepoint" ||
+                record.provider === "teams-files";
+              if (graphWatch && !canWatchGraphFolder(folder)) continue;
+
               let sync_cursor = null;
               try {
                 if (record.provider === "google-drive") {
@@ -344,6 +350,7 @@ function fileSourcesEndpoints(app) {
                 }
               } catch (e) {
                 console.error(e);
+                if (graphWatch) continue;
               }
               await KnowledgeSource.upsertByRemote({
                 workspaceId: workspace.id,
@@ -369,7 +376,10 @@ function fileSourcesEndpoints(app) {
         response.status(200).json({ success: true, ...result });
       } catch (e) {
         console.error(e);
-        response.status(500).json({ success: false, error: e.message });
+        const status = Number(e.status);
+        response
+          .status(status >= 400 && status < 600 ? status : 500)
+          .json({ success: false, error: e.message });
       }
     }
   );

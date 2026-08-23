@@ -29,6 +29,17 @@ function encodeChannel(teamId, channelId) {
   return `team:${teamId}:channel:${channelId}`;
 }
 
+const BROWSE_ONLY_KINDS = new Set(["root", "site", "team"]);
+
+function isBrowseOnlyLocator(id) {
+  return BROWSE_ONLY_KINDS.has(parseLocator(id).kind);
+}
+
+function canWatchGraphFolder(folder = {}) {
+  if (isBrowseOnlyLocator(folder.id || folder.remote_id)) return false;
+  return Boolean(folder.driveId);
+}
+
 function parseLocator(id) {
   if (!id || id === "root") return { kind: "root" };
   const value = String(id);
@@ -65,4 +76,6 @@ module.exports = {
   encodeTeam,
   encodeChannel,
   parseLocator,
+  isBrowseOnlyLocator,
+  canWatchGraphFolder,
 };

@@ -15,6 +15,7 @@ const {
   encodeChannel,
   encodeDriveItem,
   parseLocator,
+  isBrowseOnlyLocator,
 } = require("./graphLocators");
 const {
   TEAMS_CONSENT_MESSAGE,
@@ -55,7 +56,7 @@ function mapTeam(team) {
     modifiedAt: null,
     mimeType: null,
     webUrl: team.webUrl || null,
-    indexable: true,
+    indexable: false,
     teamId: team.id,
   };
 }
@@ -96,8 +97,19 @@ function mapDelta(driveId) {
   };
 }
 
+function refuseBrowseOnly(fileId) {
+  if (!isBrowseOnlyLocator(fileId)) return;
+  const err = new Error(
+    "Pick a channel files folder to index. Teams cannot be watched as a unit."
+  );
+  err.status = 400;
+  throw err;
+}
+
 async function graphWithTeamsConsent(token, path, opts) {
   throwIfMissingScope(token, "Team.ReadBasic.All", TEAMS_CONSENT_MESSAGE);
+  throwIfMissingScope(token, "Channel.ReadBasic.All", TEAMS_CONSENT_MESSAGE);
+  throwIfMissingScope(token, "Files.Read.All", TEAMS_CONSENT_MESSAGE);
   try {
     return await graph(token, path, opts);
   } catch (e) {
@@ -256,16 +268,8 @@ const TeamsFilesSource = {
   },
 
   async download(record, fileId) {
+    refuseBrowseOnly(fileId);
     const loc = parseLocator(fileId);
-    if (loc.kind === "root" || loc.kind === "team") {
-      const listed = await this.listChildren(record, fileId);
-      return {
-        kind: "folder",
-        name: loc.kind === "team" ? "Team" : "Teams",
-        children: listed.items,
-        teamId: loc.teamId || null,
-      };
-    }
     if (loc.kind === "channel") {
       const folder = await filesFolder(record, loc.teamId, loc.channelId);
       const listed = await listDriveChildren(

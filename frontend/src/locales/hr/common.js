@@ -119,6 +119,7 @@ const TRANSLATIONS = {
       telegram: "Telegram",
     },
     "image-generation": "Generiranje slika",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1966,6 +1967,37 @@ const TRANSLATIONS = {
       description:
         "To može potrajati neko vrijeme. Bit će dostupno ovdje čim bude spremno.",
       aborted: "Generiranje slike je prekinuto.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

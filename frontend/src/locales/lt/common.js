@@ -118,6 +118,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Planuojami darbai",
     "model-router": "Modelio maršrutizatorius",
     "image-generation": "Vaizdų kūrimas",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1975,6 +1976,37 @@ const TRANSLATIONS = {
       description:
         "Tai gali užtrukti keletą minučių. Ji pasirodys čia, kai bus pasiruošusi.",
       aborted: "Vaizdo kūrimas buvo nutrauktas.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

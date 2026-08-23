@@ -111,6 +111,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Запланированные задачи",
     "model-router": "Примерный маршрутизатор",
     "image-generation": "Генерация изображений",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -2000,6 +2001,37 @@ const TRANSLATIONS = {
       description:
         "Это может занять некоторое время. Как только информация будет готова, она появится здесь.",
       aborted: "Генерация изображения была прервана.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

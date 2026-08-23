@@ -15,6 +15,7 @@ module.exports.GmailReplyToThread = {
             "Reply to an existing email thread immediately. " +
             "This action sends the reply right away and cannot be undone. " +
             "For composing replies that need review before sending, use gmail-create-draft-reply instead. " +
+            "Humans should send reviewed drafts from the Pending drafts page. " +
             "Supports file attachments via absolute file paths (max 20MB total for all attachments combined).",
           examples: [
             {

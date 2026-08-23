@@ -110,6 +110,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "المهام المجدولة",
     "model-router": "نموذج جهاز التوجيه",
     "image-generation": "إنشاء الصور",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1941,6 +1942,37 @@ const TRANSLATIONS = {
       heading: "إنشاء صورتك…",
       description: "قد يستغرق ذلك بعض الوقت. سيظهر هنا بمجرد أن يكون جاهزًا.",
       aborted: "تم إلغاء عملية إنشاء الصورة.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

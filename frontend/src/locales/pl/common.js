@@ -112,6 +112,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Zaplanowane zadania",
     "model-router": "Przykładowy router",
     "image-generation": "Generowanie obrazów",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1990,6 +1991,37 @@ const TRANSLATIONS = {
       description:
         "To może zająć trochę czasu. Będzie dostępne tutaj, gdy tylko zostanie przygotowane.",
       aborted: "Generowanie obrazu zostało przerwane.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

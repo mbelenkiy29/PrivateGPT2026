@@ -111,6 +111,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Planeeritud tööd",
     "model-router": "Mudel: reiting",
     "image-generation": "Pildi genereerimine",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1927,6 +1928,37 @@ const TRANSLATIONS = {
       description:
         "See võib võtta natuke aega. See ilmub siia, niipea kui see on valmis.",
       aborted: "Pildi genereerimine katkestati.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

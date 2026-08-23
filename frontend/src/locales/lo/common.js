@@ -119,6 +119,7 @@ const TRANSLATIONS = {
       telegram: "Telegram",
     },
     "image-generation": "ການສ້າງຮູບພາບ",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1870,6 +1871,37 @@ const TRANSLATIONS = {
       description:
         "ນີ້ ສາມາດໃຊ້ເວລາເລັກໜ້ອຍ. ມັນຈະປະກາດຢູ່ທີ່ນີ້ເມື່ອມັນຖືກແກ້ໄຂແລ້ວ",
       aborted: "ການສ້າງຮູບພາບຖືກຢຸດແລ້ວ",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

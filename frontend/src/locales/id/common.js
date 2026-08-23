@@ -120,6 +120,7 @@ const TRANSLATIONS = {
       telegram: "Telegram",
     },
     "image-generation": "Pembuatan Gambar",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1967,6 +1968,37 @@ const TRANSLATIONS = {
       description:
         "Ini mungkin membutuhkan waktu beberapa saat. Informasi ini akan muncul di sini segera setelah tersedia.",
       aborted: "Pembuatan gambar telah dihentikan.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

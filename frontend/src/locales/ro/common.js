@@ -112,6 +112,7 @@ const TRANSLATIONS = {
     "scheduled-jobs": "Sarcini programate",
     "model-router": "Model de router",
     "image-generation": "Generarea de imagini",
+    "pending-drafts": null,
   },
   login: {
     "multi-user": {
@@ -1996,6 +1997,37 @@ const TRANSLATIONS = {
       description:
         "Acest lucru poate dura ceva timp. Va apărea aici imediat ce va fi gata.",
       aborted: "Generarea imaginii a fost anulată.",
+    },
+  },
+  mailDrafts: {
+    title: null,
+    description: null,
+    refresh: null,
+    noSubject: null,
+    openIn: null,
+    table: {
+      provider: null,
+      to: null,
+      subject: null,
+      snippet: null,
+      created: null,
+    },
+    providers: {
+      gmail: null,
+      outlook: null,
+    },
+    empty: {
+      notConnectedTitle: null,
+      notConnectedSubtitle: null,
+      noneTitle: null,
+      noneSubtitle: null,
+      loadFailedTitle: null,
+      loadFailedSubtitle: null,
+      openSkills: null,
+    },
+    errors: {
+      fetch: null,
+      provider: null,
     },
   },
 };

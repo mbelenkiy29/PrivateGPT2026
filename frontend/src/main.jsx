@@ -145,6 +145,15 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: "/settings/mail-drafts",
+        lazy: async () => {
+          const { default: MailDrafts } = await import(
+            "@/pages/GeneralSettings/MailDrafts"
+          );
+          return { element: <AdminRoute Component={MailDrafts} /> };
+        },
+      },
+      {
         path: "/settings/agents/builder",
         lazy: async () => {
           const { default: AgentBuilder } = await import(

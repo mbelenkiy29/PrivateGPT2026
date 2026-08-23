@@ -1201,10 +1201,64 @@ const TRANSLATIONS = {
       "occurred": "ເກີດຂຶ້ນເມື່ອ"
     }
   },
-  "privacy": {
-    "title": "ຄວາມເປັນສ່ວນຕົວ & ການຈັດການຂໍ້ມູນ",
-    "description": "ນີ້ແມ່ນການຕັ້ງຄ່າວິທີທີ່ຜູ້ໃຫ້ບໍລິການພາຍນອກ ແລະ PrivateGPT ຈັດການຂໍ້ມູນຂອງທ່ານ.",
-    "anonymous": "ເປີດການສົ່ງຂໍ້ມູນການໃຊ້ງານແບບບໍ່ລະບຸຕົວຕົນ (Telemetry)"
+  privacy: {
+    title: "ຄວາມເປັນສ່ວນຕົວ & ການຈັດການຂໍ້ມູນ",
+    description: "ນີ້ແມ່ນການຕັ້ງຄ່າວິທີທີ່ຜູ້ໃຫ້ບໍລິການພາຍນອກ ແລະ PrivateGPT ຈັດການຂໍ້ມູນຂອງທ່ານ.",
+    anonymous: "ເປີດການສົ່ງຂໍ້ມູນການໃຊ້ງານແບບບໍ່ລະບຸຕົວຕົນ (Telemetry)",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "ຄົ້ນຫາຕົວເຊື່ອມຕໍ່ຂໍ້ມູນ",
@@ -1509,10 +1563,20 @@ const TRANSLATIONS = {
         "cancel": "ຍົກເລີກ"
       }
     },
-    "preset_img_description": "ຈາກຂໍ້ຄວາມ ໃຫ້ສ້າງຮູບພາບ",
-    "generating_response": "ຜົນການຕອບ",
-    "response_failed": "ສາมาถ ප්‍රතිສະໜອງ ຂໍ້ຄວາມ ໄດ້",
-    "response_failed_reason": "ສາเหตุ: {{reason}}"
+    preset_img_description: "ຈາກຂໍ້ຄວາມ ໃຫ້ສ້າງຮູບພາບ",
+    generating_response: "ຜົນການຕອບ",
+    response_failed: "ສາมาถ ප්‍රතිສະໜອງ ຂໍ້ຄວາມ ໄດ້",
+    response_failed_reason: "ສາเหตุ: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "ແກ້ໄຂບັນຊີ",

@@ -1201,10 +1201,64 @@ const TRANSLATIONS = {
       "occurred": "Dogodilo se u"
     }
   },
-  "privacy": {
-    "title": "Privatnost i rukovanje podacima",
-    "description": "Ovo je vaša konfiguracija za način na koji povezani pružatelji usluga trećih strana i PrivateGPT rukuju vašim podacima.",
-    "anonymous": "Anonimna telemetrija omogućena"
+  privacy: {
+    title: "Privatnost i rukovanje podacima",
+    description: "Ovo je vaša konfiguracija za način na koji povezani pružatelji usluga trećih strana i PrivateGPT rukuju vašim podacima.",
+    anonymous: "Anonimna telemetrija omogućena",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "Pretraži konektore podataka",
@@ -1509,10 +1563,20 @@ const TRANSLATIONS = {
         "cancel": "Odustani"
       }
     },
-    "preset_img_description": "Generiraj sliku na temelju tekstualnog uputa.",
-    "generating_response": "Generiranje odgovora",
-    "response_failed": "Nije moguće odgovoriti na poruku.",
-    "response_failed_reason": "Razlog: {{reason}}"
+    preset_img_description: "Generiraj sliku na temelju tekstualnog uputa.",
+    generating_response: "Generiranje odgovora",
+    response_failed: "Nije moguće odgovoriti na poruku.",
+    response_failed_reason: "Razlog: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "Uredi račun",

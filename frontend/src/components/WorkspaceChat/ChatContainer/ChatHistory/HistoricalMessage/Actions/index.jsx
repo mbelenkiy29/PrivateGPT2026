@@ -18,6 +18,8 @@ const Actions = ({
   isEditing,
   role,
   metrics = {},
+  provenance = null,
+  sources = [],
 }) => {
   const { t } = useTranslation();
   const [selectedFeedback, setSelectedFeedback] = useState(feedbackScore);
@@ -65,6 +67,8 @@ const Actions = ({
             forkThread={forkThread}
             isEditing={isEditing}
             role={role}
+            provenance={provenance}
+            sources={sources}
           />
         </div>
       </div>

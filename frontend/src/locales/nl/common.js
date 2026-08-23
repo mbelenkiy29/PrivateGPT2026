@@ -874,10 +874,64 @@ const TRANSLATIONS = {
       "occurred": "Opgetreden Op"
     }
   },
-  "privacy": {
-    "title": "Privacy & Gegevensverwerking",
-    "description": "Dit is je configuratie voor hoe verbonden derden en PrivateGPT je gegevens verwerken.",
-    "anonymous": "Anonieme Telemetrie Ingeschakeld"
+  privacy: {
+    title: "Privacy & Gegevensverwerking",
+    description: "Dit is je configuratie voor hoe verbonden derden en PrivateGPT je gegevens verwerken.",
+    anonymous: "Anonieme Telemetrie Ingeschakeld",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "Zoek naar data-connectoren",
@@ -1177,15 +1231,28 @@ const TRANSLATIONS = {
         "cancel": "Annuleren"
       }
     },
-    "stt_unsupported": "Toegang tot een microfoon wordt in deze browser niet ondersteund.",
-    "stt_mic_denied": "Het was niet mogelijk om de microfoon te gebruiken. Gelieve toestemming te verlenen en opnieuw te proberen.",
-    "stt_transcription_failed": "Transcriptie mislukt: {{error}}",
-    "export": "Exporteer de chat als…",
-    "exporting": "Exporteren...",
-    "preset_img_description": "Genereer een afbeelding op basis van een tekstuele instructie.",
-    "generating_response": "Antwoord genereren",
-    "response_failed": "Kon de bericht niet beantwoorden.",
-    "response_failed_reason": "Reden: {{reason}}"
+    stt_unsupported:
+      "Toegang tot een microfoon wordt in deze browser niet ondersteund.",
+    stt_mic_denied:
+      "Het was niet mogelijk om de microfoon te gebruiken. Gelieve toestemming te verlenen en opnieuw te proberen.",
+    stt_transcription_failed: "Transcriptie mislukt: {{error}}",
+    export: "Exporteer de chat als…",
+    exporting: "Exporteren...",
+    preset_img_description:
+      "Genereer een afbeelding op basis van een tekstuele instructie.",
+    generating_response: "Antwoord genereren",
+    response_failed: "Kon de bericht niet beantwoorden.",
+    response_failed_reason: "Reden: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "Account bewerken",

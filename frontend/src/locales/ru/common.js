@@ -874,10 +874,64 @@ const TRANSLATIONS = {
       "occurred": "Произошло в"
     }
   },
-  "privacy": {
-    "title": "Конфиденциальность и обработка данных",
-    "description": "Это ваша конфигурация для того, как подключенные сторонние поставщики и PrivateGPT обрабатывают ваши данные.",
-    "anonymous": "Анонимная телеметрия включена"
+  privacy: {
+    title: "Конфиденциальность и обработка данных",
+    description: "Это ваша конфигурация для того, как подключенные сторонние поставщики и PrivateGPT обрабатывают ваши данные.",
+    anonymous: "Анонимная телеметрия включена",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "Поиск коннекторов данных",
@@ -1177,15 +1231,28 @@ const TRANSLATIONS = {
         "cancel": "Отменить"
       }
     },
-    "stt_unsupported": "Функция доступа к микрофону не поддерживается в этом браузере.",
-    "stt_mic_denied": "Не удалось получить доступ к микрофону. Пожалуйста, предоставьте разрешение и попробуйте снова.",
-    "stt_transcription_failed": "Не удалось выполнить транскрибирование: {{error}}",
-    "export": "Экспортировать чат в формате…",
-    "exporting": "Экспорт...",
-    "preset_img_description": "Создать изображение на основе текстового запроса",
-    "generating_response": "Формирование ответа",
-    "response_failed": "Не удалось ответить на сообщение.",
-    "response_failed_reason": "Причина: {{reason}}"
+    stt_unsupported:
+      "Функция доступа к микрофону не поддерживается в этом браузере.",
+    stt_mic_denied:
+      "Не удалось получить доступ к микрофону. Пожалуйста, предоставьте разрешение и попробуйте снова.",
+    stt_transcription_failed:
+      "Не удалось выполнить транскрибирование: {{error}}",
+    export: "Экспортировать чат в формате…",
+    exporting: "Экспорт...",
+    preset_img_description: "Создать изображение на основе текстового запроса",
+    generating_response: "Формирование ответа",
+    response_failed: "Не удалось ответить на сообщение.",
+    response_failed_reason: "Причина: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "Редактировать учётную запись",

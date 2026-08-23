@@ -25,6 +25,7 @@ export default function handleChat(
     metrics = {},
     routedTo = null,
     outputs = null,
+    provenance = null,
   } = chatResult;
 
   if (type === "modelRouteNotification") {
@@ -102,6 +103,7 @@ export default function handleChat(
         pending: false,
         chatId,
         metrics,
+        ...(provenance ? { provenance } : {}),
         ...(outputs ? { outputs } : {}),
       },
     ]);
@@ -116,6 +118,7 @@ export default function handleChat(
       pending: false,
       chatId,
       metrics,
+      ...(provenance ? { provenance } : {}),
       ...(outputs ? { outputs } : {}),
     });
     emitAssistantMessageCompleteEvent(chatId);
@@ -138,6 +141,7 @@ export default function handleChat(
           pending: false,
           chatId,
           metrics,
+          ...(provenance ? { provenance } : {}),
         };
 
         _chatHistory[chatIdx - 1] = { ..._chatHistory[chatIdx - 1], chatId }; // update prompt with chatID
@@ -170,6 +174,7 @@ export default function handleChat(
         pending: false,
         chatId,
         metrics,
+        ...(provenance ? { provenance } : {}),
       });
     }
     setChatHistory([..._chatHistory]);

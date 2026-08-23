@@ -170,7 +170,7 @@ const TRANSLATIONS = {
     security: "Security",
     "event-logs": "Event Logs",
     "scheduled-jobs": "Scheduled Jobs",
-    privacy: "Privacy & Data",
+    privacy: "Privacy & Trust",
     "ai-providers": "AI Providers",
     "knowledge-sources": "Knowledge sources",
     "agent-skills": "Agent Skills",
@@ -1410,10 +1410,74 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privacy & Data-Handling",
+    title: "Privacy & Trust",
     description:
-      "This is your configuration for how connected third party providers and PrivateGPT handle your data.",
+      "See where answers run, how long chats are kept, and how this instance handles your data.",
     anonymous: "Anonymous Telemetry Enabled",
+    summary: {
+      title: "This month",
+      description:
+        "Usage recorded on this instance since the start of the UTC month.",
+    },
+    no_training:
+      "PrivateGPT does not train models on your chats, documents, or prompts.",
+    no_training_local:
+      "Your configured LLM runs on this server. Prompts and completions stay on this instance.",
+    no_training_cloud:
+      "Your configured LLM is a cloud provider. Prompts and completions are sent to that provider. We cannot claim they do not train on or retain your data — review their privacy policy below.",
+    destination: {
+      title: "Destination",
+      this_server: "This server",
+      named_cloud: "Cloud provider",
+      mixed: "Mixed (local and cloud)",
+      none: "No usage this month",
+      unknown: "Unknown",
+      current: "Current LLM: {{provider}} ({{destination}})",
+    },
+    citations: {
+      title: "Citations",
+      headline: "On each answer",
+      description:
+        'Answers cite the documents they used. Open "Why this answer" on any chat reply to see destination, model, and sources.',
+    },
+    spend: {
+      title: "Monthly spend",
+      local: "Local",
+      cloud: "Cloud",
+      cost: "Estimated completion cost this month",
+      requests: "Completions",
+      tokens: "Tokens",
+      period: "Since {{date}} (UTC month)",
+    },
+    retention: {
+      title: "Chat retention",
+      description:
+        "Automatically delete chat history older than this many days. 0 keeps chats forever.",
+      days_one: "{{count}} day",
+      days_other: "{{count}} days",
+      forever: "Keep forever",
+      save: "Save retention",
+      saved: "Chat retention updated.",
+      failed: "Could not update chat retention.",
+      unavailable:
+        "Could not load the current retention setting. Save is disabled until this page can reach the server.",
+    },
+    gdpr: {
+      title: "Export or delete user data",
+      description:
+        "Download a copy of a user's chats, memories, and embed transcripts, or permanently delete that data. Deleting data does not remove the user account.",
+      select_user: "Select a user",
+      no_users:
+        "No users found. Enable multi-user mode to export or delete a specific user's data.",
+      export: "Export data",
+      delete: "Delete data",
+      export_success: "User data exported.",
+      export_failed: "Could not export user data.",
+      delete_confirm:
+        "Permanently delete chats, memories, and embed transcripts for {{username}}? This cannot be undone.",
+      delete_success: "User data deleted.",
+      delete_failed: "Could not delete user data.",
+    },
   },
   connectors: {
     "search-placeholder": "Search data connectors",
@@ -1665,6 +1729,16 @@ const TRANSLATIONS = {
     similarity_match: "match",
     fork: "Fork",
     delete: "Delete",
+    why_this_answer: "Why this answer",
+    why_this_answer_unavailable: "Provenance was not recorded for this reply.",
+    why_destination: "Destination",
+    why_provider: "Provider",
+    why_model: "Model",
+    why_local: "Processed on this server",
+    why_cloud: "Processed by a cloud provider",
+    why_citations: "Citations",
+    why_no_citations: "This reply did not cite any documents.",
+    why_no_training: "PrivateGPT does not train on this chat.",
     cancel: "Cancel",
     submit: "Submit",
     edit_prompt: "Edit prompt",

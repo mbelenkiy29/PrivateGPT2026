@@ -964,10 +964,64 @@ const TRANSLATIONS = {
       "occurred": "Aufgetreten am"
     }
   },
-  "privacy": {
-    "title": "Datenschutz & Datenverarbeitung",
-    "description": "Dies ist Ihre Konfiguration dafür, wie verbundene Drittanbieter und PrivateGPT Ihre Daten behandeln.",
-    "anonymous": "Anonyme Telemetrie aktiviert"
+  privacy: {
+    title: "Datenschutz & Datenverarbeitung",
+    description: "Dies ist Ihre Konfiguration dafür, wie verbundene Drittanbieter und PrivateGPT Ihre Daten behandeln.",
+    anonymous: "Anonyme Telemetrie aktiviert",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "Datenverbindungen durchsuchen",
@@ -1267,15 +1321,28 @@ const TRANSLATIONS = {
         "cancel": "Abbrechen"
       }
     },
-    "stt_unsupported": "Die Verwendung eines Mikrofons ist in diesem Browser nicht möglich.",
-    "stt_mic_denied": "Es konnte nicht auf das Mikrofon zugegriffen werden. Bitte erteilen Sie die erforderlichen Berechtigungen und versuchen Sie es erneut.",
-    "stt_transcription_failed": "Transkription fehlgeschlagen: {{error}}",
-    "export": "Chat-Export als...",
-    "exporting": "Exportieren...",
-    "preset_img_description": "Erstelle ein Bild basierend auf einer Textanfrage.",
-    "generating_response": "Antwort generieren",
-    "response_failed": "Ich konnte die Nachricht nicht beantworten.",
-    "response_failed_reason": "Grund: {{reason}}"
+    stt_unsupported:
+      "Die Verwendung eines Mikrofons ist in diesem Browser nicht möglich.",
+    stt_mic_denied:
+      "Es konnte nicht auf das Mikrofon zugegriffen werden. Bitte erteilen Sie die erforderlichen Berechtigungen und versuchen Sie es erneut.",
+    stt_transcription_failed: "Transkription fehlgeschlagen: {{error}}",
+    export: "Chat-Export als...",
+    exporting: "Exportieren...",
+    preset_img_description:
+      "Erstelle ein Bild basierend auf einer Textanfrage.",
+    generating_response: "Antwort generieren",
+    response_failed: "Ich konnte die Nachricht nicht beantworten.",
+    response_failed_reason: "Grund: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "Account bearbeiten",

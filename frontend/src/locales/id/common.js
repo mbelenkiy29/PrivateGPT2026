@@ -1201,10 +1201,64 @@ const TRANSLATIONS = {
       "occurred": "Terjadi Pada"
     }
   },
-  "privacy": {
-    "title": "Privasi & Penanganan Data",
-    "description": "Ini adalah konfigurasi Anda tentang bagaimana penyedia pihak ketiga yang terhubung dan PrivateGPT menangani data Anda.",
-    "anonymous": "Telemetri Anonim Diaktifkan"
+  privacy: {
+    title: "Privasi & Penanganan Data",
+    description: "Ini adalah konfigurasi Anda tentang bagaimana penyedia pihak ketiga yang terhubung dan PrivateGPT menangani data Anda.",
+    anonymous: "Telemetri Anonim Diaktifkan",
+    summary: {
+      title: null,
+      description: null,
+    },
+    no_training: null,
+    no_training_local: null,
+    no_training_cloud: null,
+    destination: {
+      title: null,
+      this_server: null,
+      named_cloud: null,
+      mixed: null,
+      none: null,
+      unknown: null,
+      current: null,
+    },
+    citations: {
+      title: null,
+      headline: null,
+      description: null,
+    },
+    spend: {
+      title: null,
+      local: null,
+      cloud: null,
+      cost: null,
+      requests: null,
+      tokens: null,
+      period: null,
+    },
+    retention: {
+      title: null,
+      description: null,
+      days_one: null,
+      days_other: null,
+      forever: null,
+      save: null,
+      saved: null,
+      failed: null,
+      unavailable: null,
+    },
+    gdpr: {
+      title: null,
+      description: null,
+      select_user: null,
+      no_users: null,
+      export: null,
+      delete: null,
+      export_success: null,
+      export_failed: null,
+      delete_confirm: null,
+      delete_success: null,
+      delete_failed: null,
+    },
   },
   "connectors": {
     "search-placeholder": "Cari konektor data",
@@ -1509,10 +1563,20 @@ const TRANSLATIONS = {
         "cancel": "Batal"
       }
     },
-    "preset_img_description": "Hasilkan gambar berdasarkan teks yang diberikan.",
-    "generating_response": "Menghasilkan respons",
-    "response_failed": "Tidak dapat membalas pesan tersebut.",
-    "response_failed_reason": "Alasan: {{reason}}"
+    preset_img_description: "Hasilkan gambar berdasarkan teks yang diberikan.",
+    generating_response: "Menghasilkan respons",
+    response_failed: "Tidak dapat membalas pesan tersebut.",
+    response_failed_reason: "Alasan: {{reason}}",
+    why_this_answer: null,
+    why_this_answer_unavailable: null,
+    why_destination: null,
+    why_provider: null,
+    why_model: null,
+    why_local: null,
+    why_cloud: null,
+    why_citations: null,
+    why_no_citations: null,
+    why_no_training: null,
   },
   "profile_settings": {
     "edit_account": "Edit Akun",

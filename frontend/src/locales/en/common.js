@@ -116,6 +116,7 @@ const TRANSLATIONS = {
     channels: "Channels",
     "available-channels": {
       telegram: "Telegram",
+      teams: "Microsoft Teams",
     },
   },
   login: {
@@ -1260,6 +1261,60 @@ const TRANSLATIONS = {
       "pending-description":
         "Users waiting to be verified. Match the pairing code shown here with the one displayed in their Telegram chat.",
       unknown: "Unknown",
+    },
+  },
+  "teams-bot": {
+    title: "Microsoft Teams Bot",
+    description:
+      "Let teammates @mention PrivateAI in Microsoft Teams. Replies come from the bound workspace's knowledge, in-thread, with citations.",
+    "messaging-url": "Messaging endpoint",
+    "messaging-url-hint":
+      "Paste this into the Azure Bot resource as the messaging endpoint (Bot Framework webhook).",
+    "app-id": "Microsoft App ID",
+    "app-id-hint":
+      "Application (client) ID from the Azure Bot / App registration.",
+    "app-password": "App password / client secret",
+    "app-password-hint":
+      "Client secret from the Azure Bot registration. Stored encrypted.",
+    "tenant-id": "Directory (tenant) ID",
+    "tenant-id-hint":
+      "Optional. Leave blank to use the Bot Framework token endpoint.",
+    "tenant-id-placeholder": "Optional",
+    "default-workspace": "Default workspace",
+    "default-workspace-hint":
+      "Used until someone runs /switch in a Teams channel.",
+    enable: "Enable Teams bot",
+    disable: "Disable bot",
+    enabling: "Saving…",
+    copy: "Copy",
+    copied: "Copied",
+    status: "Enabled",
+    "no-workspaces": "No workspaces yet",
+    "toast-app-id-required": "Enter the Microsoft App ID.",
+    "toast-secret-required": "Enter the Azure Bot app password.",
+    "toast-saved":
+      "Teams bot enabled. Set the messaging endpoint on the Azure Bot.",
+    "toast-save-failed": "Could not enable the Teams bot.",
+    "toast-disabled": "Teams bot disabled.",
+    "toast-disable-failed": "Could not disable the Teams bot.",
+    setup: {
+      bot: {
+        title: "Register an Azure Bot",
+        "step-1":
+          "In Azure Portal create an Azure Bot (or Bot Channels Registration) and note the Microsoft App ID and secret.",
+        "step-2":
+          "Enable the Microsoft Teams channel on that bot. Sideload or publish the bot so teammates can @mention it.",
+        "step-3":
+          "Set the messaging endpoint to the URL below. Azure must be able to reach this instance over HTTPS.",
+        "step-4":
+          "Paste App ID and secret here, pick a default workspace, and enable. Teammates can /switch to another workspace.",
+      },
+      graph: {
+        title: "Graph is for file ingest, not this bot",
+        description:
+          "Indexing Teams channel files uses the Azure app under Cloud drives (Graph: Team.ReadBasic.All, Channel.ReadBasic.All, Files.Read.All). That consent is not required for @mentions. You may reuse the same app registration if you add the Bot channel and a client secret, but the chat webhook and Graph ingest stay separate.",
+        "open-cloud-drives": "Open Cloud drives",
+      },
     },
   },
   security: {

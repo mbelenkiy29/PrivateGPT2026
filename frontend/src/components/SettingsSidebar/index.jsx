@@ -393,6 +393,12 @@ const SidebarOptions = ({ user = null, t }) => (
               flex: true,
               hidden: !!user,
             },
+            {
+              btnText: t("settings.available-channels.teams"),
+              href: paths.settings.teamsBot(),
+              flex: true,
+              roles: ["admin"],
+            },
           ]}
         />
         <Option

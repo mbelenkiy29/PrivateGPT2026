@@ -47,6 +47,7 @@ const {
 } = require("./endpoints/utils/googleAgentSkillEndpoints");
 const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
+const { teamsChannelEndpoints } = require("./endpoints/channels/teams");
 require("./utils/knowledgeSources/register");
 const { httpLogger } = require("./middleware/httpLogger");
 const app = express();
@@ -108,6 +109,7 @@ outlookAgentEndpoints(apiRouter);
 googleAgentSkillEndpoints(apiRouter);
 memoryEndpoints(apiRouter);
 fileSourcesEndpoints(apiRouter);
+teamsChannelEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

@@ -143,7 +143,9 @@ const OneDriveSource = {
       return {
         success: false,
         error:
-          data.error_description || data.error || "OneDrive token exchange failed",
+          data.error_description ||
+          data.error ||
+          "OneDrive token exchange failed",
       };
 
     const me = await graph(data.access_token, "/me");
@@ -200,6 +202,48 @@ const OneDriveSource = {
     if (!res.ok) throw new Error(`Failed to download ${meta.name}`);
     const buffer = Buffer.from(await res.arrayBuffer());
     return { kind: "file", name: meta.name, buffer };
+  },
+
+  /**
+   * One page of Graph delta for a folder. `cursor` is a deltaLink or nextLink
+   * URL from a previous page, or null to start from the folder.
+   */
+  async delta(record, folderId = "root", cursor = null) {
+    const token = await refreshIfNeeded(record);
+    let data;
+    if (cursor && /^https?:\/\//i.test(cursor)) {
+      const res = await fetch(cursor, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          data?.error?.message ||
+          data?.error_description ||
+          `Graph ${res.status}`;
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
+      }
+    } else {
+      const path =
+        !folderId || folderId === "root"
+          ? "/me/drive/root/delta?$top=200"
+          : `/me/drive/items/${encodeURIComponent(folderId)}/delta?$top=200`;
+      data = await graph(token, path);
+    }
+
+    const items = (data.value || []).map((item) => {
+      if (item.deleted || item["@removed"]) {
+        return { id: item.id, name: item.name, deleted: true };
+      }
+      return mapItem(item);
+    });
+    return {
+      items,
+      nextLink: data["@odata.nextLink"] || null,
+      deltaLink: data["@odata.deltaLink"] || null,
+    };
   },
 };
 

@@ -31,8 +31,22 @@ const { DocumentSyncRun } = require("../models/documentSyncRun.js");
         Document.parseDocumentTypeAndSource(document);
 
       if (DocumentSyncQueue.extraFileTypes?.includes(type)) {
+        const nextSync = DocumentSyncQueue.calcNextSync(queue);
         log(
-          `Document ${document.filename} type ${type} has no fetch path here; skipping.`
+          `Document ${document.filename} type ${type} has no fetch path here; next check ${nextSync.toLocaleString()}.`
+        );
+        await DocumentSyncQueue._update(queue.id, {
+          lastSyncedAt: new Date().toISOString(),
+          nextSyncAt: nextSync.toISOString(),
+        });
+        await DocumentSyncQueue.saveRun(
+          queue.id,
+          DocumentSyncRun.statuses.exited,
+          {
+            filename: document.filename,
+            workspacesModified: [],
+            reason: "No fetch path for extra file type.",
+          }
         );
         continue;
       }

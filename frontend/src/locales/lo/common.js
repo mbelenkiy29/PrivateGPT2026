@@ -117,8 +117,14 @@ const TRANSLATIONS = {
     channels: "ຊ່ອງທາງການຕິດຕໍ່",
     "available-channels": {
       telegram: "Telegram",
+      slack: null,
     },
     "image-generation": "ການສ້າງຮູບພາບ",
+    "knowledge-sources": null,
+    slack: {
+      title: null,
+      description: null,
+    },
   },
   login: {
     "multi-user": {
@@ -1871,6 +1877,32 @@ const TRANSLATIONS = {
         "ນີ້ ສາມາດໃຊ້ເວລາເລັກໜ້ອຍ. ມັນຈະປະກາດຢູ່ທີ່ນີ້ເມື່ອມັນຖືກແກ້ໄຂແລ້ວ",
       aborted: "ການສ້າງຮູບພາບຖືກຢຸດແລ້ວ",
     },
+  },
+  "slack-bot": {
+    title: null,
+    description: null,
+    "events-url": null,
+    "events-url-hint": null,
+    "signing-secret": null,
+    "signing-secret-hint": null,
+    "default-workspace": null,
+    "default-workspace-hint": null,
+    enable: null,
+    disable: null,
+    enabling: null,
+    copy: null,
+    copied: null,
+    "connect-slack-first": null,
+    "open-knowledge-sources": null,
+    "reconnect-scopes": null,
+    "toast-secret-required": null,
+    "toast-saved": null,
+    "toast-save-failed": null,
+    "toast-disabled": null,
+    "toast-disable-failed": null,
+    status: null,
+    "slack-workspace": null,
+    "not-connected": null,
   },
 };
 

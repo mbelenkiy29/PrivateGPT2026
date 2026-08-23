@@ -60,6 +60,7 @@ const {
   parseCommand,
   resetProcessedEvents,
   telegramHtmlToMrkdwn,
+  publicBotConfig,
 } = require("../../../utils/channelChat/slack");
 
 const SIGNING_SECRET = "slack-signing-secret";
@@ -128,6 +129,7 @@ describe("Slack @PrivateAI bot", () => {
         signing_secret: encryptToken(SIGNING_SECRET),
         default_workspace: WORKSPACE.slug,
         bot_user_id: BOT_USER,
+        team_id: TEAM_ID,
       },
     });
     ExternalCommunicationConnector.upsert.mockResolvedValue({
@@ -243,6 +245,34 @@ describe("Slack @PrivateAI bot", () => {
       type: "chat",
       text: "what is the refund policy?",
     });
+    expect(parseCommand("help with the refund policy")).toEqual({
+      type: "chat",
+      text: "help with the refund policy",
+    });
+    expect(parseCommand("status of invoice 123")).toEqual({
+      type: "chat",
+      text: "status of invoice 123",
+    });
+    expect(parseCommand("/help")).toEqual({ type: "help", arg: "" });
+  });
+
+  it("sends natural-language help questions through RAG, not HELP_TEXT", async () => {
+    await processAppMention(
+      mentionPayload({
+        text: `<@${BOT_USER}> help with the refund policy`,
+      }).event,
+      { team_id: TEAM_ID }
+    );
+    expect(streamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "help with the refund policy",
+        includeCitations: true,
+      })
+    );
+    const posted = fetchMock.mock.calls.map(([, init]) =>
+      JSON.parse(init.body)
+    );
+    expect(posted.some((body) => /Commands:/.test(body.text))).toBe(false);
   });
 
   it("binds the Slack channel to a workspace on /switch", async () => {
@@ -322,5 +352,140 @@ describe("Slack @PrivateAI bot", () => {
     expect(
       telegramHtmlToMrkdwn('<b>Hello</b> <a href="https://x">doc</a>')
     ).toBe("*Hello* <https://x|doc>");
+  });
+
+  it("rejects Events payloads when rawBody is missing even if JSON.stringify is signed", async () => {
+    const payload = mentionPayload();
+    const reconstructed = JSON.stringify(payload);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const outcome = await acceptSlackEvent({
+      body: payload,
+      headers: {
+        "x-slack-request-timestamp": timestamp,
+        "x-slack-signature": signBody(reconstructed, timestamp),
+      },
+    });
+    expect(outcome.status).toBe(401);
+    expect(outcome.event).toBeUndefined();
+  });
+
+  it("rejects replayed Events with a stale timestamp", async () => {
+    const payload = mentionPayload();
+    const rawBody = JSON.stringify(payload);
+    const now = Date.now();
+    const timestamp = String(Math.floor(now / 1000) - 301);
+    expect(
+      verifySlackSignature({
+        signingSecret: SIGNING_SECRET,
+        timestamp,
+        signature: signBody(rawBody, timestamp),
+        rawBody,
+        now,
+      })
+    ).toBe(false);
+    const outcome = await acceptSlackEvent(
+      {
+        rawBody,
+        body: payload,
+        headers: {
+          "x-slack-request-timestamp": timestamp,
+          "x-slack-signature": signBody(rawBody, timestamp),
+        },
+      },
+      { now }
+    );
+    expect(outcome.status).toBe(401);
+  });
+
+  it("rejects Events payloads missing Slack signature headers", async () => {
+    const payload = mentionPayload();
+    const rawBody = JSON.stringify(payload);
+    const outcome = await acceptSlackEvent({
+      rawBody,
+      body: payload,
+      headers: {},
+    });
+    expect(outcome.status).toBe(401);
+  });
+
+  it("drops signed app_mention events from a different Slack team", async () => {
+    const payload = mentionPayload();
+    payload.team_id = "TOTHER";
+    const rawBody = JSON.stringify(payload);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const outcome = await acceptSlackEvent({
+      rawBody,
+      body: payload,
+      headers: {
+        "x-slack-request-timestamp": timestamp,
+        "x-slack-signature": signBody(rawBody, timestamp),
+      },
+    });
+    expect(outcome.status).toBe(200);
+    expect(outcome.body).toEqual({ ok: true, skipped: "team-mismatch" });
+    expect(outcome.event).toBeUndefined();
+
+    const processed = await processAppMention(payload.event, {
+      team_id: "TOTHER",
+    });
+    expect(processed).toEqual({ skipped: true, reason: "team-mismatch" });
+    expect(streamResponse).not.toHaveBeenCalled();
+  });
+
+  it("does not answer from an arbitrary workspace when none is bound", async () => {
+    ExternalCommunicationConnector.get.mockResolvedValue({
+      type: "slack",
+      active: true,
+      config: {
+        signing_secret: encryptToken(SIGNING_SECRET),
+        default_workspace: null,
+        bot_user_id: BOT_USER,
+        team_id: TEAM_ID,
+      },
+    });
+    Workspace.where.mockResolvedValue([
+      WORKSPACE,
+      { id: 8, name: "Other", slug: "other" },
+    ]);
+
+    const result = await processAppMention(mentionPayload().event, {
+      team_id: TEAM_ID,
+    });
+    expect(result).toMatchObject({ ok: true, command: "unbound" });
+    expect(streamResponse).not.toHaveBeenCalled();
+    const posted = fetchMock.mock.calls.map(([, init]) =>
+      JSON.parse(init.body)
+    );
+    expect(posted.some((body) => /\/switch/.test(body.text))).toBe(true);
+  });
+
+  it("skips duplicate Slack event_ids", async () => {
+    ChannelWorkspaceBinding.get.mockResolvedValue({
+      connector_type: "slack",
+      external_id: `${TEAM_ID}:${CHANNEL_ID}`,
+      workspaceId: WORKSPACE.id,
+    });
+    const payload = mentionPayload({ eventId: "EvDuplicate" });
+    await processSlackCallback(payload);
+    expect(streamResponse).toHaveBeenCalledTimes(1);
+    streamResponse.mockClear();
+    const again = await processSlackCallback(payload);
+    expect(again).toEqual({ skipped: true, reason: "duplicate" });
+    expect(streamResponse).not.toHaveBeenCalled();
+  });
+
+  it("does not leak Slack tokens or the signing secret in public bot config", async () => {
+    const config = await publicBotConfig({
+      protocol: "https",
+      headers: { host: "example.test" },
+    });
+    const serialized = JSON.stringify(config);
+    expect(serialized).not.toContain(BOT_TOKEN);
+    expect(serialized).not.toContain("xoxb-");
+    expect(serialized).not.toContain("access_token");
+    expect(serialized).not.toContain(SIGNING_SECRET);
+    expect(config.slackConnected).toBe(true);
+    expect(config.signingSecret).toMatch(/^\*+[a-z0-9]{4}$/i);
+    expect(config.signingSecret).not.toBe(SIGNING_SECRET);
   });
 });

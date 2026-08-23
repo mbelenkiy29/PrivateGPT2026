@@ -70,12 +70,9 @@ function alreadyProcessed(eventId, now = Date.now()) {
 function rawBodyFromRequest(request) {
   if (typeof request.rawBody === "string" && request.rawBody.length)
     return request.rawBody;
-  if (Buffer.isBuffer(request.rawBody)) return request.rawBody.toString("utf8");
-  try {
-    return JSON.stringify(request.body || {});
-  } catch {
-    return "";
-  }
+  if (Buffer.isBuffer(request.rawBody) && request.rawBody.length)
+    return request.rawBody.toString("utf8");
+  return null;
 }
 
 function verifySlackSignature({
@@ -197,7 +194,7 @@ function stripBotMention(text = "") {
 
 function parseCommand(text = "") {
   const trimmed = String(text).trim();
-  const match = trimmed.match(/^\/?(switch|status|help)(?:\s+([\s\S]+))?$/i);
+  const match = trimmed.match(/^\/(switch|status|help)(?:\s+([\s\S]+))?$/i);
   if (!match) return { type: "chat", text: trimmed };
   return {
     type: match[1].toLowerCase(),
@@ -217,6 +214,21 @@ async function getBotToken() {
   const connection = await getSlackConnection();
   const tokenConfig = await tokenConfigFromConnection(connection);
   return tokenConfig?.bot_token || tokenConfig?.access_token || null;
+}
+
+async function connectedTeamId(connector = null) {
+  const rec = connector || (await getConnector());
+  if (rec?.config?.team_id) return String(rec.config.team_id);
+  const connection = await getSlackConnection();
+  if (connection?.account_email) return String(connection.account_email);
+  const tokenConfig = await tokenConfigFromConnection(connection);
+  if (tokenConfig?.team_id) return String(tokenConfig.team_id);
+  return null;
+}
+
+function teamMatches(expectedTeamId, incomingTeamId) {
+  if (!expectedTeamId || !incomingTeamId) return false;
+  return String(expectedTeamId) === String(incomingTeamId);
 }
 
 async function resolveWorkspace({ teamId, channelId, defaultSlug } = {}) {
@@ -246,8 +258,6 @@ async function resolveWorkspace({ teamId, channelId, defaultSlug } = {}) {
     if (fallback) return { workspace: fallback, binding: null };
   }
 
-  const available = await Workspace.where({}, 1);
-  if (available.length) return { workspace: available[0], binding: null };
   return { workspace: null, binding: null };
 }
 
@@ -367,6 +377,10 @@ async function processAppMention(event = {}, envelope = {}) {
 
   const token = await getBotToken();
   if (!token) return { skipped: true, reason: "no-token" };
+
+  const expectedTeam = await connectedTeamId(connector);
+  if (!teamMatches(expectedTeam, teamId))
+    return { skipped: true, reason: "team-mismatch" };
 
   if (isBotEvent(event, connector.config?.bot_user_id))
     return { skipped: true, reason: "bot" };
@@ -491,6 +505,16 @@ async function acceptSlackEvent(request = {}, { now = Date.now() } = {}) {
     };
   }
 
+  if (body.type === "event_callback") {
+    const expectedTeam = await connectedTeamId(connector);
+    if (!teamMatches(expectedTeam, body.team_id)) {
+      return {
+        status: 200,
+        body: { ok: true, skipped: "team-mismatch" },
+      };
+    }
+  }
+
   return {
     status: 200,
     body: { ok: true },
@@ -566,11 +590,6 @@ async function saveBotConfig({ signingSecret, defaultWorkspace, active } = {}) {
     } else {
       next.default_workspace = null;
     }
-  }
-
-  if (!next.default_workspace) {
-    const available = await Workspace.where({}, 1);
-    if (available.length) next.default_workspace = available[0].slug;
   }
 
   const token = await getBotToken();

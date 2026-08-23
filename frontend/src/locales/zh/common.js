@@ -104,10 +104,16 @@ const TRANSLATIONS = {
     channels: "频道",
     "available-channels": {
       telegram: "电报",
+      slack: null,
     },
     "scheduled-jobs": "计划好的任务",
     "model-router": "型号路由器",
     "image-generation": "图像生成",
+    "knowledge-sources": null,
+    slack: {
+      title: null,
+      description: null,
+    },
   },
   login: {
     "multi-user": {
@@ -958,8 +964,7 @@ const TRANSLATIONS = {
   },
   privacy: {
     title: "隐私和数据处理",
-    description:
-      "这是你对如何处理连接的第三方提供商和PrivateGPT的数据的配置。",
+    description: "这是你对如何处理连接的第三方提供商和PrivateGPT的数据的配置。",
     anonymous: "启用匿名遥测",
   },
   connectors: {
@@ -1288,8 +1293,7 @@ const TRANSLATIONS = {
           "记忆应该用简洁明了的语句表达。例如：“用户更喜欢使用 Python 而不是 JavaScript”。",
         edit_description: "更新此存储内容的资料。",
         label: "记忆",
-        placeholder:
-          "例如，用户的姓名是 Joe，用户在 PrivateGPT 上工作，等等。",
+        placeholder: "例如，用户的姓名是 Joe，用户在 PrivateGPT 上工作，等等。",
         create: "创造",
         save: "保存",
         cancel: "取消",
@@ -1854,6 +1858,32 @@ const TRANSLATIONS = {
       description: "这可能需要一些时间。一旦准备好，它就会在这里显示出来。",
       aborted: "图像生成已终止。",
     },
+  },
+  "slack-bot": {
+    title: null,
+    description: null,
+    "events-url": null,
+    "events-url-hint": null,
+    "signing-secret": null,
+    "signing-secret-hint": null,
+    "default-workspace": null,
+    "default-workspace-hint": null,
+    enable: null,
+    disable: null,
+    enabling: null,
+    copy: null,
+    copied: null,
+    "connect-slack-first": null,
+    "open-knowledge-sources": null,
+    "reconnect-scopes": null,
+    "toast-secret-required": null,
+    "toast-saved": null,
+    "toast-save-failed": null,
+    "toast-disabled": null,
+    "toast-disable-failed": null,
+    status: null,
+    "slack-workspace": null,
+    "not-connected": null,
   },
 };
 

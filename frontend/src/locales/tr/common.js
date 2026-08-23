@@ -108,10 +108,16 @@ const TRANSLATIONS = {
     channels: "Kanalalar",
     "available-channels": {
       telegram: "Telegram",
+      slack: null,
     },
     "scheduled-jobs": "Planlanan İşler",
     "model-router": "Model Router",
     "image-generation": "Görsel Oluşturma",
+    "knowledge-sources": null,
+    slack: {
+      title: null,
+      description: null,
+    },
   },
   login: {
     "multi-user": {
@@ -1337,8 +1343,7 @@ const TRANSLATIONS = {
     },
     branding: {
       title: "Marka & Beyaz Etiketleme",
-      description:
-        "PrivateGPT örneğinizi özel markalamayla beyaz etiketleyin.",
+      description: "PrivateGPT örneğinizi özel markalamayla beyaz etiketleyin.",
     },
     chat: {
       title: "Sohbet",
@@ -1982,6 +1987,32 @@ const TRANSLATIONS = {
         "Bu işlem biraz zaman alabilir. Hazır olduğunda burada görüntülenecektir.",
       aborted: "Görüntü oluşturma işlemi başarısız oldu.",
     },
+  },
+  "slack-bot": {
+    title: null,
+    description: null,
+    "events-url": null,
+    "events-url-hint": null,
+    "signing-secret": null,
+    "signing-secret-hint": null,
+    "default-workspace": null,
+    "default-workspace-hint": null,
+    enable: null,
+    disable: null,
+    enabling: null,
+    copy: null,
+    copied: null,
+    "connect-slack-first": null,
+    "open-knowledge-sources": null,
+    "reconnect-scopes": null,
+    "toast-secret-required": null,
+    "toast-saved": null,
+    "toast-save-failed": null,
+    "toast-disabled": null,
+    "toast-disable-failed": null,
+    status: null,
+    "slack-workspace": null,
+    "not-connected": null,
   },
 };
 

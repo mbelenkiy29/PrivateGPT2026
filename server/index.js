@@ -71,9 +71,12 @@ app.use(
   bodyParser.json({
     limit: FILE_LIMIT,
     verify: (req, _res, buf) => {
-      const url = req.originalUrl || req.url || "";
+      const path = String(req.originalUrl || req.url || "").split("?")[0];
       // Slack signing-secret checks need the exact raw body bytes.
-      if (url.includes("/channels/slack/events")) {
+      if (
+        path === "/api/channels/slack/events" ||
+        path === "/channels/slack/events"
+      ) {
         req.rawBody = buf.toString("utf8");
       }
     },

@@ -118,8 +118,14 @@ const TRANSLATIONS = {
     channels: "Saluran",
     "available-channels": {
       telegram: "Telegram",
+      slack: null,
     },
     "image-generation": "Pembuatan Gambar",
+    "knowledge-sources": null,
+    slack: {
+      title: null,
+      description: null,
+    },
   },
   login: {
     "multi-user": {
@@ -1968,6 +1974,32 @@ const TRANSLATIONS = {
         "Ini mungkin membutuhkan waktu beberapa saat. Informasi ini akan muncul di sini segera setelah tersedia.",
       aborted: "Pembuatan gambar telah dihentikan.",
     },
+  },
+  "slack-bot": {
+    title: null,
+    description: null,
+    "events-url": null,
+    "events-url-hint": null,
+    "signing-secret": null,
+    "signing-secret-hint": null,
+    "default-workspace": null,
+    "default-workspace-hint": null,
+    enable: null,
+    disable: null,
+    enabling: null,
+    copy: null,
+    copied: null,
+    "connect-slack-first": null,
+    "open-knowledge-sources": null,
+    "reconnect-scopes": null,
+    "toast-secret-required": null,
+    "toast-saved": null,
+    "toast-save-failed": null,
+    "toast-disabled": null,
+    "toast-disable-failed": null,
+    status: null,
+    "slack-workspace": null,
+    "not-connected": null,
   },
 };
 

@@ -5,6 +5,11 @@ const { generateImage } = require("./commands/img");
 const { convertToPromptHistory } = require("../helpers/chat/responses");
 const { SlashCommandPresets } = require("../../models/slashCommandsPresets");
 const { SystemPromptVariables } = require("../../models/systemPromptVariables");
+const {
+  decorateChatResponse,
+  buildProvenance,
+  isLocalProvider,
+} = require("../helpers/chat/provenance");
 
 const VALID_COMMANDS = {
   "/reset": resetMemory,
@@ -133,4 +138,7 @@ module.exports = {
   grepCommand,
   grepAllSlashCommands,
   VALID_COMMANDS,
+  decorateChatResponse,
+  buildProvenance,
+  isLocalProvider,
 };

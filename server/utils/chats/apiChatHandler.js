@@ -3,6 +3,8 @@ const { DocumentManager } = require("../DocumentManager");
 const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
+const { decorateChatResponse } = require("../helpers/chat/provenance");
+const { UsageEvent } = require("../../models/usageEvent");
 const { writeResponseChunk } = require("../helpers/chat/responses");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
 const {
@@ -199,15 +201,26 @@ async function chatSync({
         await WorkspaceChats.new({
           workspaceId: workspace.id,
           prompt: String(message),
-          response: {
-            text: textResponse,
-            sources: citations,
-            attachments,
-            type: chatMode,
-            thoughts,
-            outputs: allOutputs,
-            metrics,
-          },
+          response: await decorateChatResponse(
+            {
+              text: textResponse,
+              sources: citations,
+              attachments,
+              type: chatMode,
+              thoughts,
+              outputs: allOutputs,
+              metrics,
+            },
+            {
+              provider: agentHandler.provider,
+              model: agentHandler.model,
+              routingMetadata: agentHandler.routingMetadata,
+              workspace,
+              source: UsageEvent.sources.agent,
+              workspaceId: workspace.id,
+              userId: user?.id,
+            }
+          ),
           include: true,
           threadId: thread?.id || null,
           apiSessionId: sessionId,
@@ -448,13 +461,23 @@ async function chatSync({
   const { chat } = await WorkspaceChats.new({
     workspaceId: workspace.id,
     prompt: message,
-    response: {
-      text: textResponse,
-      sources,
-      attachments,
-      type: chatMode,
-      metrics: performanceMetrics,
-    },
+    response: await decorateChatResponse(
+      {
+        text: textResponse,
+        sources,
+        attachments,
+        type: chatMode,
+        metrics: performanceMetrics,
+      },
+      {
+        routingMetadata,
+        workspace,
+        connector: LLMConnector,
+        source: UsageEvent.sources.chat,
+        workspaceId: workspace.id,
+        userId: user?.id,
+      }
+    ),
     threadId: thread?.id || null,
     apiSessionId: sessionId,
     user,
@@ -573,15 +596,26 @@ async function streamChat({
         await WorkspaceChats.new({
           workspaceId: workspace.id,
           prompt: String(message),
-          response: {
-            text: textResponse,
-            sources: citations,
-            attachments: attachments,
-            type: chatMode,
-            thoughts,
-            outputs: allOutputs,
-            metrics,
-          },
+          response: await decorateChatResponse(
+            {
+              text: textResponse,
+              sources: citations,
+              attachments: attachments,
+              type: chatMode,
+              thoughts,
+              outputs: allOutputs,
+              metrics,
+            },
+            {
+              provider: agentHandler.provider,
+              model: agentHandler.model,
+              routingMetadata: agentHandler.routingMetadata,
+              workspace,
+              source: UsageEvent.sources.agent,
+              workspaceId: workspace.id,
+              userId: user?.id,
+            }
+          ),
           include: true,
           threadId: thread?.id || null,
           apiSessionId: sessionId,
@@ -853,13 +887,23 @@ async function streamChat({
     const { chat } = await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: message,
-      response: {
-        text: completeText,
-        sources,
-        type: chatMode,
-        metrics,
-        attachments,
-      },
+      response: await decorateChatResponse(
+        {
+          text: completeText,
+          sources,
+          type: chatMode,
+          metrics,
+          attachments,
+        },
+        {
+          routingMetadata,
+          workspace,
+          connector: LLMConnector,
+          source: UsageEvent.sources.chat,
+          workspaceId: workspace.id,
+          userId: user?.id,
+        }
+      ),
       threadId: thread?.id || null,
       apiSessionId: sessionId,
       user,

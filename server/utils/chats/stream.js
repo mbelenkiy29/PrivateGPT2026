@@ -4,6 +4,8 @@ const { WorkspaceChats } = require("../../models/workspaceChats");
 const { WorkspaceParsedFiles } = require("../../models/workspaceParsedFiles");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
+const { decorateChatResponse } = require("../helpers/chat/provenance");
+const { UsageEvent } = require("../../models/usageEvent");
 const { writeResponseChunk } = require("../helpers/chat/responses");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
 const { grepAgents } = require("./agents");
@@ -328,13 +330,23 @@ async function streamChatWithWorkspace(
     const { chat } = await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: message,
-      response: {
-        text: completeText,
-        sources,
-        type: chatMode,
-        attachments,
-        metrics,
-      },
+      response: await decorateChatResponse(
+        {
+          text: completeText,
+          sources,
+          type: chatMode,
+          attachments,
+          metrics,
+        },
+        {
+          routingMetadata,
+          workspace,
+          connector: LLMConnector,
+          source: UsageEvent.sources.chat,
+          workspaceId: workspace.id,
+          userId: user?.id,
+        }
+      ),
       threadId: thread?.id || null,
       user,
     });

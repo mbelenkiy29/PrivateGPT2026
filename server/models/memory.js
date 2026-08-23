@@ -456,6 +456,31 @@ const Memory = {
       return null;
     }
   },
+
+  where: async function (clause = {}, limit = null, orderBy = null) {
+    try {
+      return await prisma.memories.findMany({
+        where: clause,
+        ...(limit !== null ? { take: limit } : {}),
+        ...(orderBy !== null ? { orderBy } : {}),
+      });
+    } catch (error) {
+      console.error(error.message);
+      return [];
+    }
+  },
+
+  deleteMany: async function (clause = {}) {
+    try {
+      if (!clause || !Object.keys(clause).length)
+        throw new Error("Clause cannot be empty");
+      await prisma.memories.deleteMany({ where: clause });
+      return true;
+    } catch (error) {
+      console.error(error.message);
+      return false;
+    }
+  },
 };
 
 module.exports = { Memory };

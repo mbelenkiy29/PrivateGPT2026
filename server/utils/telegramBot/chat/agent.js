@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require("uuid");
 const { EphemeralAgentHandler } = require("../../agents/ephemeral");
 const { WorkspaceChats } = require("../../../models/workspaceChats");
+const { UsageEvent } = require("../../../models/usageEvent");
+const { decorateChatResponse } = require("../../helpers/chat/provenance");
 const { safeJsonParse } = require("../../http");
 const {
   editMessage,
@@ -294,14 +296,24 @@ async function handleAgentResponse(
       await WorkspaceChats.new({
         workspaceId: workspace.id,
         prompt: message,
-        response: {
-          text: responseText,
-          sources,
-          type: "chat",
-          metrics,
-          attachments,
-          ...(outputs.length > 0 ? { outputs } : {}),
-        },
+        response: await decorateChatResponse(
+          {
+            text: responseText,
+            sources,
+            type: "chat",
+            metrics,
+            attachments,
+            ...(outputs.length > 0 ? { outputs } : {}),
+          },
+          {
+            provider: agentHandler?.provider,
+            model: agentHandler?.model,
+            routingMetadata: agentHandler?.routingMetadata,
+            workspace,
+            source: UsageEvent.sources.agent,
+            workspaceId: workspace.id,
+          }
+        ),
         threadId: thread?.id || null,
       });
 

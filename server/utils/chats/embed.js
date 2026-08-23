@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require("uuid");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
+const { decorateChatResponse } = require("../helpers/chat/provenance");
+const { UsageEvent } = require("../../models/usageEvent");
 const { chatPrompt, sourceIdentifier } = require("./index");
 const { EmbedChats } = require("../../models/embedChats");
 const {
@@ -228,7 +230,16 @@ async function streamChatWithForEmbed(
   await EmbedChats.new({
     embedId: embed.id,
     prompt: message,
-    response: { text: completeText, type: chatMode, sources, metrics },
+    response: await decorateChatResponse(
+      { text: completeText, type: chatMode, sources, metrics },
+      {
+        routingMetadata,
+        workspace: embed.workspace,
+        connector: LLMConnector,
+        source: UsageEvent.sources.embed,
+        workspaceId: embed.workspace?.id,
+      }
+    ),
     connection_information: response.locals.connection
       ? {
           ...response.locals.connection,

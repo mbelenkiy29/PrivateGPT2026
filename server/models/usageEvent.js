@@ -59,21 +59,27 @@ const UsageEvent = {
       if (workspaceId != null) where.workspaceId = Number(workspaceId);
       if (since) where.createdAt = { gte: new Date(since) };
 
-      const summary = await prisma.usage_events.aggregate({
-        where,
-        _sum: {
-          prompt_tokens: true,
-          completion_tokens: true,
-          cost_usd: true,
-        },
-        _count: { _all: true },
-      });
+      const [summary, local, cloud] = await Promise.all([
+        prisma.usage_events.aggregate({
+          where,
+          _sum: {
+            prompt_tokens: true,
+            completion_tokens: true,
+            cost_usd: true,
+          },
+          _count: { _all: true },
+        }),
+        prisma.usage_events.count({ where: { ...where, local: true } }),
+        prisma.usage_events.count({ where: { ...where, local: false } }),
+      ]);
 
       return {
         prompt_tokens: summary._sum.prompt_tokens || 0,
         completion_tokens: summary._sum.completion_tokens || 0,
         cost_usd: summary._sum.cost_usd || 0,
         count: summary._count._all || 0,
+        local,
+        cloud,
       };
     } catch (e) {
       console.error(e);
@@ -82,6 +88,8 @@ const UsageEvent = {
         completion_tokens: 0,
         cost_usd: 0,
         count: 0,
+        local: 0,
+        cloud: 0,
       };
     }
   },

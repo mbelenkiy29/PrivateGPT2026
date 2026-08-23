@@ -1,6 +1,8 @@
 const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
+const { decorateChatResponse } = require("../helpers/chat/provenance");
+const { UsageEvent } = require("../../models/usageEvent");
 const { DocumentManager } = require("../DocumentManager");
 const {
   sourceIdentifier,
@@ -168,6 +170,8 @@ async function streamResponse({
       voiceResponse,
       ctx,
       chatId,
+      routingMetadata,
+      connector: LLMConnector,
     });
   } catch (error) {
     console.error("Error streaming response:", error);
@@ -323,6 +327,8 @@ async function persistAndDeliver({
   voiceResponse,
   ctx,
   chatId,
+  routingMetadata = null,
+  connector = null,
 }) {
   if (!completeText?.length) {
     await ctx.bot.sendMessage(chatId, "No response generated.");
@@ -332,13 +338,22 @@ async function persistAndDeliver({
   await WorkspaceChats.new({
     workspaceId: workspace.id,
     prompt: message,
-    response: {
-      text: completeText,
-      sources,
-      type: chatMode,
-      metrics,
-      attachments,
-    },
+    response: await decorateChatResponse(
+      {
+        text: completeText,
+        sources,
+        type: chatMode,
+        metrics,
+        attachments,
+      },
+      {
+        routingMetadata,
+        workspace,
+        connector,
+        source: UsageEvent.sources.channel,
+        workspaceId: workspace.id,
+      }
+    ),
     threadId: thread?.id || null,
   });
 

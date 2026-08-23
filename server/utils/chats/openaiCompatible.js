@@ -3,6 +3,8 @@ const { DocumentManager } = require("../DocumentManager");
 const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
+const { decorateChatResponse } = require("../helpers/chat/provenance");
+const { UsageEvent } = require("../../models/usageEvent");
 const { writeResponseChunk } = require("../helpers/chat/responses");
 const { chatPrompt, sourceIdentifier } = require("./index");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
@@ -202,13 +204,22 @@ async function chatSync({
   const { chat } = await WorkspaceChats.new({
     workspaceId: workspace.id,
     prompt: String(prompt),
-    response: {
-      text: textResponse,
-      sources,
-      type: chatMode,
-      metrics,
-      attachments,
-    },
+    response: await decorateChatResponse(
+      {
+        text: textResponse,
+        sources,
+        type: chatMode,
+        metrics,
+        attachments,
+      },
+      {
+        routingMetadata,
+        workspace,
+        connector: LLMConnector,
+        source: UsageEvent.sources.chat,
+        workspaceId: workspace.id,
+      }
+    ),
   });
 
   return formatJSON(
@@ -469,13 +480,22 @@ async function streamChat({
     const { chat } = await WorkspaceChats.new({
       workspaceId: workspace.id,
       prompt: String(prompt),
-      response: {
-        text: completeText,
-        sources,
-        type: chatMode,
-        metrics,
-        attachments,
-      },
+      response: await decorateChatResponse(
+        {
+          text: completeText,
+          sources,
+          type: chatMode,
+          metrics,
+          attachments,
+        },
+        {
+          routingMetadata,
+          workspace,
+          connector: LLMConnector,
+          source: UsageEvent.sources.chat,
+          workspaceId: workspace.id,
+        }
+      ),
     });
 
     writeResponseChunk(

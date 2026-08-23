@@ -1,5 +1,7 @@
 const { WorkspaceChats } = require("../../../../models/workspaceChats");
 const { WorkspaceThread } = require("../../../../models/workspaceThread");
+const { UsageEvent } = require("../../../../models/usageEvent");
+const { decorateChatResponse } = require("../../../helpers/chat/provenance");
 
 /**
  * Plugin to save chat history to AnythingLLM DB.
@@ -107,15 +109,28 @@ const chatHistory = {
         await WorkspaceChats.upsert(aibitat.trackedChatId, {
           workspaceId: Number(invocation.workspace_id),
           prompt,
-          response: {
-            text: response,
-            sources: citations,
-            type: "chat",
-            attachments,
-            metrics,
-            ...(outputs.length > 0 ? { outputs } : {}),
-            ...(clarifyingQuestions.length > 0 ? { clarifyingQuestions } : {}),
-          },
+          response: await decorateChatResponse(
+            {
+              text: response,
+              sources: citations,
+              type: "chat",
+              attachments,
+              metrics,
+              ...(outputs.length > 0 ? { outputs } : {}),
+              ...(clarifyingQuestions.length > 0
+                ? { clarifyingQuestions }
+                : {}),
+            },
+            {
+              routingMetadata: aibitat.handlerProps?.routingMetadata,
+              workspace: invocation?.workspace,
+              provider: aibitat.provider,
+              model: aibitat.model,
+              source: UsageEvent.sources.agent,
+              workspaceId: invocation.workspace_id,
+              userId: invocation?.user_id,
+            }
+          ),
           user: { id: invocation?.user_id || null },
           threadId: invocation?.thread_id || null,
           include: true,
@@ -143,19 +158,32 @@ const chatHistory = {
         await WorkspaceChats.upsert(aibitat.trackedChatId, {
           workspaceId: Number(invocation.workspace_id),
           prompt,
-          response: {
-            sources: [...existingSources, ...citations],
-            // when we have a _storeSpecial called the options param can include a storedResponse() function
-            // that will override the text property to store extra information in, depending on the special type of chat.
-            text: options.hasOwnProperty("storedResponse")
-              ? options.storedResponse(response)
-              : response,
-            type: options?.saveAsType ?? "chat",
-            attachments,
-            metrics,
-            ...(outputs.length > 0 ? { outputs } : {}),
-            ...(clarifyingQuestions.length > 0 ? { clarifyingQuestions } : {}),
-          },
+          response: await decorateChatResponse(
+            {
+              sources: [...existingSources, ...citations],
+              // when we have a _storeSpecial called the options param can include a storedResponse() function
+              // that will override the text property to store extra information in, depending on the special type of chat.
+              text: options.hasOwnProperty("storedResponse")
+                ? options.storedResponse(response)
+                : response,
+              type: options?.saveAsType ?? "chat",
+              attachments,
+              metrics,
+              ...(outputs.length > 0 ? { outputs } : {}),
+              ...(clarifyingQuestions.length > 0
+                ? { clarifyingQuestions }
+                : {}),
+            },
+            {
+              routingMetadata: aibitat.handlerProps?.routingMetadata,
+              workspace: invocation?.workspace,
+              provider: aibitat.provider,
+              model: aibitat.model,
+              source: UsageEvent.sources.agent,
+              workspaceId: invocation.workspace_id,
+              userId: invocation?.user_id,
+            }
+          ),
           user: { id: invocation?.user_id || null },
           threadId: invocation?.thread_id || null,
           include: true,

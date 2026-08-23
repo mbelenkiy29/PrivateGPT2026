@@ -105,8 +105,25 @@ const SystemSettings = {
     "memory_enabled",
     "memory_auto_extraction",
     "file_source_oauth_config",
+
+    // Trust / retention
+    "chat_retention_days",
   ],
   validations: {
+    chat_retention_days: (update) => {
+      try {
+        if (isNullOrNaN(update)) throw new Error("Value is not a number.");
+        const days = Number(update);
+        if (days < 0) throw new Error("Value cannot be less than 0.");
+        return Math.floor(days);
+      } catch (e) {
+        console.error(
+          `Failed to run validation function on chat_retention_days`,
+          e.message
+        );
+        return 90;
+      }
+    },
     footer_data: (updates) => {
       try {
         const array = JSON.parse(updates)
@@ -770,6 +787,28 @@ const SystemSettings = {
     } catch (error) {
       console.error(error.message);
       return false;
+    }
+  },
+
+  DEFAULT_CHAT_RETENTION_DAYS: 90,
+
+  /**
+   * Chat history retention in days. Default 90. 0 = keep forever.
+   * @returns {Promise<number>}
+   */
+  chatRetentionDays: async function () {
+    try {
+      const raw = await this.getValueOrFallback(
+        { label: "chat_retention_days" },
+        this.DEFAULT_CHAT_RETENTION_DAYS
+      );
+      const days = Number(raw);
+      if (!Number.isFinite(days) || days < 0)
+        return this.DEFAULT_CHAT_RETENTION_DAYS;
+      return Math.floor(days);
+    } catch (error) {
+      console.error(error.message);
+      return this.DEFAULT_CHAT_RETENTION_DAYS;
     }
   },
 

@@ -29,6 +29,17 @@ jest.mock("../../../models/workspaceChats", () => ({
     markThreadHistoryInvalidV2: jest.fn(),
   },
 }));
+jest.mock("../../../models/usageEvent", () => ({
+  UsageEvent: {
+    sources: {
+      chat: "chat",
+      embed: "embed",
+      agent: "agent",
+      channel: "channel",
+    },
+    create: jest.fn().mockResolvedValue(null),
+  },
+}));
 jest.mock("../../../models/telemetry", () => ({
   Telemetry: {
     sendTelemetry: jest.fn(),

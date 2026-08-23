@@ -6,6 +6,17 @@ const { extractTextContent, extractAttachments } = require('../../../endpoints/a
 
 // Mock dependencies
 jest.mock('../../../models/workspaceChats');
+jest.mock('../../../models/usageEvent', () => ({
+  UsageEvent: {
+    sources: {
+      chat: 'chat',
+      embed: 'embed',
+      agent: 'agent',
+      channel: 'channel',
+    },
+    create: jest.fn().mockResolvedValue(null),
+  },
+}));
 jest.mock('../../../utils/helpers');
 jest.mock('../../../utils/DocumentManager', () => ({
   DocumentManager: class {

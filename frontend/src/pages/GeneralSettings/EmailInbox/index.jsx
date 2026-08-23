@@ -168,15 +168,8 @@ export default function EmailInboxSettings() {
                     value={imap.password}
                     onChange={(e) => updateImap("password", e.target.value)}
                     autoComplete="off"
+                    hint="Connections always use TLS (typically port 993). Plaintext LOGIN is not allowed."
                   />
-                  <label className="flex items-center gap-2 text-xs text-theme-text-secondary">
-                    <input
-                      type="checkbox"
-                      checked={imap.tls}
-                      onChange={(e) => updateImap("tls", e.target.checked)}
-                    />
-                    Use TLS
-                  </label>
                   <label className="flex items-center gap-2 text-xs text-theme-text-secondary">
                     <input
                       type="checkbox"

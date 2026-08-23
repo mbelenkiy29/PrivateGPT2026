@@ -116,6 +116,12 @@ function emailInboxEndpoints(app) {
             error: "IMAP host, username, and password are required.",
           });
         }
+        if (body.tls === false) {
+          return response.status(400).json({
+            success: false,
+            error: "IMAP requires TLS. Plaintext LOGIN is not allowed.",
+          });
+        }
         const workspace = await Workspace.get({ id: workspaceId });
         if (!workspace) {
           return response
@@ -135,7 +141,7 @@ function emailInboxEndpoints(app) {
             port: Number(body.port || 993),
             user,
             password,
-            tls: body.tls !== false,
+            tls: true,
             includeSent: !!body.includeSent,
           },
         });

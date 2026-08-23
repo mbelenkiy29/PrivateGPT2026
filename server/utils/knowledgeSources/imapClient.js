@@ -1,4 +1,3 @@
-const net = require("net");
 const tls = require("tls");
 const { isSkippedMailbox } = require("./mail");
 
@@ -194,6 +193,13 @@ class ImapSession {
     this.tag = 0;
   }
 
+  #assertTls() {
+    if (this.useTls) return;
+    throw new Error(
+      "IMAP LOGIN over plaintext is not allowed. Enable TLS (port 993)."
+    );
+  }
+
   #nextTag() {
     this.tag += 1;
     return `A${this.tag}`;
@@ -203,15 +209,14 @@ class ImapSession {
     if (!this.host) throw new Error("IMAP host is required.");
     if (!this.user || !this.password)
       throw new Error("IMAP username and password are required.");
+    this.#assertTls();
 
     await new Promise((resolve, reject) => {
       const onError = (err) => reject(err);
       const connectOpts = { host: this.host, port: this.port };
-      this.socket = this.useTls
-        ? tls.connect({ ...connectOpts, servername: this.host }, () =>
-            resolve()
-          )
-        : net.connect(connectOpts, () => resolve());
+      this.socket = tls.connect({ ...connectOpts, servername: this.host }, () =>
+        resolve()
+      );
       this.socket.setTimeout(this.timeoutMs);
       this.socket.once("error", onError);
       this.socket.once("timeout", () =>

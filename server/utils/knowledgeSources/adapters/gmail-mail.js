@@ -46,6 +46,10 @@ function collectGmailParts(
   return acc;
 }
 
+function labelsAreSpamOrTrash(labelIds = []) {
+  return labelIds.includes("SPAM") || labelIds.includes("TRASH");
+}
+
 function parseGmailMessage(msg = {}) {
   const headers = headerMap(msg.payload);
   const parts = collectGmailParts(msg.payload || {});
@@ -64,8 +68,23 @@ function parseGmailMessage(msg = {}) {
     body: parts.text || parts.html || msg.snippet || "",
     attachments: parts.attachments,
     labels,
-    spamOrTrash: labels.includes("SPAM") || labels.includes("TRASH"),
+    spamOrTrash: labelsAreSpamOrTrash(labels),
   };
+}
+
+async function keepNonSpamIds(gmailGet, ids, limit) {
+  const kept = [];
+  for (const id of ids) {
+    if (kept.length >= limit) break;
+    try {
+      const msg = await gmailGet(`/messages/${id}?format=minimal`);
+      if (!msg?.id || labelsAreSpamOrTrash(msg.labelIds || [])) continue;
+      kept.push(msg.id);
+    } catch {
+      // deleted, trash, or otherwise unreadable
+    }
+  }
+  return kept;
 }
 
 function gmailApiClient(config) {
@@ -110,6 +129,7 @@ function gmailApiClient(config) {
             }
           }
           ids = [...new Set(ids)];
+          ids = await keepNonSpamIds(gmailGet, ids, limit);
         } catch (e) {
           if (e.status !== 404 && e.status !== 410) throw e;
           ids = [];
@@ -252,15 +272,13 @@ function createGmailMailAdapter({ config = {}, client } = {}) {
         const api = client || cfg.client || (await resolveGmailClient(cfg));
         if (api.get) {
           const fetched = await api.get(item);
-          if (fetched) full = fetched;
+          if (!fetched || fetched.spamOrTrash) {
+            throw new Error("Gmail message is spam, trash, or unavailable.");
+          }
+          full = fetched;
         }
       }
-      if (full?.spamOrTrash)
-        return mailDownloadPayload({
-          ...full,
-          body: "",
-          subject: full.subject || "(skipped)",
-        });
+      if (full?.spamOrTrash) throw new Error("Gmail message is spam or trash.");
       return mailDownloadPayload(full);
     },
     async delta(cursor, extra = {}) {
@@ -285,5 +303,7 @@ registerWatchType("gmail-mail");
 
 module.exports = adapter;
 module.exports.createGmailMailAdapter = createGmailMailAdapter;
+module.exports.gmailApiClient = gmailApiClient;
 module.exports.parseGmailMessage = parseGmailMessage;
+module.exports.labelsAreSpamOrTrash = labelsAreSpamOrTrash;
 module.exports.PROVIDER = "gmail-mail";

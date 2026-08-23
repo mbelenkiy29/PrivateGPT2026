@@ -6,10 +6,12 @@ const {
 const { createImapAdapter } = require("../../../utils/knowledgeSources/adapters/imap");
 const {
   createGmailMailAdapter,
+  gmailApiClient,
 } = require("../../../utils/knowledgeSources/adapters/gmail-mail");
 const {
   createOutlookMailAdapter,
 } = require("../../../utils/knowledgeSources/adapters/outlook-mail");
+const { ImapSession } = require("../../../utils/knowledgeSources/imapClient");
 const {
   isSkippedMailbox,
   mailDownloadPayload,
@@ -116,6 +118,63 @@ describe("email inbox knowledge source adapters", () => {
     expect(delta.cursor).toBe("history-99");
   });
 
+  it("Gmail REST history omits SPAM/TRASH instead of indexing stubs", async () => {
+    const prevFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => {
+      const u = String(url);
+      const json = (data) => ({ ok: true, json: async () => data });
+      if (u.includes("/history?")) {
+        return json({
+          historyId: "h2",
+          history: [
+            {
+              messagesAdded: [
+                { message: { id: "spam1" } },
+                { message: { id: "ok1" } },
+              ],
+            },
+          ],
+        });
+      }
+      if (u.includes("/messages/spam1"))
+        return json({ id: "spam1", labelIds: ["SPAM", "INBOX"] });
+      if (u.includes("/messages/ok1") && u.includes("format=minimal"))
+        return json({ id: "ok1", labelIds: ["INBOX"] });
+      if (u.includes("/messages/ok1"))
+        return json({
+          id: "ok1",
+          labelIds: ["INBOX"],
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "a@b.c" },
+              { name: "To", value: "c@d.e" },
+              { name: "Subject", value: "Hello" },
+              { name: "Date", value: "today" },
+            ],
+            body: { data: Buffer.from("hello").toString("base64url") },
+          },
+        });
+      throw new Error(`unexpected ${u}`);
+    });
+
+    try {
+      const api = gmailApiClient({ accessToken: "tok" });
+      const listed = await api.list({ cursor: "h1", limit: 200 });
+      expect(listed.items.map((item) => item.id)).toEqual(["ok1"]);
+      expect(listed.cursor).toBe("h2");
+
+      const adapter = createGmailMailAdapter({ client: api });
+      await expect(adapter.download({ id: "spam1" })).rejects.toThrow(
+        /spam, trash, or unavailable/
+      );
+      const downloaded = await adapter.download({ id: "ok1" });
+      expect(downloaded.subject).toBe("Hello");
+    } finally {
+      global.fetch = prevFetch;
+    }
+  });
+
   it("Outlook mock lists two messages and stores a deltaLink cursor", async () => {
     const deltaLink =
       "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta?$deltatoken=abc";
@@ -153,6 +212,93 @@ describe("email inbox knowledge source adapters", () => {
     expect(downloaded.body).toContain("14 days");
     expect(adapter.toChunkSource(listed.items[1])).toBe("outlook-mail://12");
     expect(adapter.watchHint().staleAfterMs).toBe(3600000);
+  });
+
+  it("Outlook keeps unconsumed Graph page items in the cursor", async () => {
+    const graphMessage = (id, subject) => ({
+      id,
+      subject,
+      from: { emailAddress: { address: "a@b.c" } },
+      toRecipients: [{ emailAddress: { address: "c@d.e" } }],
+      receivedDateTime: "2024-01-01T00:00:00Z",
+      body: { content: subject, contentType: "text" },
+    });
+    const inbox = Array.from({ length: 199 }, (_, i) =>
+      graphMessage(`in-${i}`, `inbox ${i}`)
+    );
+    const sent = [
+      graphMessage("s1", "sent 1"),
+      graphMessage("s2", "sent 2"),
+      graphMessage("s3", "sent 3"),
+    ];
+    const urls = [];
+    const adapter = createOutlookMailAdapter({
+      config: { includeSent: true },
+      client: {
+        async request(url) {
+          const u = String(url);
+          urls.push(u);
+          if (u.includes("sentitems")) {
+            if (u.includes("deltatoken=sent")) {
+              return {
+                success: true,
+                data: { value: [], "@odata.deltaLink": u },
+              };
+            }
+            return {
+              success: true,
+              data: {
+                value: sent,
+                "@odata.deltaLink":
+                  "https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages/delta?$deltatoken=sent",
+              },
+            };
+          }
+          if (u.includes("deltatoken=inbox")) {
+            return {
+              success: true,
+              data: { value: [], "@odata.deltaLink": u },
+            };
+          }
+          return {
+            success: true,
+            data: {
+              value: inbox,
+              "@odata.deltaLink":
+                "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta?$deltatoken=inbox",
+            },
+          };
+        },
+      },
+    });
+
+    const first = await adapter.list({ config: { includeSent: true } });
+    expect(first.items).toHaveLength(200);
+    expect(first.items.some((item) => item.id === "s1")).toBe(true);
+    expect(first.items.some((item) => item.id === "s2")).toBe(false);
+    const sentCursor = JSON.parse(first.cursor).sentitems;
+    expect(sentCursor.pending).toEqual(["s2", "s3"]);
+    expect(urls.some((u) => u.includes("sentitems") && u.includes("$top=1"))).toBe(
+      true
+    );
+
+    const second = await adapter.list({
+      cursor: first.cursor,
+      config: { includeSent: true },
+    });
+    expect(second.items.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["s2", "s3"])
+    );
+  });
+
+  it("refuses IMAP LOGIN without TLS", async () => {
+    const session = new ImapSession({
+      host: "imap.example.com",
+      user: "me",
+      password: "secret",
+      tls: false,
+    });
+    await expect(session.connect()).rejects.toThrow(/plaintext/);
   });
 
   it("skips spam and trash mailbox names", () => {

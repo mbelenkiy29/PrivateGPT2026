@@ -37,15 +37,16 @@ function mapGraphMessage(msg = {}) {
 
 function graphClientFromToken(config) {
   return {
-    async request(endpoint) {
+    async request(endpoint, options = {}) {
       const url = endpoint.startsWith("http")
         ? endpoint
         : `https://graph.microsoft.com/v1.0${endpoint}`;
       const res = await fetch(url, {
+        ...options,
         headers: {
           Authorization: `Bearer ${config.accessToken}`,
           "Content-Type": "application/json",
-          Prefer: "odata.maxpagesize=200",
+          ...options.headers,
         },
       });
       const data = await res.json().catch(() => ({}));
@@ -82,31 +83,72 @@ function createOutlookMailAdapter({ config = {}, client } = {}) {
     return resolveOutlookBridge(cfg);
   }
 
-  async function listFolder(bridge, folder, deltaLink, limit, remaining) {
+  async function listFolder(bridge, folder, storedCursor, remaining) {
+    if (remaining <= 0) return { items: [], cursor: storedCursor || null };
+
     const items = [];
-    let cursor = deltaLink || null;
-    const initial = `/me/mailFolders/${folder}/messages/delta?$top=${limit}&$select=id,subject,from,toRecipients,receivedDateTime,body,hasAttachments,parentFolderId,conversationId`;
-    let url = deltaLink || initial;
+    let pending = [];
+    let url;
+    if (storedCursor && typeof storedCursor === "object") {
+      pending = Array.isArray(storedCursor.pending)
+        ? storedCursor.pending.filter(Boolean)
+        : [];
+      url = storedCursor.resume || null;
+    } else if (typeof storedCursor === "string" && storedCursor) {
+      url = storedCursor;
+    } else {
+      url = `/me/mailFolders/${folder}/messages/delta?$top=${remaining}&$select=id,subject,from,toRecipients,receivedDateTime,body,hasAttachments,parentFolderId,conversationId`;
+    }
+
+    while (pending.length && items.length < remaining) {
+      items.push({ id: pending.shift() });
+    }
+    if (items.length >= remaining) {
+      return {
+        items,
+        cursor: pending.length || url ? { pending, resume: url } : url || null,
+      };
+    }
+
+    const requestOpts = {
+      headers: { Prefer: `odata.maxpagesize=${remaining - items.length}` },
+    };
+
     while (url && items.length < remaining) {
-      const result = await bridge.request(url);
+      const result = await bridge.request(url, requestOpts);
       if (!result.success)
         throw new Error(result.error || `Outlook delta failed for ${folder}`);
       const data = result.data || {};
+      const page = [];
       for (const msg of data.value || []) {
         const mapped = mapGraphMessage(msg);
-        if (mapped.deleted) continue;
-        items.push(mapped);
-        if (items.length >= remaining) break;
+        if (!mapped.deleted) page.push(mapped);
       }
+      const need = remaining - items.length;
+      const resume =
+        data["@odata.nextLink"] || data["@odata.deltaLink"] || null;
+      if (page.length > need) {
+        items.push(...page.slice(0, need));
+        return {
+          items,
+          cursor: {
+            pending: page
+              .slice(need)
+              .map((m) => m.id)
+              .filter(Boolean),
+            resume,
+          },
+        };
+      }
+      items.push(...page);
       if (data["@odata.nextLink"] && items.length < remaining) {
         url = data["@odata.nextLink"];
-        cursor = data["@odata.nextLink"];
         continue;
       }
-      cursor = data["@odata.deltaLink"] || data["@odata.nextLink"] || cursor;
-      break;
+      return { items, cursor: resume };
     }
-    return { items, cursor };
+
+    return { items, cursor: url || storedCursor || null };
   }
 
   async function collect(opts = {}, cursor) {
@@ -123,7 +165,6 @@ function createOutlookMailAdapter({ config = {}, client } = {}) {
         bridge,
         folder,
         cursorMap[folder] || null,
-        DELTA_CAP,
         DELTA_CAP - items.length
       );
       for (const item of listed.items) {

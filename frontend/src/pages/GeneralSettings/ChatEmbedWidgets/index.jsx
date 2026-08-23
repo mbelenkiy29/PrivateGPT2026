@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import EmbedConfigsView from "./EmbedConfigs";
 import EmbedChatsView from "./EmbedChats";
+import EmbedSmbListView from "./EmbedSmbLists";
+
+const VIEWS = ["configs", "chats", "unanswered", "leads", "handoffs"];
 
 export default function ChatEmbedWidgets() {
   const [selectedView, setSelectedView] = useState("configs");
@@ -48,11 +52,7 @@ export default function ChatEmbedWidgets() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="bg-theme-bg-secondary text-white rounded-xl p-4 overflow-y-scroll no-scroll">
-                    {selectedView === "configs" ? (
-                      <EmbedConfigsView />
-                    ) : (
-                      <EmbedChatsView />
-                    )}
+                    <SelectedEmbedView selectedView={selectedView} />
                   </div>
                 </div>
               </div>
@@ -84,16 +84,22 @@ export default function ChatEmbedWidgets() {
         </div>
         <div className="flex-[2] flex flex-col gap-y-[18px] mt-10 min-w-0">
           <div className="bg-theme-bg-secondary text-white rounded-xl flex-1 p-4 overflow-y-scroll no-scroll">
-            {selectedView === "configs" ? (
-              <EmbedConfigsView />
-            ) : (
-              <EmbedChatsView />
-            )}
+            <SelectedEmbedView selectedView={selectedView} />
           </div>
         </div>
       </div>
     </WidgetLayout>
   );
+}
+
+function SelectedEmbedView({ selectedView }) {
+  if (selectedView === "configs") return <EmbedConfigsView />;
+  if (selectedView === "chats") return <EmbedChatsView />;
+  if (selectedView === "unanswered")
+    return <EmbedSmbListView kind="unanswered" />;
+  if (selectedView === "leads") return <EmbedSmbListView kind="leads" />;
+  if (selectedView === "handoffs") return <EmbedSmbListView kind="handoffs" />;
+  return null;
 }
 
 function WidgetLayout({ children }) {
@@ -114,26 +120,26 @@ function WidgetLayout({ children }) {
 }
 
 function WidgetList({ selectedView, handleClick }) {
+  const { t } = useTranslation();
   const views = {
-    configs: {
-      title: "Widgets",
-    },
-    chats: {
-      title: "History",
-    },
+    configs: { title: t("embeddable.views.widgets") },
+    chats: { title: t("embeddable.views.history") },
+    unanswered: { title: t("embeddable.views.unanswered") },
+    leads: { title: t("embeddable.views.leads") },
+    handoffs: { title: t("embeddable.views.handoffs") },
   };
 
   return (
     <div
       className={`bg-theme-bg-secondary text-white rounded-xl ${isMobile ? "w-full" : "min-w-[360px] w-fit"}`}
     >
-      {Object.entries(views).map(([view, settings], index) => (
+      {VIEWS.map((view, index) => (
         <div
           key={view}
           className={`py-3 px-4 flex items-center justify-between ${
             index === 0 ? "rounded-t-xl" : ""
           } ${
-            index === Object.keys(views).length - 1
+            index === VIEWS.length - 1
               ? "rounded-b-xl"
               : "border-b border-white/10"
           } cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${
@@ -141,7 +147,7 @@ function WidgetList({ selectedView, handleClick }) {
           }`}
           onClick={() => handleClick?.(view)}
         >
-          <div className="text-sm font-light">{settings.title}</div>
+          <div className="text-sm font-light">{views[view].title}</div>
           <CaretRight
             size={14}
             weight="bold"

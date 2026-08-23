@@ -1103,6 +1103,41 @@ const TRANSLATIONS = {
       "chats": "Obrolan Terkirim",
       "active": "Domain Aktif",
       "created": "Dibuat"
+    },
+    "views": {
+      "widgets": null,
+      "history": null,
+      "unanswered": null,
+      "leads": null,
+      "handoffs": null
+    },
+    "smb": {
+      "ai_disclosure": null,
+      "ai_disclosure_hint": null,
+      "show_handoff": null,
+      "show_handoff_hint": null,
+      "handoff_email": null,
+      "handoff_email_hint": null,
+      "lead_capture": null,
+      "lead_capture_hint": null,
+      "grounded_only": null,
+      "grounded_only_hint": null,
+      "business_hours": null,
+      "business_hours_hint": null,
+      "timezone": null,
+      "timezone_placeholder": null,
+      "open": null,
+      "close": null,
+      "to": null,
+      "days": {
+        "sun": null,
+        "mon": null,
+        "tue": null,
+        "wed": null,
+        "thu": null,
+        "fri": null,
+        "sat": null
+      }
     }
   },
   "embed-chats": {
@@ -1115,6 +1150,43 @@ const TRANSLATIONS = {
       "message": "Pesan",
       "response": "Respons",
       "at": "Dikirim Pada"
+    }
+  },
+  "embed-handoffs": {
+    "title": null,
+    "description": null,
+    "empty": null,
+    "table": {
+      "embed": null,
+      "session": null,
+      "email": null,
+      "status": null,
+      "at": null
+    },
+    "view": null,
+    "transcript": null
+  },
+  "embed-leads": {
+    "title": null,
+    "description": null,
+    "empty": null,
+    "table": {
+      "embed": null,
+      "name": null,
+      "email": null,
+      "question": null,
+      "at": null
+    }
+  },
+  "embed-unanswered": {
+    "title": null,
+    "description": null,
+    "empty": null,
+    "table": {
+      "embed": null,
+      "question": null,
+      "session": null,
+      "at": null
     }
   },
   "telegram": {

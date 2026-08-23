@@ -4,6 +4,7 @@ import {
   ChatModeSelection,
   NumberInput,
   PermittedDomains,
+  SmbEmbedFields,
   WorkspaceSelection,
   enforceSubmissionSchema,
 } from "../../NewEmbedModal";
@@ -39,7 +40,7 @@ export default function EditEmbedModal({ embed, closeModal }) {
   return (
     <form onSubmit={handleUpdate} className="flex flex-col gap-y-5">
       <ModalHeader title={`Update embed #${embed.id}`} onClose={closeModal} />
-      <ModalBody>
+      <ModalBody className="max-h-[60vh] overflow-y-auto">
         <WorkspaceSelection defaultValue={embed.workspace.id} />
         <ChatModeSelection defaultValue={embed.chat_mode} />
         <PermittedDomains
@@ -81,6 +82,7 @@ export default function EditEmbedModal({ embed, closeModal }) {
           hint="Allow setting of the system prompt to override the workspace default."
           defaultValue={embed.allow_prompt_override}
         />
+        <SmbEmbedFields embed={embed} />
 
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
         <p className="text-xs text-zinc-400 light:text-slate-600">

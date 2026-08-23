@@ -105,6 +105,7 @@ const SystemSettings = {
     "memory_enabled",
     "memory_auto_extraction",
     "file_source_oauth_config",
+    "slack_oauth_config",
   ],
   validations: {
     footer_data: (updates) => {
@@ -444,6 +445,16 @@ const SystemSettings = {
       return String(apiKey);
     },
     file_source_oauth_config: (update) => {
+      try {
+        if (!update) return JSON.stringify({});
+        const parsed =
+          typeof update === "string" ? safeJsonParse(update, {}) : update;
+        return JSON.stringify(parsed || {});
+      } catch {
+        return JSON.stringify({});
+      }
+    },
+    slack_oauth_config: (update) => {
       try {
         if (!update) return JSON.stringify({});
         const parsed =

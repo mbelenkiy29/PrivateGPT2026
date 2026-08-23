@@ -4,6 +4,8 @@ import { isMobile } from "react-device-detect";
 import useRedirectToHomeOnOnboardingComplete from "@/hooks/useOnboardingComplete";
 import Home from "./Home";
 import LLMPreference from "./LLMPreference";
+import StarterKit from "./StarterKit";
+import ConnectDrive from "./ConnectDrive";
 import UserSetup from "./UserSetup";
 import DataHandling from "./DataHandling";
 import Survey from "./Survey";
@@ -11,6 +13,8 @@ import Survey from "./Survey";
 const OnboardingSteps = {
   home: Home,
   "llm-preference": LLMPreference,
+  "starter-kit": StarterKit,
+  "connect-drive": ConnectDrive,
   "user-setup": UserSetup,
   "data-handling": DataHandling,
   survey: Survey,

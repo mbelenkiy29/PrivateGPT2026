@@ -27,6 +27,7 @@ import { ChatTooltips } from "./ChatTooltips";
 import { MetricsProvider } from "./ChatHistory/HistoricalMessage/Actions/RenderMetrics";
 import useChatContainerQuickScroll from "@/hooks/useChatContainerQuickScroll";
 import { PENDING_HOME_MESSAGE } from "@/utils/constants";
+import { consumeStarterKitPrompt } from "@/utils/starterKit";
 import { clearPromptInputDraft } from "@/hooks/usePromptInputStorage";
 import { safeJsonParse } from "@/utils/request";
 import { useTranslation } from "react-i18next";
@@ -289,6 +290,14 @@ export default function ChatContainer({
           attachments: pending.attachments || [],
           autoSubmit: true,
         });
+      }, 100);
+      return;
+    }
+
+    const starterPrompt = consumeStarterKitPrompt();
+    if (starterPrompt) {
+      setTimeout(() => {
+        sendCommand({ text: starterPrompt, autoSubmit: false });
       }, 100);
     }
   }, [workspace?.slug]);

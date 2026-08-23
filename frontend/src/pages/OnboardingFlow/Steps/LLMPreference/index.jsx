@@ -405,7 +405,7 @@ export default function LLMPreference({
       showToast(`Failed to save LLM settings: ${error}`, "error");
       return;
     }
-    navigate(paths.onboarding.userSetup());
+    navigate(paths.onboarding.starterKit());
   };
 
   useEffect(() => {

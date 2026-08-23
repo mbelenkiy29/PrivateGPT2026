@@ -33,7 +33,7 @@ export default function UserSetup({ setHeader, setForwardBtn, setBackBtn }) {
   }
 
   function handleBack() {
-    navigate(paths.onboarding.llmPreference());
+    navigate(paths.onboarding.starterKit());
   }
 
   useEffect(() => {

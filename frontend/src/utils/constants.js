@@ -10,6 +10,8 @@ export const SEEN_WATCH_ALERT = "anythingllm_watched_document_alert";
 export const LAST_VISITED_WORKSPACE = "anythingllm_last_visited_workspace";
 export const USER_PROMPT_INPUT_MAP = "anythingllm_user_prompt_input_map";
 export const PENDING_HOME_MESSAGE = "anythingllm_pending_home_message";
+export const STARTER_KIT_ONBOARDING = "anythingllm_starter_kit_onboarding";
+export const STARTER_KIT_PROMPT = "anythingllm_starter_kit_prompt";
 
 export const APPEARANCE_SETTINGS = "anythingllm_appearance_settings";
 

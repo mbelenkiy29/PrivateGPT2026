@@ -21,6 +21,7 @@ const EmbedConfig = {
     "chat_mode",
     "workspace_id",
     "message_limit",
+    "grounded_only",
   ],
 
   new: async function (data, creatorId = null) {
@@ -57,6 +58,10 @@ const EmbedConfig = {
           message_limit: validatedCreationData(
             data?.message_limit,
             "message_limit"
+          ),
+          grounded_only: validatedCreationData(
+            data?.grounded_only,
+            "grounded_only"
           ),
           createdBy: creatorId != null ? Number(creatorId) : null,
           workspace: {
@@ -208,6 +213,7 @@ const BOOLEAN_KEYS = [
   "allow_temperature_override",
   "allow_prompt_override",
   "enabled",
+  "grounded_only",
 ];
 
 const NUMBER_KEYS = [

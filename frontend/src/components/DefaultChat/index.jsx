@@ -5,20 +5,30 @@ import useUser from "@/hooks/useUser";
 import Appearance from "@/models/appearance";
 import useLogo from "@/hooks/useLogo";
 import Workspace from "@/models/workspace";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { LAST_VISITED_WORKSPACE } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
 import { safeJsonParse } from "@/utils/request";
+import showToast from "@/utils/toast";
+import StarterKitCards from "@/components/StarterKitCards";
+import {
+  firstSuggestedQuestion,
+  queueStarterKitPrompt,
+} from "@/utils/starterKit";
 
 export default function DefaultChatContainer() {
   const { t } = useTranslation();
   const { user } = useUser();
   const { logo } = useLogo();
+  const navigate = useNavigate();
   const [lastVisitedWorkspace, setLastVisitedWorkspace] = useState(null);
   const [{ workspaces, loading }, setWorkspaces] = useState({
     workspaces: [],
     loading: true,
   });
+  const [kits, setKits] = useState([]);
+  const [installingId, setInstallingId] = useState(null);
+  const canInstallKits = !user || ["admin", "manager"].includes(user?.role);
 
   useEffect(() => {
     async function fetchWorkspaces() {
@@ -52,6 +62,11 @@ export default function DefaultChatContainer() {
     fetchWorkspaces();
   }, []);
 
+  useEffect(() => {
+    if (!canInstallKits) return;
+    Workspace.starterKits().then(setKits);
+  }, [canInstallKits]);
+
   if (loading) {
     return (
       <Layout>
@@ -71,19 +86,44 @@ export default function DefaultChatContainer() {
   }
 
   const hasWorkspaces = workspaces.length > 0;
+  const showStarterKits = !hasWorkspaces && canInstallKits && kits.length > 0;
+
+  async function handleInstallKit(kit) {
+    if (installingId) return;
+    setInstallingId(kit.id);
+    const {
+      workspace,
+      kit: installed,
+      message,
+    } = await Workspace.installKit(kit.id);
+    setInstallingId(null);
+    if (!workspace) {
+      showToast(message || t("onboarding.starterKit.error"), "error");
+      return;
+    }
+    const question = firstSuggestedQuestion(installed || kit);
+    if (question) queueStarterKitPrompt(question);
+    navigate(paths.workspace.chat(workspace.slug));
+  }
+
   return (
     <Layout>
-      <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto no-scroll">
+      <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto no-scroll px-4 py-8">
         <img
           src={logo}
           alt="Custom Logo"
           className=" w-[200px] h-fit mb-5 rounded-lg"
         />
         <h1 className="text-white text-2xl font-semibold">
-          {t("home.welcome")}, {user.username}!
+          {t("home.welcome")}
+          {user?.username ? `, ${user.username}` : ""}!
         </h1>
         <p className="text-theme-home-text-secondary text-base text-center whitespace-pre-line">
-          {hasWorkspaces ? t("home.chooseWorkspace") : t("home.notAssigned")}
+          {hasWorkspaces
+            ? t("home.chooseWorkspace")
+            : showStarterKits
+              ? t("home.starterKits.description")
+              : t("home.notAssigned")}
         </p>
         {hasWorkspaces && (
           <NavLink
@@ -97,6 +137,18 @@ export default function DefaultChatContainer() {
             })}{" "}
             &rarr;
           </NavLink>
+        )}
+        {showStarterKits && (
+          <div className="w-full max-w-[720px] mt-6">
+            <h2 className="text-theme-text-primary text-sm font-semibold text-center mb-3">
+              {t("home.starterKits.title")}
+            </h2>
+            <StarterKitCards
+              kits={kits}
+              installingId={installingId}
+              onSelect={handleInstallKit}
+            />
+          </div>
         )}
       </div>
     </Layout>

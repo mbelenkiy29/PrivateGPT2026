@@ -36,6 +36,7 @@ const { workspaceParsedFilesEndpoints } = require("./workspacesParsedFiles");
 const {
   workspaceDeletionProtection,
 } = require("../utils/middleware/workspaceDeletionProtection");
+const { StarterKit } = require("../models/starterKit");
 
 function workspaceEndpoints(app) {
   if (!app) return;
@@ -70,6 +71,67 @@ function workspaceEndpoints(app) {
           user?.id
         );
         response.status(200).json({ workspace, message });
+      } catch (e) {
+        console.error(e.message, e);
+        response.sendStatus(500).end();
+      }
+    }
+  );
+
+  app.get(
+    "/workspace/starter-kits",
+    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    async (_, response) => {
+      try {
+        response.status(200).json({ kits: StarterKit.list() });
+      } catch (e) {
+        console.error(e.message, e);
+        response.sendStatus(500).end();
+      }
+    }
+  );
+
+  app.post(
+    "/workspace/install-kit",
+    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    async (request, response) => {
+      try {
+        const user = await userFromSession(request, response);
+        const { kitId = null, createEmbed } = reqBody(request) || {};
+        const result = await StarterKit.install(kitId, {
+          userId: user?.id,
+          createEmbed,
+        });
+        if (!result.workspace) {
+          response.status(400).json({
+            workspace: null,
+            embed: null,
+            kit: result.kit,
+            message: result.message || "Failed to install starter kit.",
+          });
+          return;
+        }
+
+        await Telemetry.sendTelemetry(
+          "starter_kit_installed",
+          {
+            kitId,
+            multiUserMode: multiUserMode(response),
+            LLMSelection: process.env.LLM_PROVIDER || "openai",
+            Embedder: process.env.EMBEDDING_ENGINE || "inherit",
+            VectorDbSelection: process.env.VECTOR_DB || "lancedb",
+          },
+          user?.id
+        );
+        await EventLogs.logEvent(
+          "starter_kit_installed",
+          {
+            kitId,
+            workspaceName: result.workspace?.name,
+          },
+          user?.id
+        );
+        response.status(200).json(result);
       } catch (e) {
         console.error(e.message, e);
         response.sendStatus(500).end();

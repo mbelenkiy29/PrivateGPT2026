@@ -9,6 +9,60 @@ const TRANSLATIONS = {
       description:
         "PrivateGPT can work with many LLM providers. This will be the service which handles chatting.",
     },
+    starterKit: {
+      title: "Choose a starter kit",
+      description:
+        "Set up a workspace for your first job in a few minutes. You can add documents next.",
+      skip: "Skip for now",
+      install: "Use this kit",
+      installing: "Setting up…",
+      error: "Could not install starter kit.",
+      kits: {
+        "customer-support": {
+          name: "Customer Support",
+          description:
+            "Grounded FAQ desk for hours, refunds, shipping, and other help-center questions.",
+        },
+        "employee-handbook": {
+          name: "Employee Handbook",
+          description:
+            "Internal HR assistant for PTO, benefits, and policy questions from the handbook.",
+        },
+        "sales-proposals": {
+          name: "Sales Proposals",
+          description:
+            "Rewrite and draft proposals in your voice using past winning proposals.",
+        },
+        "invoice-qa": {
+          name: "Invoice Q&A",
+          description:
+            "Ask questions about invoices, due dates, balances, and vendor payment terms.",
+        },
+        "legal-lite": {
+          name: "Legal Lite",
+          description:
+            "Find clauses in uploaded contracts. Refuses legal advice.",
+        },
+        "clinic-sops": {
+          name: "Clinic SOPs",
+          description:
+            "Staff assistant for clinic procedures. Does not handle PHI or medical advice.",
+        },
+      },
+    },
+    connectDrive: {
+      title: "Connect Google Drive",
+      description:
+        "Optionally connect Drive so this workspace can use your files. You can skip and add documents later.",
+      connect: "Connect Google Drive",
+      connecting: "Opening Google login…",
+      connected: "Drive connected",
+      skip: "Skip and start chatting",
+      later: "Connect Drive so answers can use files from a shared folder.",
+      needsCredentials:
+        "Drive login is not configured yet. You can add credentials later in Settings → Cloud drives.",
+      connectError: "Could not connect Google Drive.",
+    },
     userSetup: {
       title: "User Setup",
       description: "Configure your user settings.",
@@ -73,6 +127,11 @@ const TRANSLATIONS = {
     notAssigned:
       "You currently aren't assigned to any workspaces.\nPlease contact your administrator to request access to a workspace.",
     goToWorkspace: 'Go to "{{workspace}}"',
+    starterKits: {
+      title: "Start with a job kit",
+      description:
+        "Install a ready-made workspace with a prompt, suggested questions, and optional embed.",
+    },
   },
   settings: {
     title: "Instance Settings",
@@ -790,8 +849,7 @@ const TRANSLATIONS = {
     },
     branding: {
       title: "Branding & Whitelabeling",
-      description:
-        "White-label your PrivateGPT instance with custom branding.",
+      description: "White-label your PrivateGPT instance with custom branding.",
     },
     chat: {
       title: "Chat",

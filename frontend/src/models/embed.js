@@ -75,6 +75,42 @@ const Embed = {
         return { success: false, error: e.message };
       });
   },
+  leads: async (offset = 0) => {
+    return await fetch(`${API_BASE}/embed/leads`, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({ offset }),
+    })
+      .then((res) => res.json())
+      .catch((e) => {
+        console.error(e);
+        return { leads: [], hasPages: false };
+      });
+  },
+  handoffs: async (offset = 0) => {
+    return await fetch(`${API_BASE}/embed/handoffs`, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({ offset }),
+    })
+      .then((res) => res.json())
+      .catch((e) => {
+        console.error(e);
+        return { handoffs: [], hasPages: false };
+      });
+  },
+  unanswered: async (offset = 0) => {
+    return await fetch(`${API_BASE}/embed/unanswered`, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({ offset }),
+    })
+      .then((res) => res.json())
+      .catch((e) => {
+        console.error(e);
+        return { unanswered: [], hasPages: false };
+      });
+  },
 };
 
 export default Embed;

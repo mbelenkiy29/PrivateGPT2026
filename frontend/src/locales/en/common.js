@@ -790,8 +790,7 @@ const TRANSLATIONS = {
     },
     branding: {
       title: "Branding & Whitelabeling",
-      description:
-        "White-label your PrivateGPT instance with custom branding.",
+      description: "White-label your PrivateGPT instance with custom branding.",
     },
     chat: {
       title: "Chat",
@@ -1186,6 +1185,46 @@ const TRANSLATIONS = {
       active: "Active Domains",
       created: "Created",
     },
+    views: {
+      widgets: "Widgets",
+      history: "History",
+      unanswered: "Unanswered",
+      leads: "Leads",
+      handoffs: "Handoffs",
+    },
+    smb: {
+      ai_disclosure: "Show AI disclosure",
+      ai_disclosure_hint: "Visitors see a banner that they are talking to AI.",
+      show_handoff: "Show Talk to a human",
+      show_handoff_hint:
+        "Let visitors request a human. The chat transcript is saved as a handoff.",
+      handoff_email: "Handoff email",
+      handoff_email_hint:
+        "Stored on each handoff so your team knows where to follow up.",
+      lead_capture: "Capture leads",
+      lead_capture_hint:
+        "Ask for name and email before the first message in the widget.",
+      grounded_only: "Grounded answers only",
+      grounded_only_hint:
+        "Force query mode. Off-document questions are refused and logged as unanswered.",
+      business_hours: "Business hours",
+      business_hours_hint:
+        "Optional hours shown on the widget. Leave days unchecked to hide the badge.",
+      timezone: "Timezone",
+      timezone_placeholder: "America/New_York",
+      open: "Open",
+      close: "Close",
+      to: "to",
+      days: {
+        sun: "Sunday",
+        mon: "Monday",
+        tue: "Tuesday",
+        wed: "Wednesday",
+        thu: "Thursday",
+        fri: "Friday",
+        sat: "Saturday",
+      },
+    },
   },
   "embed-chats": {
     title: "Embed Chat History",
@@ -1198,6 +1237,45 @@ const TRANSLATIONS = {
       message: "Message",
       response: "Response",
       at: "Sent At",
+    },
+  },
+  "embed-unanswered": {
+    title: "Unanswered questions",
+    description:
+      "Questions the grounded widget could not answer from workspace documents.",
+    empty: "No unanswered questions yet.",
+    table: {
+      embed: "Embed",
+      question: "Question",
+      session: "Session",
+      at: "Asked at",
+    },
+  },
+  "embed-leads": {
+    title: "Leads",
+    description: "Contact details visitors submitted from published widgets.",
+    empty: "No leads captured yet.",
+    table: {
+      embed: "Embed",
+      name: "Name",
+      email: "Email",
+      question: "Last question",
+      at: "Captured at",
+    },
+  },
+  "embed-handoffs": {
+    title: "Handoffs",
+    description:
+      "Human handoff requests with the chat transcript from each widget session.",
+    empty: "No handoff requests yet.",
+    view: "View",
+    transcript: "Transcript",
+    table: {
+      embed: "Embed",
+      session: "Session",
+      email: "Notify",
+      status: "Status",
+      at: "Requested at",
     },
   },
   telegram: {

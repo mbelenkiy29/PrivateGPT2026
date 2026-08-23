@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Workspace from "@/models/workspace";
 import { TagsInput } from "react-tag-input-component";
 import Embed from "@/models/embed";
 import Toggle from "@/components/lib/Toggle";
+import { safeJsonParse } from "@/utils/request";
 import {
   ModalHeader,
   ModalBody,
@@ -12,6 +14,8 @@ import {
   ModalLabel,
   ModalHint,
 } from "@/components/lib/Modal";
+
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 export function enforceSubmissionSchema(form) {
   const data = {};
@@ -30,6 +34,13 @@ export function enforceSubmissionSchema(form) {
   if (!data.hasOwnProperty("allow_prompt_override"))
     data.allow_prompt_override = false;
   if (!data.hasOwnProperty("message_limit")) data.message_limit = 20;
+  if (!data.hasOwnProperty("ai_disclosure")) data.ai_disclosure = false;
+  if (!data.hasOwnProperty("show_handoff")) data.show_handoff = false;
+  if (!data.hasOwnProperty("lead_capture")) data.lead_capture = false;
+  if (!data.hasOwnProperty("grounded_only")) data.grounded_only = false;
+  if (!data.hasOwnProperty("handoff_email")) data.handoff_email = null;
+  if (!data.hasOwnProperty("business_hours_json"))
+    data.business_hours_json = null;
   return data;
 }
 
@@ -52,7 +63,7 @@ export default function NewEmbedModal({ closeModal }) {
         title="Create new embed for workspace"
         onClose={closeModal}
       />
-      <ModalBody>
+      <ModalBody className="max-h-[60vh] overflow-y-auto">
         <WorkspaceSelection />
         <ChatModeSelection />
         <PermittedDomains />
@@ -87,6 +98,7 @@ export default function NewEmbedModal({ closeModal }) {
           title="Enable Prompt Override"
           hint="Allow setting of the system prompt to override the workspace default."
         />
+        <SmbEmbedFields />
 
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
         <p className="text-xs text-zinc-400 light:text-slate-600">
@@ -318,5 +330,185 @@ export const BooleanInput = ({ name, title, hint, defaultValue = null }) => {
       enabled={status}
       onChange={(checked) => setStatus(checked)}
     />
+  );
+};
+
+export const TextInput = ({
+  name,
+  title,
+  hint,
+  defaultValue = "",
+  type = "text",
+  placeholder = "",
+}) => {
+  return (
+    <div>
+      <div className="flex flex-col mb-2">
+        <ModalLabel htmlFor={name}>{title}</ModalLabel>
+        <ModalHint>{hint}</ModalHint>
+      </div>
+      <input
+        type={type}
+        name={name}
+        defaultValue={defaultValue || ""}
+        placeholder={placeholder}
+        className="border border-zinc-800 light:border-slate-300 bg-zinc-800 light:bg-white text-zinc-100 light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm rounded-lg focus:border-sky-500 light:focus:border-sky-500 outline-none block w-full max-w-[24rem] p-2.5"
+      />
+    </div>
+  );
+};
+
+function parseHoursDefault(raw) {
+  if (!raw) return { timezone: "UTC", days: [] };
+  const parsed = typeof raw === "string" ? safeJsonParse(raw, null) : raw;
+  if (!parsed || typeof parsed !== "object")
+    return { timezone: "UTC", days: [] };
+  return {
+    timezone: parsed.timezone || "UTC",
+    days: Array.isArray(parsed.days) ? parsed.days : [],
+  };
+}
+
+export const BusinessHoursInput = ({ defaultValue = null }) => {
+  const { t } = useTranslation();
+  const initial = parseHoursDefault(defaultValue);
+  const [timezone, setTimezone] = useState(initial.timezone);
+  const [days, setDays] = useState(() => {
+    const byDay = {};
+    initial.days.forEach((row) => {
+      if (row?.day) byDay[row.day] = row;
+    });
+    return byDay;
+  });
+
+  const payload = (() => {
+    const enabled = WEEKDAYS.map((day) => days[day])
+      .filter((row) => row && row.open && row.close)
+      .map((row) => ({ day: row.day, open: row.open, close: row.close }));
+    if (!enabled.length) return "";
+    return JSON.stringify({
+      timezone: timezone.trim() || "UTC",
+      days: enabled,
+    });
+  })();
+
+  const toggleDay = (day, enabled) => {
+    setDays((prev) => {
+      if (!enabled) {
+        const next = { ...prev };
+        delete next[day];
+        return next;
+      }
+      return {
+        ...prev,
+        [day]: prev[day] || { day, open: "09:00", close: "17:00" },
+      };
+    });
+  };
+
+  const updateDay = (day, field, value) => {
+    const hhmm = String(value || "").slice(0, 5);
+    setDays((prev) => ({
+      ...prev,
+      [day]: {
+        ...(prev[day] || { day, open: "09:00", close: "17:00" }),
+        [field]: hhmm,
+      },
+    }));
+  };
+
+  return (
+    <div>
+      <div className="flex flex-col mb-2">
+        <ModalLabel>{t("embeddable.smb.business_hours")}</ModalLabel>
+        <ModalHint>{t("embeddable.smb.business_hours_hint")}</ModalHint>
+      </div>
+      <input type="hidden" name="business_hours_json" value={payload} />
+      <div className="flex flex-col gap-y-2">
+        <input
+          type="text"
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          placeholder={t("embeddable.smb.timezone_placeholder")}
+          className="border border-zinc-800 light:border-slate-300 bg-zinc-800 light:bg-white text-zinc-100 light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm rounded-lg focus:border-sky-500 light:focus:border-sky-500 outline-none block w-full max-w-[24rem] p-2.5"
+          aria-label={t("embeddable.smb.timezone")}
+        />
+        {WEEKDAYS.map((day) => {
+          const row = days[day];
+          const enabled = !!row;
+          return (
+            <label
+              key={day}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-100 light:text-slate-900"
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => toggleDay(day, e.target.checked)}
+              />
+              <span className="w-20">{t(`embeddable.smb.days.${day}`)}</span>
+              <input
+                type="time"
+                disabled={!enabled}
+                value={row?.open || "09:00"}
+                onChange={(e) => updateDay(day, "open", e.target.value)}
+                aria-label={t("embeddable.smb.open")}
+                className="border border-zinc-800 light:border-slate-300 bg-zinc-800 light:bg-white text-zinc-100 light:text-slate-900 text-xs rounded-lg outline-none p-1.5 disabled:opacity-50"
+              />
+              <span className="text-zinc-400">{t("embeddable.smb.to")}</span>
+              <input
+                type="time"
+                disabled={!enabled}
+                value={row?.close || "17:00"}
+                onChange={(e) => updateDay(day, "close", e.target.value)}
+                aria-label={t("embeddable.smb.close")}
+                className="border border-zinc-800 light:border-slate-300 bg-zinc-800 light:bg-white text-zinc-100 light:text-slate-900 text-xs rounded-lg outline-none p-1.5 disabled:opacity-50"
+              />
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const SmbEmbedFields = ({ embed = null }) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      <BooleanInput
+        name="ai_disclosure"
+        title={t("embeddable.smb.ai_disclosure")}
+        hint={t("embeddable.smb.ai_disclosure_hint")}
+        defaultValue={embed ? !!embed.ai_disclosure : true}
+      />
+      <BooleanInput
+        name="show_handoff"
+        title={t("embeddable.smb.show_handoff")}
+        hint={t("embeddable.smb.show_handoff_hint")}
+        defaultValue={embed ? !!embed.show_handoff : false}
+      />
+      <TextInput
+        name="handoff_email"
+        type="email"
+        title={t("embeddable.smb.handoff_email")}
+        hint={t("embeddable.smb.handoff_email_hint")}
+        defaultValue={embed?.handoff_email || ""}
+        placeholder="support@example.com"
+      />
+      <BooleanInput
+        name="lead_capture"
+        title={t("embeddable.smb.lead_capture")}
+        hint={t("embeddable.smb.lead_capture_hint")}
+        defaultValue={embed ? !!embed.lead_capture : false}
+      />
+      <BooleanInput
+        name="grounded_only"
+        title={t("embeddable.smb.grounded_only")}
+        hint={t("embeddable.smb.grounded_only_hint")}
+        defaultValue={embed ? !!embed.grounded_only : false}
+      />
+      <BusinessHoursInput defaultValue={embed?.business_hours_json} />
+    </>
   );
 };

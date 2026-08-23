@@ -1,6 +1,9 @@
 /* eslint-env jest */
 process.env.SIG_KEY = process.env.SIG_KEY || "a".repeat(64);
 process.env.SIG_SALT = process.env.SIG_SALT || "b".repeat(64);
+process.env.STORAGE_DIR =
+  process.env.STORAGE_DIR ||
+  require("path").resolve(__dirname, "../../../storage");
 
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -79,29 +82,36 @@ const WORKSPACE = {
 const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
   modulusLength: 2048,
 });
+const { publicKey: rotatedPublic, privateKey: rotatedPrivate } =
+  crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
 const TEST_JWK = {
   ...publicKey.export({ format: "jwk" }),
   kid: "test-key",
   use: "sig",
   alg: "RS256",
 };
+const ROTATED_JWK = {
+  ...rotatedPublic.export({ format: "jwk" }),
+  kid: "rotated-key",
+  use: "sig",
+  alg: "RS256",
+};
 
-function signToken(payload = {}, header = {}) {
-  return jwt.sign(
-    {
-      iss: "https://api.botframework.com",
-      aud: APP_ID,
-      serviceurl: SERVICE_URL,
-      ...payload,
-    },
-    privateKey,
-    {
-      algorithm: "RS256",
-      keyid: "test-key",
-      expiresIn: "1h",
-      ...header,
-    }
-  );
+function signToken(payload = {}, options = {}) {
+  const claims = {
+    iss: "https://api.botframework.com",
+    aud: APP_ID,
+    serviceurl: SERVICE_URL,
+    ...payload,
+  };
+  if (payload.serviceurl === null) delete claims.serviceurl;
+  const { secret = privateKey, ...signOpts } = options;
+  return jwt.sign(claims, secret, {
+    algorithm: "RS256",
+    keyid: "test-key",
+    ...(claims.exp ? {} : { expiresIn: "1h" }),
+    ...signOpts,
+  });
 }
 
 function jsonResponse(body = { id: "a-reply-id" }, status = 200) {
@@ -119,6 +129,7 @@ function mentionActivity({
   conversationType = "channel",
   serviceUrl = SERVICE_URL,
   mention = true,
+  entities,
 } = {}) {
   return {
     type: "message",
@@ -136,15 +147,18 @@ function mentionActivity({
     recipient: { id: BOT_ID, name: "PrivateAI" },
     text,
     textFormat: "plain",
-    entities: mention
-      ? [
-          {
-            type: "mention",
-            mentioned: { id: BOT_ID, name: "PrivateAI" },
-            text: "<at>PrivateAI</at>",
-          },
-        ]
-      : [],
+    entities:
+      entities !== undefined
+        ? entities
+        : mention
+          ? [
+              {
+                type: "mention",
+                mentioned: { id: BOT_ID, name: "PrivateAI" },
+                text: "<at>PrivateAI</at>",
+              },
+            ]
+          : [],
     channelData: {
       tenant: { id: TENANT_ID },
       teamsChannelId: conversationType === "personal" ? undefined : CHANNEL_ID,
@@ -386,9 +400,20 @@ describe("Teams @PrivateAI bot", () => {
     expect(isAllowedServiceUrl("https://smba.trafficmanager.net/amer/")).toBe(
       true
     );
+    expect(isAllowedServiceUrl("https://directline.botframework.com/")).toBe(
+      true
+    );
+    expect(
+      isAllowedServiceUrl("https://smba.infra.gcc.teams.microsoft.com/")
+    ).toBe(true);
     expect(isAllowedServiceUrl("https://evil.example/v3/conversations")).toBe(
       false
     );
+    expect(isAllowedServiceUrl("https://contoso.trafficmanager.net/")).toBe(
+      false
+    );
+    expect(isAllowedServiceUrl("https://evil.azure.net/bot")).toBe(false);
+    expect(isAllowedServiceUrl("https://attacker.microsoft.com/")).toBe(false);
   });
 
   it("encrypts the Microsoft app password and never returns it from public config", async () => {
@@ -414,6 +439,181 @@ describe("Teams @PrivateAI bot", () => {
     expect(JSON.stringify(publicConfig)).not.toContain(APP_PASSWORD);
     expect(publicConfig.messagingUrl).toBe(
       "https://llm.example/api/channels/teams/messages"
+    );
+  });
+
+  it("rejects expired JWTs and algorithm confusion", async () => {
+    const expired = signToken({
+      exp: Math.floor(Date.now() / 1000) - 600,
+      iat: Math.floor(Date.now() / 1000) - 1200,
+    });
+    await expect(verifyBotFrameworkToken(expired, APP_ID)).resolves.toBe(false);
+
+    const hs256 = signToken(
+      {},
+      { algorithm: "HS256", secret: "not-an-rsa-key" }
+    );
+    await expect(verifyBotFrameworkToken(hs256, APP_ID)).resolves.toBe(false);
+
+    const noneHeader = Buffer.from(
+      JSON.stringify({ alg: "none", typ: "JWT", kid: "test-key" })
+    ).toString("base64url");
+    const nonePayload = Buffer.from(
+      JSON.stringify({
+        iss: "https://api.botframework.com",
+        aud: APP_ID,
+        serviceurl: SERVICE_URL,
+      })
+    ).toString("base64url");
+    await expect(
+      verifyBotFrameworkToken(`${noneHeader}.${nonePayload}.`, APP_ID)
+    ).resolves.toBe(false);
+  });
+
+  it("fails closed when the JWT serviceurl does not match the activity", async () => {
+    const activity = mentionActivity();
+    const mismatch = await acceptTeamsActivity({
+      body: activity,
+      headers: {
+        authorization: `Bearer ${signToken({
+          serviceurl: "https://smba.trafficmanager.net/other/",
+        })}`,
+      },
+    });
+    expect(mismatch.status).toBe(401);
+    expect(mismatch.activity).toBeUndefined();
+
+    const missingClaim = await acceptTeamsActivity({
+      body: activity,
+      headers: {
+        authorization: `Bearer ${signToken({ serviceurl: null })}`,
+      },
+    });
+    expect(missingClaim.status).toBe(401);
+    expect(missingClaim.activity).toBeUndefined();
+  });
+
+  it("skips duplicate activity ids", async () => {
+    const activity = mentionActivity({ id: "act-duplicate" });
+    const first = await processTeamsActivity(activity);
+    const second = await processTeamsActivity(activity);
+    expect(first).toMatchObject({ ok: true, command: "chat" });
+    expect(second).toEqual({ skipped: true, reason: "duplicate" });
+    expect(streamResponse).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not cache a failed JWKS fetch", async () => {
+    let keyCalls = 0;
+    fetchMock.mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes("openidconfiguration")) {
+        return jsonResponse({
+          jwks_uri: "https://login.botframework.com/v1/.well-known/keys",
+        });
+      }
+      if (u.includes(".well-known/keys")) {
+        keyCalls += 1;
+        if (keyCalls === 1) return jsonResponse({ keys: [] }, 500);
+        return jsonResponse({ keys: [TEST_JWK] });
+      }
+      return jsonResponse({});
+    });
+
+    const token = signToken();
+    await expect(verifyBotFrameworkToken(token, APP_ID)).resolves.toBe(false);
+    await expect(verifyBotFrameworkToken(token, APP_ID)).resolves.toBe(true);
+    expect(keyCalls).toBe(2);
+  });
+
+  it("refetches JWKS when the token kid is unknown", async () => {
+    let keyCalls = 0;
+    fetchMock.mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes("openidconfiguration")) {
+        return jsonResponse({
+          jwks_uri: "https://login.botframework.com/v1/.well-known/keys",
+        });
+      }
+      if (u.includes(".well-known/keys")) {
+        keyCalls += 1;
+        if (keyCalls === 1) return jsonResponse({ keys: [TEST_JWK] });
+        return jsonResponse({ keys: [TEST_JWK, ROTATED_JWK] });
+      }
+      return jsonResponse({});
+    });
+
+    const rotated = signToken(
+      {},
+      { secret: rotatedPrivate, keyid: "rotated-key" }
+    );
+    await expect(verifyBotFrameworkToken(rotated, APP_ID)).resolves.toBe(true);
+    expect(keyCalls).toBe(2);
+  });
+
+  it("ignores channel messages that only mention a colleague", async () => {
+    const result = await processTeamsMessage(
+      mentionActivity({
+        text: "<at>Ada</at> what is the refund policy?",
+        mention: false,
+        entities: [
+          {
+            type: "mention",
+            mentioned: { id: USER_ID, name: "Ada" },
+            text: "<at>Ada</at>",
+          },
+        ],
+      })
+    );
+    expect(result).toEqual({ skipped: true, reason: "no-mention" });
+    expect(streamResponse).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a tenant-level workspace binding", async () => {
+    ChannelWorkspaceBinding.get.mockImplementation(async ({ external_id }) => {
+      if (external_id === TENANT_ID) {
+        return {
+          connector_type: "teams",
+          external_id: TENANT_ID,
+          workspaceId: WORKSPACE.id,
+        };
+      }
+      return null;
+    });
+    await processTeamsMessage(mentionActivity());
+    expect(ChannelWorkspaceBinding.get).toHaveBeenCalledWith({
+      connector_type: "teams",
+      external_id: `${TENANT_ID}:${CHANNEL_ID}`,
+    });
+    expect(ChannelWorkspaceBinding.get).toHaveBeenCalledWith({
+      connector_type: "teams",
+      external_id: TENANT_ID,
+    });
+    expect(streamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ workspace: WORKSPACE })
+    );
+  });
+
+  it("does not re-encrypt a masked app password on save", async () => {
+    const existing = connectorRow.config.app_password;
+    const result = await saveBotConfig({
+      microsoftAppId: APP_ID,
+      microsoftAppPassword: "************cret",
+      defaultWorkspace: WORKSPACE.slug,
+      active: true,
+    });
+    expect(result.success).toBe(true);
+    expect(
+      ExternalCommunicationConnector.upsert.mock.calls[0][1].app_password
+    ).toBe(existing);
+  });
+
+  it("builds a citation footer used after persist", () => {
+    const { formatCitationFooter } = jest.requireActual(
+      "../../../utils/channelChat/stream"
+    );
+    expect(formatCitationFooter()).toBeNull();
+    expect(formatCitationFooter([{ title: "Employee handbook" }])).toBe(
+      "*Sources*\n1. Employee handbook"
     );
   });
 });

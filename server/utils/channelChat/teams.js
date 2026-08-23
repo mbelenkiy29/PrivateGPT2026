@@ -17,6 +17,7 @@ const BOT_FRAMEWORK_OPENID =
 const BOT_FRAMEWORK_TOKEN_SCOPE = "https://api.botframework.com/.default";
 const ACTIVITY_TTL_MS = 10 * 60 * 1000;
 const JWKS_TTL_MS = 24 * 60 * 60 * 1000;
+const JWKS_FETCH_TIMEOUT_MS = 5_000;
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 
 const HELP_TEXT = `Ask me a question about this workspace's knowledge.
@@ -70,27 +71,68 @@ function isAllowedIssuer(iss) {
   return false;
 }
 
+function isLocalDevHost(host) {
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function isAllowedJwksUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === "login.botframework.com" ||
+      host === "login.microsoftonline.com" ||
+      host === "login.botframework.azure.us"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isAllowedServiceUrl(url) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
-    if (host === "localhost" || host === "127.0.0.1") {
+    if (isLocalDevHost(host)) {
+      if (process.env.NODE_ENV === "production") return false;
       return parsed.protocol === "http:" || parsed.protocol === "https:";
     }
     if (parsed.protocol !== "https:") return false;
-    if (
-      host === "smba.trafficmanager.net" ||
-      host.endsWith(".trafficmanager.net")
-    )
-      return true;
+    if (host === "smba.trafficmanager.net") return true;
     if (host === "botframework.com" || host.endsWith(".botframework.com"))
       return true;
-    if (host.endsWith(".azure.net") || host.endsWith(".microsoft.com"))
+    if (host === "smba.infra.gcc.teams.microsoft.com") return true;
+    if (host === "smba.infra.gov.teams.microsoft.us") return true;
+    if (
+      host === "botframework.azure.us" ||
+      host.endsWith(".botframework.azure.us")
+    )
       return true;
     return false;
   } catch {
     return false;
   }
+}
+
+function normalizeServiceUrl(url) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    parsed.username = "";
+    parsed.password = "";
+    let normalized = parsed.toString();
+    if (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+    return normalized.toLowerCase();
+  } catch {
+    return String(url).replace(/\/$/, "").toLowerCase();
+  }
+}
+
+function serviceUrlMatches(claim, activityUrl) {
+  if (!claim || !activityUrl) return false;
+  return normalizeServiceUrl(claim) === normalizeServiceUrl(activityUrl);
 }
 
 function activitiesUrl(serviceUrl, conversationId, activityId = null) {
@@ -151,30 +193,56 @@ function jwkToPem(jwk) {
     .export({ type: "spki", format: "pem" });
 }
 
-async function fetchJwks() {
-  const now = Date.now();
-  if (jwksCache.keys && now - jwksCache.fetchedAt < JWKS_TTL_MS)
-    return jwksCache.keys;
+function hasUsableKeys(keys) {
+  return Array.isArray(keys) && keys.length > 0;
+}
 
-  const metaRes = await fetch(BOT_FRAMEWORK_OPENID);
+async function fetchJwks({ force = false } = {}) {
+  const now = Date.now();
+  if (
+    !force &&
+    hasUsableKeys(jwksCache.keys) &&
+    now - jwksCache.fetchedAt < JWKS_TTL_MS
+  ) {
+    return jwksCache.keys;
+  }
+
+  const signal = AbortSignal.timeout(JWKS_FETCH_TIMEOUT_MS);
+  const metaRes = await fetch(BOT_FRAMEWORK_OPENID, { signal });
+  if (!metaRes.ok) throw new Error(`OpenID metadata HTTP ${metaRes.status}`);
   const meta = await metaRes.json().catch(() => ({}));
-  const jwksUri =
-    meta.jwks_uri ||
-    `${BOT_FRAMEWORK_OPENID.replace(/openidconfiguration$/, "keys")}`;
-  const keysRes = await fetch(jwksUri);
+  const fallbackUri = BOT_FRAMEWORK_OPENID.replace(
+    /openidconfiguration$/,
+    "keys"
+  );
+  const jwksUri = meta.jwks_uri || fallbackUri;
+  if (!isAllowedJwksUrl(jwksUri)) throw new Error("Untrusted JWKS URI.");
+
+  const keysRes = await fetch(jwksUri, {
+    signal: AbortSignal.timeout(JWKS_FETCH_TIMEOUT_MS),
+  });
+  if (!keysRes.ok) throw new Error(`JWKS HTTP ${keysRes.status}`);
   const body = await keysRes.json().catch(() => ({}));
   const keys = Array.isArray(body.keys) ? body.keys : [];
-  jwksCache = { keys, fetchedAt: now, jwksUri };
+  if (!hasUsableKeys(keys)) throw new Error("JWKS contained no keys.");
+
+  jwksCache = { keys, fetchedAt: Date.now(), jwksUri };
   return keys;
+}
+
+function keysMatchingKid(keys, kid) {
+  if (!kid) return keys;
+  return keys.filter((key) => key.kid === kid);
 }
 
 async function verifyBotFrameworkToken(token, appId) {
   if (!token || !appId) return false;
   const decoded = jwt.decode(token, { complete: true });
   if (!decoded?.payload || !decoded.header) return false;
+  if (decoded.header.alg !== "RS256") return false;
   if (!isAllowedIssuer(decoded.payload.iss)) return false;
 
-  let keys = [];
+  let keys;
   try {
     keys = await fetchJwks();
   } catch (error) {
@@ -183,7 +251,16 @@ async function verifyBotFrameworkToken(token, appId) {
   }
 
   const kid = decoded.header.kid;
-  const candidates = kid ? keys.filter((key) => key.kid === kid) : keys;
+  let candidates = keysMatchingKid(keys, kid);
+  if (kid && !candidates.length) {
+    try {
+      keys = await fetchJwks({ force: true });
+      candidates = keysMatchingKid(keys, kid);
+    } catch (error) {
+      log("JWKS refetch failed:", error.message);
+      return false;
+    }
+  }
   if (!candidates.length) return false;
 
   for (const jwk of candidates) {
@@ -192,6 +269,7 @@ async function verifyBotFrameworkToken(token, appId) {
       jwt.verify(token, pem, {
         algorithms: ["RS256"],
         audience: String(appId),
+        issuer: decoded.payload.iss,
         clockTolerance: 300,
       });
       return true;
@@ -370,7 +448,6 @@ function mentionedBot(activity = {}) {
     return true;
   const text = String(activity.text || "");
   if (botId && text.includes(String(botId))) return true;
-  if (/<at>[\s\S]*?<\/at>/i.test(text)) return true;
   return false;
 }
 
@@ -674,19 +751,15 @@ async function acceptTeamsActivity(request = {}) {
     return { status: 400, body: { ok: false, error: "Invalid activity." } };
   }
 
-  if (token) {
-    const payload = jwt.decode(token);
-    if (
-      payload?.serviceurl &&
-      activity.serviceUrl &&
-      String(payload.serviceurl).replace(/\/$/, "") !==
-        String(activity.serviceUrl).replace(/\/$/, "")
-    ) {
-      return {
-        status: 401,
-        body: { ok: false, error: "Token service URL mismatch." },
-      };
-    }
+  const payload = jwt.decode(token) || {};
+  if (
+    !serviceUrlMatches(payload.serviceurl, activity.serviceUrl) ||
+    !isAllowedServiceUrl(activity.serviceUrl)
+  ) {
+    return {
+      status: 401,
+      body: { ok: false, error: "Token service URL mismatch." },
+    };
   }
 
   if (!connector.active) {

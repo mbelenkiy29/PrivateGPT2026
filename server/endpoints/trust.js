@@ -6,6 +6,7 @@ const { UsageEvent } = require("../models/usageEvent");
 const { User } = require("../models/user");
 const { WorkspaceChats } = require("../models/workspaceChats");
 const { reqBody, userFromSession } = require("../utils/http");
+const { parseRetentionDays } = require("../utils/helpers/trust");
 const {
   flexUserRoleValid,
   ROLES,
@@ -61,7 +62,7 @@ function trustEndpoints(app) {
         const [chats, memories, embedChats] = await Promise.all([
           WorkspaceChats.where({ user_id: userId }),
           Memory.where({ userId }),
-          EmbedChats.where({ usersId: userId }),
+          EmbedChats.forUser(userId),
         ]);
 
         const actor = await userFromSession(request, response);
@@ -100,7 +101,7 @@ function trustEndpoints(app) {
 
         await WorkspaceChats.delete({ user_id: userId });
         await Memory.deleteMany({ userId });
-        await EmbedChats.delete({ usersId: userId });
+        await EmbedChats.deleteForUser(userId);
 
         const actor = await userFromSession(request, response);
         await EventLogs.logEvent(
@@ -123,14 +124,12 @@ function trustEndpoints(app) {
     async (request, response) => {
       try {
         const { days } = reqBody(request);
-        const parsed = Number(days);
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          return response.status(400).json({
-            error: "days must be a number >= 0 (0 = keep forever).",
-          });
+        const parsed = parseRetentionDays(days);
+        if (parsed.error) {
+          return response.status(400).json({ error: parsed.error });
         }
 
-        const value = Math.floor(parsed);
+        const value = parsed.days;
         const { success, error } = await SystemSettings._updateSettings({
           chat_retention_days: value,
         });

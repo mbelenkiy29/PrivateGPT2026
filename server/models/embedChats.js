@@ -1,5 +1,6 @@
 const { safeJsonParse } = require("../utils/http");
 const prisma = require("../utils/prisma");
+const { embedChatClauseForUser } = require("../utils/helpers/trust");
 
 /**
  * @typedef {Object} EmbedChat
@@ -181,6 +182,18 @@ const EmbedChats = {
       console.error(error.message);
       return [];
     }
+  },
+
+  clauseForUser: embedChatClauseForUser,
+
+  forUser: async function (userId) {
+    if (userId == null) return [];
+    return this.where(embedChatClauseForUser(userId));
+  },
+
+  deleteForUser: async function (userId) {
+    if (userId == null) return false;
+    return this.delete(embedChatClauseForUser(userId));
   },
 
   count: async function (clause = {}) {

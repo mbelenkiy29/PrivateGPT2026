@@ -948,10 +948,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Confidentialité et gestion des données",
-    description:
-      "Voici votre configuration pour la gestion des données et des fournisseurs tiers connectés avec PrivateGPT.",
-    anonymous: "Télémétrie anonyme activée",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -991,6 +990,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

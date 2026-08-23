@@ -1139,10 +1139,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privadesa i gestió de dades",
-    description:
-      "Aquesta és la teva configuració de com els proveïdors de tercers connectats i PrivateGPT gestionen les teves dades.",
-    anonymous: "Telemetria anònima activada",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1182,6 +1181,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

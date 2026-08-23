@@ -922,10 +922,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privatliv & datahåndtering",
-    description:
-      "Dette er din konfiguration for, hvordan tilsluttede tredjepartsudbydere og PrivateGPT håndterer dine data.",
-    anonymous: "Anonym telemetri aktiveret",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -965,6 +964,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

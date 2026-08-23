@@ -937,10 +937,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Конфиденциальность и обработка данных",
-    description:
-      "Это ваша конфигурация для того, как подключенные сторонние поставщики и PrivateGPT обрабатывают ваши данные.",
-    anonymous: "Анонимная телеметрия включена",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -980,6 +979,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

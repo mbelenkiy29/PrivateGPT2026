@@ -990,10 +990,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "פרטיות וטיפול בנתונים",
-    description:
-      "זוהי התצורה שלך לאופן שבו ספקים צד שלישי מחוברים ו-PrivateGPT מטפלים בנתונים שלך.",
-    anonymous: "טלמטריה אנונימית מופעלת",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1033,6 +1032,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

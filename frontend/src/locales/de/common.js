@@ -1045,10 +1045,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Datenschutz & Datenverarbeitung",
-    description:
-      "Dies ist Ihre Konfiguration dafür, wie verbundene Drittanbieter und PrivateGPT Ihre Daten behandeln.",
-    anonymous: "Anonyme Telemetrie aktiviert",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1088,6 +1087,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

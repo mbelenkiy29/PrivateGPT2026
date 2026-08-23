@@ -1053,10 +1053,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Soukromí a zpracování dat",
-    description:
-      "Toto je vaše konfigurace, jak připojené třetí strany a PrivateGPT zpracovávají vaše data.",
-    anonymous: "Anonymní telemetrie je povolena",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1096,6 +1095,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

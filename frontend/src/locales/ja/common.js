@@ -909,10 +909,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "プライバシーとデータ処理",
-    description:
-      "これは、接続されているサードパーティプロバイダーとPrivateGPTがデータをどのように処理するかの設定です。",
-    anonymous: "匿名テレメトリが有効",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -952,6 +951,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

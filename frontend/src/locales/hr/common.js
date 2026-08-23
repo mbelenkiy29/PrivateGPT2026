@@ -1299,10 +1299,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privatnost i rukovanje podacima",
-    description:
-      "Ovo je vaša konfiguracija za način na koji povezani pružatelji usluga trećih strana i PrivateGPT rukuju vašim podacima.",
-    anonymous: "Anonimna telemetrija omogućena",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1342,6 +1341,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

@@ -957,9 +957,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "隐私和数据处理",
-    description: "这是你对如何处理连接的第三方提供商和PrivateGPT的数据的配置。",
-    anonymous: "启用匿名遥测",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -999,6 +999,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

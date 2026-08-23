@@ -129,7 +129,6 @@ function WhyThisAnswerModal({ isOpen, onClose, provenance, sources = [] }) {
                 {provenance.local
                   ? t("chat_window.why_local")
                   : t("chat_window.why_cloud")}
-                {provenance.destination ? ` (${provenance.destination})` : ""}
               </WhyRow>
               {provenance.provider && (
                 <WhyRow label={t("chat_window.why_provider")}>
@@ -160,9 +159,15 @@ function WhyThisAnswerModal({ isOpen, onClose, provenance, sources = [] }) {
             )}
           </WhyRow>
         </dl>
-        <p className="text-xs text-theme-text-secondary">
-          {t("chat_window.why_no_training")}
-        </p>
+        {provenance?.local === true ? (
+          <p className="text-xs text-theme-text-secondary">
+            {t("chat_window.why_no_training")}
+          </p>
+        ) : provenance ? (
+          <p className="text-xs text-theme-text-secondary">
+            {t("privacy.no_training_cloud")}
+          </p>
+        ) : null}
       </ModalBody>
     </Modal>
   );

@@ -917,10 +917,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "حریم خصوصی و مدیریت داده‌ها",
-    description:
-      "این پیکربندی شما برای نحوه مدیریت داده‌ها توسط ارائه‌دهندگان شخص ثالث متصل و PrivateGPT است.",
-    anonymous: "ارسال تله‌متری ناشناس فعال است",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -960,6 +959,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

@@ -1054,10 +1054,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privatumas ir duomenų tvarkymas",
-    description:
-      "Tai jūsų konfigūracija, kaip prijungti trečiųjų šalių tiekėjai ir PrivateGPT tvarko jūsų duomenis.",
-    anonymous: "Anoniminė telemetrija įjungta",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1097,6 +1096,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

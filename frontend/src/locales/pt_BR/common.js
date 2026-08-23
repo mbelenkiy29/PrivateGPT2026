@@ -1026,10 +1026,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privacidade & Dados",
-    description:
-      "Configurações de como provedores terceiros e o PrivateGPT lidam com seus dados.",
-    anonymous: "Telemetria Anônima Ativa",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1069,6 +1068,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

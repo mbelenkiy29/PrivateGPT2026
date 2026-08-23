@@ -1039,10 +1039,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Prywatność i obsługa danych",
-    description:
-      "Jest to konfiguracja sposobu, w jaki połączeni dostawcy zewnętrzni i PrivateGPT przetwarzają dane użytkownika.",
-    anonymous: "Włączona anonimowa telemetria",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1082,6 +1081,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

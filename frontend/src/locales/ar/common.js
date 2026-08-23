@@ -918,10 +918,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "الخصوصية ومعالجة البيانات",
-    description:
-      "هذا هو التكوين الخاص بك لكيفية تعامل موفري الطرف الثالث المتصلين و إني ثينك إلْلْمْ مع بياناتك.",
-    anonymous: "تم تمكين القياس المستتر عن بعد ",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -961,6 +960,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

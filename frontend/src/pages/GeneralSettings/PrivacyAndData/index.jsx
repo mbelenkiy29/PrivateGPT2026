@@ -12,7 +12,7 @@ import { PROVIDER_PRIVACY_MAP } from "@/components/ProviderPrivacy/constants";
 import Toggle from "@/components/lib/Toggle";
 import { numberWithCommas } from "@/utils/numbers";
 
-// Matches server FREE_PROVIDERS — unknown/proxy LLMs are treated as cloud.
+// Keep in sync with server FREE_PROVIDERS. Unknown/proxy (and nvidia-nim) are cloud.
 const LOCAL_LLM_PROVIDERS = [
   "ollama",
   "lmstudio",
@@ -23,7 +23,6 @@ const LOCAL_LLM_PROVIDERS = [
   "lemonade",
   "docker-model-runner",
   "foundry",
-  "nvidia-nim",
 ];
 
 function isLocalLlm(provider) {
@@ -203,18 +202,16 @@ function NoTrainingCopy({ llmIsCloud }) {
   );
 }
 
-function RetentionSlider({ initialDays = 90, onSaved }) {
+function RetentionSlider({ initialDays, onSaved }) {
   const { t } = useTranslation();
-  const [days, setDays] = useState(
-    Number.isFinite(Number(initialDays)) ? Number(initialDays) : 90
-  );
+  const known = Number.isFinite(Number(initialDays));
+  const savedDays = known ? Number(initialDays) : null;
+  const [days, setDays] = useState(savedDays);
   const [saving, setSaving] = useState(false);
-  const savedDays = Number.isFinite(Number(initialDays))
-    ? Number(initialDays)
-    : 90;
-  const dirty = days !== savedDays;
+  const dirty = known && days !== savedDays;
 
   const handleSave = async () => {
+    if (!known) return;
     setSaving(true);
     const result = await Trust.setRetention(days);
     setSaving(false);
@@ -238,50 +235,58 @@ function RetentionSlider({ initialDays = 90, onSaved }) {
           {t("privacy.retention.description")}
         </p>
       </div>
-      <div className="flex items-center justify-between gap-x-4">
-        <p className="text-theme-text-primary text-sm font-semibold">
-          {days === 0
-            ? t("privacy.retention.forever")
-            : t("privacy.retention.days", { count: days })}
+      {!known ? (
+        <p className="text-theme-text-secondary text-xs">
+          {t("privacy.retention.unavailable")}
         </p>
-        <input
-          type="number"
-          min={0}
-          max={365}
-          step={1}
-          value={days}
-          onWheel={(e) => e.target.blur()}
-          onChange={(e) => {
-            const next = Number(e.target.value);
-            if (!Number.isFinite(next)) return;
-            setDays(Math.min(365, Math.max(0, Math.floor(next))));
-          }}
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button outline-none w-24 p-2.5"
-        />
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={365}
-        step={1}
-        value={days}
-        onChange={(e) => setDays(Number(e.target.value))}
-        className="w-full accent-sky-400"
-        aria-label={t("privacy.retention.title")}
-      />
-      <div className="flex justify-between text-[11px] text-theme-text-secondary">
-        <span>{t("privacy.retention.forever")}</span>
-        <span>{t("privacy.retention.days", { count: 90 })}</span>
-        <span>{t("privacy.retention.days", { count: 365 })}</span>
-      </div>
-      <button
-        type="button"
-        disabled={saving || !dirty}
-        onClick={handleSave}
-        className="border-none text-xs px-4 py-1 font-semibold rounded-lg bg-primary-button text-white h-[34px] w-fit disabled:opacity-50"
-      >
-        {t("privacy.retention.save")}
-      </button>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-x-4">
+            <p className="text-theme-text-primary text-sm font-semibold">
+              {days === 0
+                ? t("privacy.retention.forever")
+                : t("privacy.retention.days", { count: days })}
+            </p>
+            <input
+              type="number"
+              min={0}
+              max={365}
+              step={1}
+              value={days}
+              onWheel={(e) => e.target.blur()}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                if (!Number.isFinite(next)) return;
+                setDays(Math.min(365, Math.max(0, Math.floor(next))));
+              }}
+              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button outline-none w-24 p-2.5"
+            />
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={365}
+            step={1}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="w-full accent-sky-400"
+            aria-label={t("privacy.retention.title")}
+          />
+          <div className="flex justify-between text-[11px] text-theme-text-secondary">
+            <span>{t("privacy.retention.forever")}</span>
+            <span>{t("privacy.retention.days", { count: 90 })}</span>
+            <span>{t("privacy.retention.days", { count: 365 })}</span>
+          </div>
+          <button
+            type="button"
+            disabled={saving || !dirty}
+            onClick={handleSave}
+            className="border-none text-xs px-4 py-1 font-semibold rounded-lg bg-primary-button text-white h-[34px] w-fit disabled:opacity-50"
+          >
+            {t("privacy.retention.save")}
+          </button>
+        </>
+      )}
     </div>
   );
 }

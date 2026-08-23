@@ -939,10 +939,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Gizlilik & Veri İşleme",
-    description:
-      "Bağlantılı üçüncü taraf sağlayıcılarla ve PrivateGPT ile verilerinizin nasıl ele alındığını burada yapılandırabilirsiniz.",
-    anonymous: "Anonim Telemetri Etkin",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -982,6 +981,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

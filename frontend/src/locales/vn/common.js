@@ -924,10 +924,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Quyền riêng tư & Xử lý Dữ liệu",
-    description:
-      "Đây là cấu hình của bạn về cách các nhà cung cấp bên thứ ba được kết nối và PrivateGPT xử lý dữ liệu của bạn.",
-    anonymous: "Đã Bật Telemetry Ẩn danh",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -967,6 +966,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

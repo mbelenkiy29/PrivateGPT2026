@@ -1344,6 +1344,8 @@ const TRANSLATIONS = {
       save: "Save retention",
       saved: "Chat retention updated.",
       failed: "Could not update chat retention.",
+      unavailable:
+        "Could not load the current retention setting. Save is disabled until this page can reach the server.",
     },
     gdpr: {
       title: "Export or delete user data",

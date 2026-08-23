@@ -1002,10 +1002,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privaatsus ja andmetöötlus",
-    description:
-      "Konfiguratsioon kolmandate osapoolte ja PrivateGPT-i andmekäitluse kohta.",
-    anonymous: "Anonüümne telemeetria lubatud",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1045,6 +1044,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

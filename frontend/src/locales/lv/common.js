@@ -1031,10 +1031,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privātums un datu apstrāde",
-    description:
-      "Šī ir jūsu konfigurācija tam, kā savienotie trešo pušu pakalpojumu sniedzēji un PrivateGPT apstrādā jūsu datus.",
-    anonymous: "Anonīmā telemetrija iespējota",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1074,6 +1073,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

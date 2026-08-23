@@ -294,10 +294,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Confidențialitate & Gestionarea datelor",
-    description:
-      "Aceasta este configurația ta pentru modul în care furnizorii terți conectați și PrivateGPT gestionează datele tale.",
-    anonymous: "Telemetrie anonimă activată",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -337,6 +336,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

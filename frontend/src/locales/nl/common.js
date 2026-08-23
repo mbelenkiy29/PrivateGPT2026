@@ -932,10 +932,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privacy & Gegevensverwerking",
-    description:
-      "Dit is je configuratie voor hoe verbonden derden en PrivateGPT je gegevens verwerken.",
-    anonymous: "Anonieme Telemetrie Ingeschakeld",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -975,6 +974,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

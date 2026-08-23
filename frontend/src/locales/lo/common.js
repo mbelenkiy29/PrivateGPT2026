@@ -1235,10 +1235,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "ຄວາມເປັນສ່ວນຕົວ & ການຈັດການຂໍ້ມູນ",
-    description:
-      "ນີ້ແມ່ນການຕັ້ງຄ່າວິທີທີ່ຜູ້ໃຫ້ບໍລິການພາຍນອກ ແລະ PrivateGPT ຈັດການຂໍ້ມູນຂອງທ່ານ.",
-    anonymous: "ເປີດການສົ່ງຂໍ້ມູນການໃຊ້ງານແບບບໍ່ລະບຸຕົວຕົນ (Telemetry)",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1278,6 +1277,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

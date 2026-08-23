@@ -869,9 +869,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "隱私與資料處理",
-    description: "這裡設定已連線的第三方提供者與 PrivateGPT 會如何處理資料。",
-    anonymous: "已啟用匿名遙測",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -911,6 +911,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

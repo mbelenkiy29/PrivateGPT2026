@@ -1293,10 +1293,9 @@ const TRANSLATIONS = {
     },
   },
   privacy: {
-    title: "Privasi & Penanganan Data",
-    description:
-      "Ini adalah konfigurasi Anda tentang bagaimana penyedia pihak ketiga yang terhubung dan PrivateGPT menangani data Anda.",
-    anonymous: "Telemetri Anonim Diaktifkan",
+    title: null,
+    description: null,
+    anonymous: null,
     summary: {
       title: null,
       description: null,
@@ -1336,6 +1335,7 @@ const TRANSLATIONS = {
       save: null,
       saved: null,
       failed: null,
+      unavailable: null,
     },
     gdpr: {
       title: null,

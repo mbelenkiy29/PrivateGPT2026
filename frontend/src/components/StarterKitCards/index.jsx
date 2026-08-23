@@ -20,6 +20,7 @@ const KIT_ICONS = {
 export default function StarterKitCards({
   kits = [],
   installingId = null,
+  installedKitId = null,
   onSelect,
 }) {
   const { t } = useTranslation();
@@ -29,6 +30,8 @@ export default function StarterKitCards({
       {kits.map((kit) => {
         const Icon = KIT_ICONS[kit.id] || BookOpen;
         const busy = installingId === kit.id;
+        const installed = installedKitId === kit.id;
+        const lockedOut = !!installedKitId && !installed;
         const name = t(`onboarding.starterKit.kits.${kit.id}.name`, {
           defaultValue: kit.name,
         });
@@ -41,10 +44,10 @@ export default function StarterKitCards({
           <button
             key={kit.id}
             type="button"
-            disabled={!!installingId}
+            disabled={!!installingId || lockedOut}
             onClick={() => onSelect(kit)}
             className={`text-left rounded-xl border-2 p-4 flex flex-col gap-y-2 transition-all duration-200 ${
-              busy
+              busy || installed
                 ? "border-sky-400/70 bg-theme-bg-secondary"
                 : "border-theme-sidebar-border hover:border-sky-400/70 hover:bg-theme-bg-secondary"
             } disabled:opacity-60 disabled:cursor-not-allowed`}
@@ -65,7 +68,9 @@ export default function StarterKitCards({
             <span className="text-sky-400 text-xs font-medium mt-auto">
               {busy
                 ? t("onboarding.starterKit.installing")
-                : t("onboarding.starterKit.install")}
+                : installed
+                  ? t("onboarding.starterKit.continue")
+                  : t("onboarding.starterKit.install")}
             </span>
           </button>
         );

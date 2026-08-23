@@ -27,6 +27,7 @@ export default function DefaultChatContainer() {
     loading: true,
   });
   const [kits, setKits] = useState([]);
+  const [kitsLoading, setKitsLoading] = useState(false);
   const [installingId, setInstallingId] = useState(null);
   const canInstallKits = !user || ["admin", "manager"].includes(user?.role);
 
@@ -64,7 +65,10 @@ export default function DefaultChatContainer() {
 
   useEffect(() => {
     if (!canInstallKits) return;
-    Workspace.starterKits().then(setKits);
+    setKitsLoading(true);
+    Workspace.starterKits()
+      .then(setKits)
+      .finally(() => setKitsLoading(false));
   }, [canInstallKits]);
 
   if (loading) {
@@ -87,6 +91,19 @@ export default function DefaultChatContainer() {
 
   const hasWorkspaces = workspaces.length > 0;
   const showStarterKits = !hasWorkspaces && canInstallKits && kits.length > 0;
+  const showAdminEmpty =
+    !hasWorkspaces && canInstallKits && !kitsLoading && kits.length === 0;
+
+  async function handleEmptyWorkspace() {
+    const { workspace, message } = await Workspace.new({
+      name: t("new-workspace.placeholder"),
+    });
+    if (!workspace) {
+      showToast(message || t("onboarding.starterKit.error"), "error");
+      return;
+    }
+    navigate(paths.workspace.chat(workspace.slug));
+  }
 
   async function handleInstallKit(kit) {
     if (installingId) return;
@@ -121,8 +138,10 @@ export default function DefaultChatContainer() {
         <p className="text-theme-home-text-secondary text-base text-center whitespace-pre-line">
           {hasWorkspaces
             ? t("home.chooseWorkspace")
-            : showStarterKits
-              ? t("home.starterKits.description")
+            : canInstallKits
+              ? kitsLoading
+                ? t("common.loading")
+                : t("home.starterKits.description")
               : t("home.notAssigned")}
         </p>
         {hasWorkspaces && (
@@ -148,7 +167,23 @@ export default function DefaultChatContainer() {
               installingId={installingId}
               onSelect={handleInstallKit}
             />
+            <button
+              type="button"
+              onClick={handleEmptyWorkspace}
+              className="mt-4 w-full text-center text-theme-text-secondary text-xs hover:text-theme-text-primary"
+            >
+              {t("home.starterKits.emptyWorkspace")}
+            </button>
           </div>
+        )}
+        {showAdminEmpty && (
+          <button
+            type="button"
+            onClick={handleEmptyWorkspace}
+            className="mt-4 text-sm font-medium w-fit px-4 h-[34px] flex items-center justify-center rounded-lg cursor-pointer bg-theme-home-button-secondary hover:bg-theme-home-button-secondary-hover text-theme-home-button-secondary-text"
+          >
+            {t("home.starterKits.emptyWorkspace")}
+          </button>
         )}
       </div>
     </Layout>

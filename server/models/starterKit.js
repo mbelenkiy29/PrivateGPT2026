@@ -13,13 +13,9 @@ const KIT_ORDER = [
 ];
 
 function kitsDir() {
-  const bundled = path.resolve(__dirname, "../storage/starter-kits");
-  if (fs.existsSync(bundled)) return bundled;
-  if (process.env.STORAGE_DIR) {
-    const fromStorage = path.resolve(process.env.STORAGE_DIR, "starter-kits");
-    if (fs.existsSync(fromStorage)) return fromStorage;
-  }
-  return bundled;
+  // Shipped with the image, not under STORAGE_DIR — Docker volumes overlay
+  // server/storage and would hide kits on upgrade.
+  return path.resolve(__dirname, "../utils/starterKits/kits");
 }
 
 function publicKit(kit) {
@@ -133,10 +129,18 @@ const StarterKit = {
       const {
         WorkspaceSuggestedMessages,
       } = require("./workspacesSuggestedMessages");
-      await WorkspaceSuggestedMessages.saveAll(
+      const saved = await WorkspaceSuggestedMessages.saveAll(
         kit.suggestedMessages,
         workspace.slug
       );
+      if (saved && saved.success === false) {
+        return {
+          workspace,
+          embed: null,
+          kit: publicKit(kit),
+          message: saved.error || "Failed to save suggested messages.",
+        };
+      }
     }
 
     const shouldEmbed =
@@ -153,6 +157,14 @@ const StarterKit = {
         },
         userId
       );
+      if (!created?.embed) {
+        return {
+          workspace,
+          embed: null,
+          kit: publicKit(kit),
+          message: created?.message || "Failed to create grounded embed.",
+        };
+      }
       embed = created.embed;
     }
 

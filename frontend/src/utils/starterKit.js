@@ -14,13 +14,24 @@ export function rememberStarterKitOnboarding({ slug, firstQuestion, kitId }) {
   );
 }
 
+export function readStarterKitOnboarding() {
+  return safeJsonParse(sessionStorage.getItem(STARTER_KIT_ONBOARDING), null);
+}
+
 export function consumeStarterKitOnboarding() {
-  const data = safeJsonParse(
-    sessionStorage.getItem(STARTER_KIT_ONBOARDING),
-    null
-  );
+  const data = readStarterKitOnboarding();
   sessionStorage.removeItem(STARTER_KIT_ONBOARDING);
   return data;
+}
+
+export function continueToKitChat(navigate, paths) {
+  const landing = consumeStarterKitOnboarding();
+  if (landing?.firstQuestion) queueStarterKitPrompt(landing.firstQuestion);
+  if (landing?.slug) {
+    navigate(paths.workspace.chat(landing.slug));
+    return true;
+  }
+  return false;
 }
 
 export function queueStarterKitPrompt(text) {

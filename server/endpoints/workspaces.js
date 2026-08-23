@@ -102,10 +102,10 @@ function workspaceEndpoints(app) {
           userId: user?.id,
           createEmbed,
         });
-        if (!result.workspace) {
+        if (!result.workspace || result.message) {
           response.status(400).json({
-            workspace: null,
-            embed: null,
+            workspace: result.workspace || null,
+            embed: result.embed || null,
             kit: result.kit,
             message: result.message || "Failed to install starter kit.",
           });

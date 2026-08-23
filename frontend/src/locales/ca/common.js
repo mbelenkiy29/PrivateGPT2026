@@ -74,7 +74,9 @@ const TRANSLATIONS = {
           "name": null,
           "description": null
         }
-      }
+      },
+      "continue": null,
+      "alreadyInstalled": null
     },
     "connectDrive": {
       "title": null,
@@ -85,7 +87,15 @@ const TRANSLATIONS = {
       "skip": null,
       "later": null,
       "needsCredentials": null,
-      "connectError": null
+      "connectError": null,
+      "pickFolder": null,
+      "pickFolderHint": null,
+      "noFolders": null,
+      "watchFolder": null,
+      "indexing": null,
+      "indexed": null,
+      "indexError": null,
+      "manageDocumentsHint": null
     }
   },
   "common": {
@@ -113,7 +123,8 @@ const TRANSLATIONS = {
     "goToWorkspace": "Ves a \"{{workspace}}\"",
     "starterKits": {
       "title": null,
-      "description": null
+      "description": null,
+      "emptyWorkspace": null
     }
   },
   "settings": {

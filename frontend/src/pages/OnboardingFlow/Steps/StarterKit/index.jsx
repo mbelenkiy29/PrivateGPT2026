@@ -7,6 +7,7 @@ import showToast from "@/utils/toast";
 import StarterKitCards from "@/components/StarterKitCards";
 import {
   firstSuggestedQuestion,
+  readStarterKitOnboarding,
   rememberStarterKitOnboarding,
 } from "@/utils/starterKit";
 
@@ -19,6 +20,9 @@ export default function StarterKitStep({
   const navigate = useNavigate();
   const [kits, setKits] = useState([]);
   const [installingId, setInstallingId] = useState(null);
+  const [installedKitId, setInstalledKitId] = useState(
+    () => readStarterKitOnboarding()?.kitId || null
+  );
 
   const TITLE = t("onboarding.starterKit.title");
   const DESCRIPTION = t("onboarding.starterKit.description");
@@ -31,7 +35,7 @@ export default function StarterKitStep({
       onClick: handleSkip,
     });
     setBackBtn({ showing: true, disabled: false, onClick: handleBack });
-  }, [TITLE, DESCRIPTION, installingId]);
+  }, [TITLE, DESCRIPTION, installingId, installedKitId]);
 
   useEffect(() => {
     Workspace.starterKits().then(setKits);
@@ -42,11 +46,21 @@ export default function StarterKitStep({
   }
 
   function handleSkip() {
+    if (readStarterKitOnboarding()?.slug) {
+      navigate(paths.onboarding.connectDrive());
+      return;
+    }
     navigate(paths.onboarding.userSetup());
   }
 
   async function handleSelect(kit) {
     if (installingId) return;
+    const existing = readStarterKitOnboarding();
+    if (existing?.slug) {
+      navigate(paths.onboarding.connectDrive());
+      return;
+    }
+
     setInstallingId(kit.id);
     const {
       workspace,
@@ -58,20 +72,29 @@ export default function StarterKitStep({
       showToast(message || t("onboarding.starterKit.error"), "error");
       return;
     }
+    if (message) showToast(message, "error");
 
     rememberStarterKitOnboarding({
       slug: workspace.slug,
       kitId: kit.id,
       firstQuestion: firstSuggestedQuestion(installed || kit),
     });
+    setInstalledKitId(kit.id);
+    setInstallingId(null);
     navigate(paths.onboarding.connectDrive());
   }
 
   return (
     <div className="w-full flex flex-col items-center gap-y-4">
+      {installedKitId && (
+        <p className="text-theme-text-secondary text-xs text-center max-w-[600px]">
+          {t("onboarding.starterKit.alreadyInstalled")}
+        </p>
+      )}
       <StarterKitCards
         kits={kits}
         installingId={installingId}
+        installedKitId={installedKitId}
         onSelect={handleSelect}
       />
       <button
@@ -80,7 +103,9 @@ export default function StarterKitStep({
         disabled={!!installingId}
         className="text-theme-text-secondary text-sm font-medium hover:text-theme-text-primary disabled:opacity-50"
       >
-        {t("onboarding.starterKit.skip")}
+        {installedKitId
+          ? t("onboarding.starterKit.continue")
+          : t("onboarding.starterKit.skip")}
       </button>
     </div>
   );

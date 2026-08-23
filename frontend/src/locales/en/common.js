@@ -16,6 +16,9 @@ const TRANSLATIONS = {
       skip: "Skip for now",
       install: "Use this kit",
       installing: "Setting up…",
+      continue: "Continue",
+      alreadyInstalled:
+        "This workspace is already set up. Continue to connect Drive, or skip to user setup.",
       error: "Could not install starter kit.",
       kits: {
         "customer-support": {
@@ -53,15 +56,26 @@ const TRANSLATIONS = {
     connectDrive: {
       title: "Connect Google Drive",
       description:
-        "Optionally connect Drive so this workspace can use your files. You can skip and add documents later.",
+        "Optionally connect Drive and pick a folder to index into this workspace. You can skip and add files later.",
       connect: "Connect Google Drive",
       connecting: "Opening Google login…",
       connected: "Drive connected",
-      skip: "Skip and start chatting",
-      later: "Connect Drive so answers can use files from a shared folder.",
+      skip: "Skip — I'll add files later in Manage Documents",
+      later:
+        "Connect Drive, then pick a folder to index and watch. Connecting the account alone does not add documents.",
       needsCredentials:
         "Drive login is not configured yet. You can add credentials later in Settings → Cloud drives.",
       connectError: "Could not connect Google Drive.",
+      pickFolder:
+        "Open a folder, then index and watch it. Files will appear in this workspace; Manage Documents can add more later.",
+      pickFolderHint: "Open a folder first, then index and watch it.",
+      noFolders: "No folders here.",
+      watchFolder: "Index and watch this folder",
+      indexing: "Indexing folder…",
+      indexed: "Folder indexed and watched.",
+      indexError: "Could not index that folder.",
+      manageDocumentsHint:
+        "Until a folder is indexed, answers have no documents to ground on. Password and privacy can be set next, or later in Settings.",
     },
     userSetup: {
       title: "User Setup",
@@ -131,6 +145,7 @@ const TRANSLATIONS = {
       title: "Start with a job kit",
       description:
         "Install a ready-made workspace with a prompt, suggested questions, and optional embed.",
+      emptyWorkspace: "Create an empty workspace instead",
     },
   },
   settings: {

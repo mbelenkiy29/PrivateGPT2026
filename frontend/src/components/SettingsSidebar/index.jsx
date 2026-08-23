@@ -330,7 +330,7 @@ const SidebarOptions = ({ user = null, t }) => (
               roles: ["admin"],
             },
             {
-              btnText: "Pending drafts",
+              btnText: t("settings.pending-drafts"),
               href: paths.settings.mailDrafts(),
               flex: true,
               roles: ["admin"],

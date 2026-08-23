@@ -99,6 +99,7 @@ const TRANSLATIONS = {
     privacy: "Privacy & Data",
     "ai-providers": "AI Providers",
     "agent-skills": "Agent Skills",
+    "pending-drafts": "Pending drafts",
     "model-router": "Model Router",
     "community-hub": {
       title: "Community Hub",
@@ -1944,6 +1945,41 @@ const TRANSLATIONS = {
         spreadsheet: "Spreadsheet",
         generic: "File",
       },
+    },
+  },
+  mailDrafts: {
+    title: "Pending drafts",
+    description:
+      "Review Gmail and Outlook drafts created by the agent. Open a draft in its mailbox to send — sending is never done from this page.",
+    refresh: "Refresh",
+    noSubject: "(no subject)",
+    openIn: "Open in {{provider}}",
+    table: {
+      provider: "Provider",
+      to: "To",
+      subject: "Subject",
+      snippet: "Snippet",
+      created: "Created",
+    },
+    providers: {
+      gmail: "Gmail",
+      outlook: "Outlook",
+    },
+    empty: {
+      notConnectedTitle: "Mail is not connected",
+      notConnectedSubtitle:
+        "Connect Gmail or Outlook in Agent Skills to list drafts the agent creates for you to send.",
+      noneTitle: "No pending drafts",
+      noneSubtitle:
+        "When the agent saves a Gmail or Outlook draft, it will show up here so you can review and send it yourself.",
+      loadFailedTitle: "Could not load drafts",
+      loadFailedSubtitle:
+        "Something went wrong while fetching pending drafts. Try again.",
+      openSkills: "Open agent skills",
+    },
+    errors: {
+      fetch: "Could not load pending drafts: {{message}}",
+      provider: "{{provider}}: {{message}}",
     },
   },
 };

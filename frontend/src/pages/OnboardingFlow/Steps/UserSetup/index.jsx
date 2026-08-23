@@ -8,6 +8,15 @@ import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
 import { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from "@/utils/username";
 import { PW_REGEX } from "@/pages/GeneralSettings/Security";
+import {
+  continueToKitChat,
+  readStarterKitOnboarding,
+} from "@/utils/starterKit";
+
+function nextAfterUserSetup(navigate) {
+  if (continueToKitChat(navigate, paths)) return;
+  navigate(paths.onboarding.dataHandling());
+}
 
 export default function UserSetup({ setHeader, setForwardBtn, setBackBtn }) {
   const { t } = useTranslation();
@@ -26,14 +35,18 @@ export default function UserSetup({ setHeader, setForwardBtn, setBackBtn }) {
     if (selectedOption === "just_me" && enablePassword) {
       justMeSubmitRef.current?.click();
     } else if (selectedOption === "just_me" && !enablePassword) {
-      navigate(paths.onboarding.dataHandling());
+      nextAfterUserSetup(navigate);
     } else if (selectedOption === "my_team") {
       myTeamSubmitRef.current?.click();
     }
   }
 
   function handleBack() {
-    navigate(paths.onboarding.llmPreference());
+    if (readStarterKitOnboarding()?.slug) {
+      navigate(paths.onboarding.connectDrive());
+      return;
+    }
+    navigate(paths.onboarding.starterKit());
   }
 
   useEffect(() => {
@@ -151,7 +164,7 @@ const JustMe = ({
     window.localStorage.removeItem(AUTH_TIMESTAMP);
     window.localStorage.setItem(AUTH_TOKEN, token);
 
-    navigate(paths.onboarding.dataHandling());
+    nextAfterUserSetup(navigate);
   };
 
   const setNewPassword = (e) => setPassword(e.target.value);
@@ -263,13 +276,12 @@ const MyTeam = ({ setMultiUserLoginValid, myTeamSubmitRef, navigate }) => {
       return;
     }
 
-    navigate(paths.onboarding.dataHandling());
-    // Auto-request token with credentials that was just set so they
-    // are not redirected to login after completion.
+    // Token must be in localStorage before kit chat hits PrivateRoute.
     const { user, token } = await System.requestToken(data);
     window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
     window.localStorage.setItem(AUTH_TOKEN, token);
     window.localStorage.removeItem(AUTH_TIMESTAMP);
+    nextAfterUserSetup(navigate);
   };
 
   const setNewUsername = (e) => setUsername(e.target.value);

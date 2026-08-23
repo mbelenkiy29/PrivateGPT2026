@@ -51,8 +51,10 @@ const WorkspaceSuggestedMessages = {
           },
         });
       }
+      return { success: true, error: null };
     } catch (error) {
       console.error("Failed to save all messages", error.message);
+      return { success: false, error: error.message };
     }
   },
 

@@ -53,6 +53,12 @@ export default {
     dataHandling: () => {
       return "/onboarding/data-handling";
     },
+    starterKit: () => {
+      return "/onboarding/starter-kit";
+    },
+    connectDrive: () => {
+      return "/onboarding/connect-drive";
+    },
   },
   docs: (path = "") => {
     return `https://docs.anythingllm.com${path}`;

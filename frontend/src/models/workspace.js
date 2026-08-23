@@ -23,6 +23,48 @@ const Workspace = {
 
     return { workspace, message };
   },
+  starterKits: async function () {
+    return await fetch(`${API_BASE}/workspace/starter-kits`, {
+      method: "GET",
+      headers: baseHeaders(),
+    })
+      .then((res) => res.json())
+      .then((res) => res.kits || [])
+      .catch((e) => {
+        console.error(e);
+        return [];
+      });
+  },
+  installKit: async function (kitId, { createEmbed } = {}) {
+    return await fetch(`${API_BASE}/workspace/install-kit`, {
+      method: "POST",
+      body: JSON.stringify({ kitId, createEmbed }),
+      headers: baseHeaders(),
+    })
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          return {
+            workspace: body.workspace || null,
+            embed: body.embed || null,
+            kit: body.kit || null,
+            message:
+              body.message ||
+              res.statusText ||
+              "Failed to install starter kit.",
+          };
+        }
+        return body;
+      })
+      .catch((e) => {
+        return {
+          workspace: null,
+          embed: null,
+          kit: null,
+          message: e.message,
+        };
+      });
+  },
   update: async function (slug, data = {}) {
     const { workspace, message } = await fetch(
       `${API_BASE}/workspace/${slug}/update`,

@@ -9,6 +9,74 @@ const TRANSLATIONS = {
       description:
         "PrivateGPT can work with many LLM providers. This will be the service which handles chatting.",
     },
+    starterKit: {
+      title: "Choose a starter kit",
+      description:
+        "Set up a workspace for your first job in a few minutes. You can add documents next.",
+      skip: "Skip for now",
+      install: "Use this kit",
+      installing: "Setting up…",
+      continue: "Continue",
+      alreadyInstalled:
+        "This workspace is already set up. Continue to connect Drive, or skip to user setup.",
+      error: "Could not install starter kit.",
+      kits: {
+        "customer-support": {
+          name: "Customer Support",
+          description:
+            "Grounded FAQ desk for hours, refunds, shipping, and other help-center questions.",
+        },
+        "employee-handbook": {
+          name: "Employee Handbook",
+          description:
+            "Internal HR assistant for PTO, benefits, and policy questions from the handbook.",
+        },
+        "sales-proposals": {
+          name: "Sales Proposals",
+          description:
+            "Rewrite and draft proposals in your voice using past winning proposals.",
+        },
+        "invoice-qa": {
+          name: "Invoice Q&A",
+          description:
+            "Ask questions about invoices, due dates, balances, and vendor payment terms.",
+        },
+        "legal-lite": {
+          name: "Legal Lite",
+          description:
+            "Find clauses in uploaded contracts. Refuses legal advice.",
+        },
+        "clinic-sops": {
+          name: "Clinic SOPs",
+          description:
+            "Staff assistant for clinic procedures. Does not handle PHI or medical advice.",
+        },
+      },
+    },
+    connectDrive: {
+      title: "Connect Google Drive",
+      description:
+        "Optionally connect Drive and pick a folder to index into this workspace. You can skip and add files later.",
+      connect: "Connect Google Drive",
+      connecting: "Opening Google login…",
+      connected: "Drive connected",
+      skip: "Skip — I'll add files later in Manage Documents",
+      later:
+        "Connect Drive, then pick a folder to index and watch. Connecting the account alone does not add documents.",
+      needsCredentials:
+        "Drive login is not configured yet. You can add credentials later in Settings → Cloud drives.",
+      connectError: "Could not connect Google Drive.",
+      pickFolder:
+        "Open a folder, then index and watch it. Files will appear in this workspace; Manage Documents can add more later.",
+      pickFolderHint: "Open a folder first, then index and watch it.",
+      noFolders: "No folders here.",
+      watchFolder: "Index and watch this folder",
+      indexing: "Indexing folder…",
+      indexed: "Folder indexed and watched.",
+      indexError: "Could not index that folder.",
+      manageDocumentsHint:
+        "Until a folder is indexed, answers have no documents to ground on. Password and privacy can be set next, or later in Settings.",
+    },
     userSetup: {
       title: "User Setup",
       description: "Configure your user settings.",
@@ -73,6 +141,12 @@ const TRANSLATIONS = {
     notAssigned:
       "You currently aren't assigned to any workspaces.\nPlease contact your administrator to request access to a workspace.",
     goToWorkspace: 'Go to "{{workspace}}"',
+    starterKits: {
+      title: "Start with a job kit",
+      description:
+        "Install a ready-made workspace with a prompt, suggested questions, and optional embed.",
+      emptyWorkspace: "Create an empty workspace instead",
+    },
   },
   settings: {
     title: "Instance Settings",

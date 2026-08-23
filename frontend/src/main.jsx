@@ -449,6 +449,15 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: "/settings/external-connections/teams",
+        lazy: async () => {
+          const { default: TeamsBotSettings } = await import(
+            "@/pages/GeneralSettings/Connections/TeamsBot"
+          );
+          return { element: <AdminRoute Component={TeamsBotSettings} /> };
+        },
+      },
+      {
         path: "/settings/scheduled-jobs",
         lazy: async () => {
           const { default: ScheduledJobs } = await import(

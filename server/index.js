@@ -48,6 +48,7 @@ const {
 } = require("./endpoints/utils/googleAgentSkillEndpoints");
 const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
+const { teamsChannelEndpoints } = require("./endpoints/channels/teams");
 require("./utils/knowledgeSources/register");
 const { slackEndpoints } = require("./endpoints/slack");
 const { emailInboxEndpoints } = require("./endpoints/emailInbox");
@@ -134,6 +135,7 @@ emailInboxEndpoints(apiRouter);
 knowledgeSourcesEndpoints(apiRouter);
 trustEndpoints(apiRouter);
 slackChannelEndpoints(apiRouter);
+teamsChannelEndpoints(apiRouter);
 // Externally facing embedder endpoints
 embeddedEndpoints(apiRouter);
 

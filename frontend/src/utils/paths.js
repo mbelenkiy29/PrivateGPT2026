@@ -205,6 +205,9 @@ export default {
     slackBot: () => {
       return `/settings/external-connections/slack`;
     },
+    teamsBot: () => {
+      return `/settings/external-connections/teams`;
+    },
     scheduledJobs: () => {
       return `/settings/scheduled-jobs`;
     },

@@ -50,6 +50,7 @@ function historyIsAgentic(chatMode, chatHistory) {
  * @param {string} context.message - The message to send.
  * @param {array} context.attachments - The attachments to send.
  * @param {boolean} context.voiceResponse - Whether to send the response as voice.
+ * @param {boolean} [context.includeCitations=false] - Follow-up with a sources footer (Slack/Teams).
  */
 async function streamResponse({
   ctx = null,

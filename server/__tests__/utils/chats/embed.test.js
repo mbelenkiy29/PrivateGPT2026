@@ -13,6 +13,7 @@ jest.mock("../../../utils/helpers", () => ({
 }));
 jest.mock("../../../utils/helpers/modelPricing", () => ({
   addChatCostToMetrics: jest.fn((metrics) => metrics),
+  FREE_PROVIDERS: [],
 }));
 jest.mock("../../../utils/chats/index", () => ({
   chatPrompt: jest.fn().mockResolvedValue("system"),

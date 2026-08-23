@@ -167,12 +167,15 @@ const TRANSLATIONS = {
     "voice-speech": "Voice & Speech",
     "vector-database": "Vector Database",
     embeds: "Chat Embed",
+    "embed-widgets": "Embed widgets",
     security: "Security",
     "event-logs": "Event Logs",
     "scheduled-jobs": "Scheduled Jobs",
     privacy: "Privacy & Trust",
     "ai-providers": "AI Providers",
     "knowledge-sources": "Knowledge sources",
+    "cloud-drives": "Cloud drives",
+    "email-inbox": "Email inbox",
     "agent-skills": "Agent Skills",
     "pending-drafts": "Pending drafts",
     "model-router": "Model Router",
@@ -195,7 +198,6 @@ const TRANSLATIONS = {
       slack: "Slack",
       teams: "Microsoft Teams",
     },
-    "knowledge-sources": "Knowledge sources",
     slack: {
       title: "Slack",
       description:

@@ -87,6 +87,12 @@ describe("knowledge source adapter auto-registration", () => {
       expect.arrayContaining([
         "google-drive",
         "onedrive",
+        "slack",
+        "imap",
+        "gmail-mail",
+        "outlook-mail",
+        "notion",
+        "dropbox",
         "sharepoint",
         "teams-files",
       ])

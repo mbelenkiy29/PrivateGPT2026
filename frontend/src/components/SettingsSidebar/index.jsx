@@ -112,15 +112,6 @@ export default function SettingsSidebar() {
                     <SidebarOptions user={user} t={t} />
                     <div className="h-[1.5px] bg-[#3D4147] mx-3 mt-[14px]" />
                     <SupportEmail />
-                    <Link
-                      hidden={
-                        user?.hasOwnProperty("role") && user.role !== "admin"
-                      }
-                      to={paths.settings.privacy()}
-                      className="text-theme-text-secondary hover:text-white text-xs leading-[18px] mx-3"
-                    >
-                      {t("settings.privacy")}
-                    </Link>
                     <AppVersion />
                   </div>
                 </div>
@@ -163,15 +154,6 @@ export default function SettingsSidebar() {
                   <SidebarOptions user={user} t={t} />
                   <div className="h-[1.5px] bg-[#3D4147] mx-3 mt-[14px]" />
                   <SupportEmail />
-                  <Link
-                    hidden={
-                      user?.hasOwnProperty("role") && user.role !== "admin"
-                    }
-                    to={paths.settings.privacy()}
-                    className="text-theme-text-secondary hover:text-white hover:light:text-theme-text-primary text-xs leading-[18px] mx-3"
-                  >
-                    {t("settings.privacy")}
-                  </Link>
                   <AppVersion />
                 </div>
               </div>
@@ -270,7 +252,7 @@ const SidebarOptions = ({ user = null, t }) => (
               roles: ["admin"],
             },
             {
-              btnText: "Cloud drives",
+              btnText: t("settings.cloud-drives"),
               href: paths.settings.cloudDrives(),
               flex: true,
               roles: ["admin"],
@@ -282,7 +264,7 @@ const SidebarOptions = ({ user = null, t }) => (
               roles: ["admin"],
             },
             {
-              btnText: "Email inbox",
+              btnText: t("settings.email-inbox"),
               href: paths.settings.emailInbox(),
               flex: true,
               roles: ["admin"],
@@ -443,7 +425,7 @@ const SidebarOptions = ({ user = null, t }) => (
           childOptions={[
             {
               hidden: !canViewChatHistory,
-              btnText: t("settings.embeds"),
+              btnText: t("settings.embed-widgets"),
               href: paths.settings.embedChatWidgets(),
               flex: true,
               roles: ["admin"],

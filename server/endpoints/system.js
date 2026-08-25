@@ -82,6 +82,15 @@ function systemEndpoints(app) {
     response.status(200).json({ online: true });
   });
 
+  if (process.env.NODE_ENV !== "production") {
+    app.get("/debug/sentry-test", (request, response) => {
+      const error = new Error("Sentry API test error");
+      const { Sentry } = require("../instrument");
+      Sentry.captureException(error);
+      response.status(500).json({ error: error.message });
+    });
+  }
+
   app.get("/migrate", async (_, response) => {
     response.sendStatus(200);
   });

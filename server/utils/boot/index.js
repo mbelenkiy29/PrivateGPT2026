@@ -80,13 +80,18 @@ function bootHTTP(app, port = 3001) {
 }
 
 function catchSigTerms() {
+  const { closeSentry } = require("../../instrument");
   process.once("SIGUSR2", function () {
     Telemetry.flush();
-    process.kill(process.pid, "SIGUSR2");
+    Promise.resolve(closeSentry()).finally(() => {
+      process.kill(process.pid, "SIGUSR2");
+    });
   });
   process.on("SIGINT", function () {
     Telemetry.flush();
-    process.kill(process.pid, "SIGINT");
+    Promise.resolve(closeSentry()).finally(() => {
+      process.kill(process.pid, "SIGINT");
+    });
   });
 }
 

@@ -32,3 +32,11 @@ services:
         generateValue: true
       - key: SIG_SALT
         generateValue: true
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_SERVICE
+        value: server
+      - key: SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false

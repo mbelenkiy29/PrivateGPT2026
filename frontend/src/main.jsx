@@ -1,6 +1,16 @@
+import "./instrument";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter as createBrowserRouterBase,
+  RouterProvider,
+} from "react-router-dom";
+import * as Sentry from "@sentry/react";
+
+const createBrowserRouter =
+  typeof Sentry.wrapCreateBrowserRouterV6 === "function"
+    ? Sentry.wrapCreateBrowserRouterV6(createBrowserRouterBase)
+    : createBrowserRouterBase;
 import App from "@/App.jsx";
 import PrivateRoute, {
   AdminRoute,

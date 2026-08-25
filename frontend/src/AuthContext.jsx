@@ -8,6 +8,18 @@ import {
 import System from "./models/system";
 import { useNavigate } from "react-router-dom";
 import { safeJsonParse } from "@/utils/request";
+import * as Sentry from "@sentry/react";
+
+function syncSentryUser(user) {
+  if (!user) {
+    Sentry.setUser(null);
+    return;
+  }
+  Sentry.setUser({
+    id: user.id != null ? String(user.id) : undefined,
+    username: user.username || undefined,
+  });
+}
 
 export const AuthContext = createContext(null);
 export function AuthProvider(props) {
@@ -30,6 +42,7 @@ export function AuthProvider(props) {
     updateUser: (user, authToken = "") => {
       localStorage.setItem(AUTH_USER, JSON.stringify(user));
       localStorage.setItem(AUTH_TOKEN, authToken);
+      syncSentryUser(user);
       setStore({ user, authToken });
     },
     unsetUser: () => {
@@ -37,6 +50,7 @@ export function AuthProvider(props) {
       localStorage.removeItem(AUTH_TOKEN);
       localStorage.removeItem(AUTH_TIMESTAMP);
       localStorage.removeItem(USER_PROMPT_INPUT_MAP);
+      syncSentryUser(null);
       setStore({ user: null, authToken: null });
     },
   });
@@ -57,18 +71,21 @@ export function AuthProvider(props) {
         localStorage.removeItem(AUTH_TOKEN);
         localStorage.removeItem(AUTH_TIMESTAMP);
         localStorage.removeItem(USER_PROMPT_INPUT_MAP);
+        syncSentryUser(null);
         setStore({ user: null, authToken: null });
         navigate("/login");
         return;
       }
 
       localStorage.setItem(AUTH_USER, JSON.stringify(refreshedUser));
+      syncSentryUser(refreshedUser);
       setStore((prev) => ({
         ...prev,
         user: refreshedUser,
       }));
     }
     if (store.authToken) refreshUser();
+    else syncSentryUser(store.user);
   }, [store.authToken]);
 
   return (

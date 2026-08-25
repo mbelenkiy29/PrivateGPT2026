@@ -15,13 +15,19 @@ import KeyboardShortcutsHelp from "@/components/KeyboardShortcutsHelp";
 import ImageLightbox from "@/components/ImageLightbox";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorBoundaryFallback from "./components/ErrorBoundaryFallback";
+import * as Sentry from "@sentry/react";
 
 export default function App() {
   const location = useLocation();
   return (
     <ErrorBoundary
       FallbackComponent={ErrorBoundaryFallback}
-      onError={console.error}
+      onError={(error, info) => {
+        console.error(error);
+        Sentry.captureException(error, {
+          extra: { componentStack: info?.componentStack },
+        });
+      }}
       resetKeys={[location.pathname]}
     >
       <ThemeProvider>

@@ -2,6 +2,7 @@ process.env.NODE_ENV === "development"
   ? require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` })
   : require("dotenv").config();
 
+require("./instrument");
 require("./utils/logger")();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -212,6 +213,11 @@ app.get("/accepts", function (_, response) {
 app.all("*", function (_, response) {
   response.sendStatus(200);
 });
+
+const { Sentry } = require("./instrument");
+if (typeof Sentry.setupExpressErrorHandler === "function") {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 app
   .listen(COLLECTOR_PORT, async () => {

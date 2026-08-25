@@ -14,6 +14,7 @@ function isAllowedWhileOnboarding(method, path) {
 
   if (
     path === "/ping" ||
+    path === "/debug/sentry-test" ||
     path === "/setup-complete" ||
     path === "/onboarding" ||
     path === "/system/multi-user-mode"

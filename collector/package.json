@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@langchain/community": "^0.2.23",
+    "@opentelemetry/core": "^2.1.0",
+    "@sentry/node": "^10.71.0",
     "@xenova/transformers": "^2.14.0",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",

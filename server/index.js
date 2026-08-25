@@ -2,6 +2,7 @@ process.env.NODE_ENV === "development"
   ? require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` })
   : require("dotenv").config();
 
+require("./instrument");
 require("./utils/logger")();
 require("./utils/boot/patchSdkTimeouts")();
 require("./utils/helpers/modelPricing"); // boots the model pricing cache refresh
@@ -214,6 +215,15 @@ if (process.env.NODE_ENV !== "development") {
 
 app.all("*", function (_, response) {
   response.sendStatus(404);
+});
+
+const { Sentry } = require("./instrument");
+if (typeof Sentry.setupExpressErrorHandler === "function") {
+  Sentry.setupExpressErrorHandler(app);
+}
+app.use(function sentryFallbackErrorHandler(error, _request, response, next) {
+  if (response.headersSent) return next(error);
+  response.status(500).json({ error: "Internal server error" });
 });
 
 // In non-https mode we need to boot at the end since the server has not yet

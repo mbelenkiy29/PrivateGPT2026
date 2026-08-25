@@ -4,6 +4,18 @@ import postcss from "./postcss.config.js"
 import react from "@vitejs/plugin-react"
 import dns from "dns"
 import { visualizer } from "rollup-plugin-visualizer"
+import { sentryVitePlugin } from "@sentry/vite-plugin"
+
+function sentryPlugin() {
+  if (!process.env.SENTRY_AUTH_TOKEN) return []
+  return [
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG || "sentinel-tech-solutions-llc",
+      project: process.env.SENTRY_PROJECT || "privategpt",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+    }),
+  ]
+}
 
 dns.setDefaultResultOrder("verbatim")
 
@@ -29,6 +41,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    ...sentryPlugin(),
     visualizer({
       template: "treemap", // or sunburst
       open: false,
@@ -56,6 +69,7 @@ export default defineConfig({
     ]
   },
   build: {
+    sourcemap: process.env.SENTRY_AUTH_TOKEN ? "hidden" : false,
     rollupOptions: {
       output: {
         // These settings ensure the primary JS and CSS file references are always index.{js,css}

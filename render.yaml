@@ -7,8 +7,8 @@ services:
     runtime: docker
     plan: standard
     region: oregon
-    repo: https://github.com/mbelenkiy29/anything-llm
-    branch: render-demo
+    repo: https://github.com/mbelenkiy29/privategpt-fork
+    branch: main
     dockerfilePath: ./docker/Dockerfile
     dockerContext: .
     healthCheckPath: /api/ping

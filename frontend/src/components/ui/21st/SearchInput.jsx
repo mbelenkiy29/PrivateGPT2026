@@ -1,6 +1,7 @@
-import { CircleNotch, MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import Input from "./Input";
 import { cn } from "./cn";
+import LoadingState from "./LoadingState";
 
 /**
  * 21st.dev — Search Bar (santoshvarmaaddala) + originui Input,
@@ -15,11 +16,9 @@ export default function SearchInput({
   return (
     <div className={cn("relative", className)}>
       {loading ? (
-        <CircleNotch
-          size={14}
-          weight="bold"
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-secondary animate-spin"
-        />
+        <span className="absolute left-3 top-1/2 -translate-y-1/2">
+          <LoadingState size="grid" variant="orbit" label="Searching" />
+        </span>
       ) : (
         <MagnifyingGlass
           size={14}

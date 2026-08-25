@@ -74,6 +74,8 @@ export default function AccountModal({ user, hideModal }) {
       if (storedUser) {
         storedUser.username = data.username;
         storedUser.bio = data.bio;
+        if (data.firstName !== undefined) storedUser.firstName = data.firstName;
+        if (data.lastName !== undefined) storedUser.lastName = data.lastName;
         localStorage.setItem(AUTH_USER, JSON.stringify(storedUser));
       }
       showToast(t("profile_settings.profile_updated"), "success", {
@@ -131,6 +133,22 @@ export default function AccountModal({ user, hideModal }) {
               )}
             </div>
           </div>
+          <ModalInput
+            label={t("userOnboarding.firstName")}
+            name="firstName"
+            type="text"
+            placeholder={t("userOnboarding.firstName")}
+            defaultValue={user.firstName || ""}
+            autoComplete="given-name"
+          />
+          <ModalInput
+            label={t("userOnboarding.lastName")}
+            name="lastName"
+            type="text"
+            placeholder={t("userOnboarding.lastName")}
+            defaultValue={user.lastName || ""}
+            autoComplete="family-name"
+          />
           <ModalInput
             label={t("profile_settings.username")}
             name="username"

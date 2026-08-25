@@ -1,4 +1,3 @@
-const { WorkspaceChats } = require("../../../models/workspaceChats");
 const {
   generateImageForWorkspace,
   editImageForWorkspace,
@@ -30,7 +29,8 @@ async function generateImage(
   thread = null,
   response = null,
   attachments = [],
-  signal = null
+  signal = null,
+  { incognito = false } = {}
 ) {
   const prompt = String(message)
     .replace(/^\/img\s*/i, "")
@@ -105,7 +105,8 @@ async function generateImage(
     let textResponse = `Generated an image for: "${prompt}"`;
     if (notice) textResponse += `\n\n_${notice}_`;
 
-    const { chat } = await WorkspaceChats.new({
+    const { persistWorkspaceChat } = require("../incognito");
+    const { chat } = await persistWorkspaceChat(incognito, {
       workspaceId: workspace.id,
       prompt: message,
       response: {

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { UserPlus } from "@phosphor-icons/react";
 import Admin from "@/models/admin";
 import UserRow from "./UserRow";
@@ -12,6 +10,7 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import Toggle from "@/components/lib/Toggle";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AdminUsers() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -71,17 +70,7 @@ function UsersContainer() {
   }, []);
 
   if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm mt-8"
-        containerClassName="flex w-full"
-      />
-    );
+    return <LoadingState size="page" variant="drive" />;
   }
 
   return (

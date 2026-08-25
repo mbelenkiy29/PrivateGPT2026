@@ -1,4 +1,4 @@
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { Info } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
@@ -6,6 +6,7 @@ import { LEMONADE_COMMON_URLS } from "@/utils/constants";
 import { originOnly } from "@/utils/url";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection from "../ImageDimensionSelection";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function LemonadeImageOptions({ settings }) {
   const {
@@ -65,10 +66,7 @@ export default function LemonadeImageOptions({ settings }) {
               </Tooltip>
             </div>
             {loading ? (
-              <CircleNotch
-                size={16}
-                className="text-theme-text-secondary animate-spin"
-              />
+              <LoadingState size="grid" variant="drive" />
             ) : (
               <>
                 {!basePathValue.value && (

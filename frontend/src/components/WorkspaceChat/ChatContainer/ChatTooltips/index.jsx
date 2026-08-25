@@ -102,6 +102,12 @@ export function ChatTooltips() {
         delayShow={300}
         className="tooltip !text-xs"
       />
+      <Tooltip
+        id="incognito-toggle"
+        place="bottom"
+        delayShow={300}
+        className="tooltip !text-xs max-w-[260px]"
+      />
       <DocumentLevelTooltip />
     </>
   );

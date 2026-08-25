@@ -87,7 +87,8 @@ const FileSources = {
 
   connectPopup: async (provider) => {
     const { url, error } = await FileSources.authUrl(provider);
-    if (!url) return { success: false, error: error || "Could not start login." };
+    if (!url)
+      return { success: false, error: error || "Could not start login." };
 
     return await new Promise((resolve) => {
       const popup = window.open(

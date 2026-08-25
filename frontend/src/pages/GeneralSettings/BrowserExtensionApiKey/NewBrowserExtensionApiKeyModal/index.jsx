@@ -74,8 +74,8 @@ export default function NewBrowserExtensionApiKeyModal({
           </p>
         )}
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          After clicking "Create API Key", PrivateGPT will attempt to connect
-          to your browser extension automatically.
+          After clicking "Create API Key", PrivateGPT will attempt to connect to
+          your browser extension automatically.
         </p>
         <p className="text-xs text-zinc-400 light:text-slate-600">
           If you see "Connected to PrivateGPT" in the extension, the connection

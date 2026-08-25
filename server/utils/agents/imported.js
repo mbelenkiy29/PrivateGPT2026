@@ -9,6 +9,14 @@ const pluginsPath =
     : path.resolve(process.env.STORAGE_DIR, "plugins", "agent-skills");
 const sharedWebScraper = new CollectorApi();
 
+const DEFAULT_HANDLER_SOURCE = `module.exports.runtime = {
+  handler: async function (params = {}) {
+    this.introspect(\`Running skill with \${JSON.stringify(params)}\`);
+    return \`Skill executed. Received: \${JSON.stringify(params)}\`;
+  },
+};
+`;
+
 class ImportedPlugin {
   constructor(config) {
     this.config = config;
@@ -140,6 +148,199 @@ class ImportedPlugin {
     if (!this.isValidLocation(pluginFolder)) return;
     fs.rmSync(pluginFolder, { recursive: true });
     return true;
+  }
+
+  /**
+   * Normalize a user-provided hubId into a folder-safe kebab slug.
+   * @param {string} value
+   * @returns {string}
+   */
+  static normalizeHubId(value = "") {
+    return String(value)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 64);
+  }
+
+  /**
+   * Create a local custom skill from a form spec.
+   * Writes plugin.json + handler.js under plugins/agent-skills/{hubId}.
+   * @param {object} spec
+   * @returns {{ success: boolean, plugin?: object, error?: string }}
+   */
+  static createFromSpec(spec = {}) {
+    this.checkPluginFolderExists();
+    const name = String(spec.name || "").trim();
+    const description = String(spec.description || "").trim();
+    if (!name) return { success: false, error: "Skill name is required." };
+    if (!description)
+      return { success: false, error: "Skill description is required." };
+
+    const hubId = this.normalizeHubId(spec.hubId || name);
+    if (!hubId || !/^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/.test(hubId))
+      return {
+        success: false,
+        error:
+          "Skill id must be a short kebab-case slug (letters, numbers, hyphens).",
+      };
+
+    const pluginFolder = path.resolve(pluginsPath, normalizePath(hubId));
+    if (!isWithin(pluginsPath, pluginFolder) && pluginFolder !== pluginsPath)
+      return { success: false, error: "Invalid skill location." };
+    if (fs.existsSync(pluginFolder))
+      return {
+        success: false,
+        error: `A skill named "${hubId}" already exists.`,
+      };
+
+    const handlerSource =
+      typeof spec.handler === "string" && spec.handler.trim()
+        ? spec.handler
+        : DEFAULT_HANDLER_SOURCE;
+    if (!handlerSource.includes("module.exports"))
+      return {
+        success: false,
+        error: "handler.js must assign module.exports.",
+      };
+
+    const params =
+      spec.params && typeof spec.params === "object" && !Array.isArray(spec.params)
+        ? spec.params
+        : {};
+    const setup_args =
+      spec.setup_args &&
+      typeof spec.setup_args === "object" &&
+      !Array.isArray(spec.setup_args)
+        ? spec.setup_args
+        : {};
+
+    const pluginJson = {
+      active: false,
+      hubId,
+      name,
+      schema: "skill-1.0.0",
+      version: String(spec.version || "1.0.0"),
+      description,
+      author: spec.author || "local",
+      setup_args,
+      examples: Array.isArray(spec.examples) ? spec.examples : [],
+      entrypoint: {
+        file: "handler.js",
+        params,
+      },
+      imported: true,
+      createdLocally: true,
+    };
+
+    fs.mkdirSync(pluginFolder, { recursive: true });
+    fs.writeFileSync(
+      path.resolve(pluginFolder, "plugin.json"),
+      JSON.stringify(pluginJson, null, 2)
+    );
+    fs.writeFileSync(path.resolve(pluginFolder, "handler.js"), handlerSource);
+    return { success: true, plugin: pluginJson };
+  }
+
+  /**
+   * Import a custom skill from an in-memory zip buffer.
+   * @param {Buffer} zipBuffer
+   * @param {{ overwrite?: boolean }} [opts]
+   * @returns {{ success: boolean, plugin?: object, error?: string }}
+   */
+  static importFromZipBuffer(zipBuffer, { overwrite = false } = {}) {
+    this.checkPluginFolderExists();
+    if (!zipBuffer || !Buffer.isBuffer(zipBuffer))
+      return { success: false, error: "Zip file is required." };
+
+    const AdmZip = require("adm-zip");
+    let zip;
+    try {
+      zip = new AdmZip(zipBuffer);
+    } catch (error) {
+      return { success: false, error: "Could not read zip file." };
+    }
+
+    const entries = zip.getEntries();
+    const pluginEntry = entries.find(
+      (entry) =>
+        !entry.isDirectory &&
+        (entry.entryName === "plugin.json" ||
+          entry.entryName.endsWith("/plugin.json"))
+    );
+    if (!pluginEntry)
+      return { success: false, error: "Zip is missing plugin.json." };
+
+    const pluginJson = safeJsonParse(pluginEntry.getData().toString("utf8"), null);
+    if (!pluginJson)
+      return { success: false, error: "plugin.json is not valid JSON." };
+
+    const hubId = this.normalizeHubId(pluginJson.hubId || pluginJson.name);
+    if (!hubId) return { success: false, error: "plugin.json is missing hubId." };
+
+    const pluginFolder = path.resolve(pluginsPath, normalizePath(hubId));
+    if (!isWithin(pluginsPath, pluginFolder) && pluginFolder !== pluginsPath)
+      return { success: false, error: "Invalid skill location." };
+    if (fs.existsSync(pluginFolder) && !overwrite)
+      return {
+        success: false,
+        error: `A skill named "${hubId}" already exists.`,
+      };
+
+    const prefix = pluginEntry.entryName.endsWith("/plugin.json")
+      ? pluginEntry.entryName.slice(0, -"plugin.json".length)
+      : "";
+
+    for (const entry of entries) {
+      const relative = prefix
+        ? entry.entryName.startsWith(prefix)
+          ? entry.entryName.slice(prefix.length)
+          : null
+        : entry.entryName;
+      if (relative === null || relative === "") continue;
+      const entryPath = path.resolve(pluginFolder, relative);
+      if (!isWithin(pluginFolder, entryPath) && pluginFolder !== entryPath) {
+        return {
+          success: false,
+          error: `Zip entry "${entry.entryName}" would extract outside the skill folder.`,
+        };
+      }
+    }
+
+    if (fs.existsSync(pluginFolder))
+      fs.rmSync(pluginFolder, { recursive: true, force: true });
+    fs.mkdirSync(pluginFolder, { recursive: true });
+
+    for (const entry of entries) {
+      const relative = prefix
+        ? entry.entryName.startsWith(prefix)
+          ? entry.entryName.slice(prefix.length)
+          : null
+        : entry.entryName;
+      if (relative === null || relative === "") continue;
+      const dest = path.resolve(pluginFolder, relative);
+      if (entry.isDirectory) {
+        fs.mkdirSync(dest, { recursive: true });
+        continue;
+      }
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, entry.getData());
+    }
+
+    const pluginJsonPath = path.resolve(pluginFolder, "plugin.json");
+    if (!fs.existsSync(pluginJsonPath))
+      return { success: false, error: "Zip did not contain plugin.json." };
+    const handlerPath = path.resolve(pluginFolder, "handler.js");
+    if (!fs.existsSync(handlerPath))
+      return { success: false, error: "Zip did not contain handler.js." };
+
+    const saved = safeJsonParse(fs.readFileSync(pluginJsonPath, "utf8"), {});
+    saved.active = false;
+    saved.hubId = hubId;
+    saved.imported = true;
+    fs.writeFileSync(pluginJsonPath, JSON.stringify(saved, null, 2));
+    return { success: true, plugin: saved };
   }
 
   /**
@@ -361,5 +562,8 @@ class ImportedPlugin {
     }
   }
 }
+
+ImportedPlugin.DEFAULT_HANDLER_SOURCE = DEFAULT_HANDLER_SOURCE;
+ImportedPlugin.pluginsPath = pluginsPath;
 
 module.exports = ImportedPlugin;

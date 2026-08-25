@@ -4,11 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import FolderRow from "./FolderRow";
 import System from "@/models/system";
-import {
-  CircleNotch,
-  Plus,
-  Trash,
-} from "@phosphor-icons/react";
+import { Plus, Trash } from "@phosphor-icons/react";
 import SearchInput from "@/components/ui/21st/SearchInput";
 import Button from "@/components/ui/21st/Button";
 import ExplorerPanel from "@/components/ui/21st/ExplorerPanel";
@@ -25,6 +21,7 @@ import { Tooltip } from "react-tooltip";
 import { safeJsonParse } from "@/utils/request";
 import useUploadQueue from "../hooks/useUploadQueue";
 import { getFilesFromUploadEvent } from "@/utils/folderUpload";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 const NO_FILES = [];
 
@@ -337,7 +334,7 @@ export default function Directory({
         >
           {!!busyMessage && (
             <div className="sticky top-0 z-20 flex items-center justify-center gap-x-2 bg-theme-bg-secondary/95 border-b border-theme-modal-border py-1.5">
-              <CircleNotch size={12} className="animate-spin" weight="bold" />
+              <LoadingState size="grid" variant="drive" />
               <p className="text-theme-text-primary text-xs font-medium">
                 {busyMessage}
               </p>
@@ -358,10 +355,7 @@ export default function Directory({
                 hasMore={row.hasMore}
                 totalCount={row.totalCount}
                 displayCount={row.displayCount}
-                selectionState={folderSelectionState(
-                  row.item.name,
-                  row.files
-                )}
+                selectionState={folderSelectionState(row.item.name, row.files)}
                 isFileSelected={(id) => isFileSelected(row.item.name, id)}
                 onToggleExpanded={toggleExpanded}
                 onToggleFolder={(folder) => toggleFolder(folder, row.files)}

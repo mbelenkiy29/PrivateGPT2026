@@ -71,10 +71,7 @@ export default function CustomSiteSettings() {
                 return { ...prev, title: e.target.value };
               });
             }}
-            value={
-              settings.title ??
-              APP_TITLE
-            }
+            value={settings.title ?? APP_TITLE}
           />
         </div>
       </div>

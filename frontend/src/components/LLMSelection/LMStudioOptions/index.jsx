@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
-import {
-  Info,
-  CaretDown,
-  CaretUp,
-  CircleNotch,
-  Warning,
-} from "@phosphor-icons/react";
+import { Info, CaretDown, CaretUp, Warning } from "@phosphor-icons/react";
 import paths from "@/utils/paths";
 import System from "@/models/system";
 import { LMSTUDIO_COMMON_URLS } from "@/utils/constants";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { Tooltip } from "react-tooltip";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function LMStudioOptions({ settings, showAlert = false }) {
   const {
@@ -106,10 +101,7 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
-                  size={16}
-                  className="text-theme-text-secondary animate-spin"
-                />
+                <LoadingState size="grid" variant="drive" />
               ) : (
                 <>
                   {!basePathValue.value && (

@@ -5,6 +5,10 @@ const Provider = require("./aibitat/providers/ai-provider");
 const ImportedPlugin = require("./imported");
 const { AgentFlows } = require("../agentFlows");
 const MCPCompatibilityLayer = require("../MCP");
+const {
+  parseSkillOverrides,
+  importedSkillId,
+} = require("./skillOverrides");
 
 // This is a list of skills that are built-in and default enabled.
 const DEFAULT_SKILLS = [
@@ -86,11 +90,8 @@ const WORKSPACE_AGENT = {
     return {
       role,
       functions: [
-        ...(await agentSkillsFromSystemSettings()),
         ...clarifyingQuestionsSkills,
-        ...ImportedPlugin.activeImportedPlugins(),
-        ...AgentFlows.activeFlowPlugins(),
-        ...(await new MCPCompatibilityLayer().activeMCPServers()),
+        ...(await functionsForWorkspace(workspace)),
       ],
     };
   },
@@ -190,6 +191,90 @@ async function agentSkillsFromSystemSettings() {
     // This is normal single-stage plugin
     systemFunctions.push(AgentPlugins[skillName].name);
   }
+  return systemFunctions;
+}
+
+/**
+ * Load agent functions, honoring a workspace skill override when present.
+ * Default (useGlobal) keeps instance-wide skill flags.
+ * @param {import("@prisma/client").workspaces | null} workspace
+ * @returns {Promise<string[]>}
+ */
+async function functionsForWorkspace(workspace = null) {
+  const overrides = parseSkillOverrides(workspace);
+  if (!workspace || overrides.useGlobal !== false) {
+    return [
+      ...(await agentSkillsFromSystemSettings()),
+      ...ImportedPlugin.activeImportedPlugins(),
+      ...AgentFlows.activeFlowPlugins(),
+      ...(await new MCPCompatibilityLayer().activeMCPServers()),
+    ];
+  }
+
+  const systemFunctions = [];
+  const isMultiUser = await SystemSettings.isMultiUserMode();
+  const selected = new Set(
+    (overrides.skills || []).map((id) => importedSkillId(id))
+  );
+
+  DEFAULT_SKILLS.forEach((skill) => {
+    if (selected.has(skill)) systemFunctions.push(AgentPlugins[skill].name);
+  });
+
+  const skillFilterState = {};
+  for (const skillName of Object.keys(SKILL_FILTER_CONFIG)) {
+    if (!selected.has(skillName)) continue;
+    const config = SKILL_FILTER_CONFIG[skillName];
+    skillFilterState[skillName] = {
+      available: await config.getAvailability(),
+      disabledSubSkills: safeJsonParse(
+        await SystemSettings.getValueOrFallback(
+          { label: config.disabledSettingKey },
+          "[]"
+        ),
+        []
+      ),
+    };
+  }
+
+  for (const skillName of selected) {
+    if (!AgentPlugins.hasOwnProperty(skillName)) continue;
+    if (DEFAULT_SKILLS.includes(skillName)) continue;
+    if (isMultiUser && SINGLE_USER_ONLY_SKILLS.has(skillName)) continue;
+
+    if (Array.isArray(AgentPlugins[skillName].plugin)) {
+      for (const subPlugin of AgentPlugins[skillName].plugin) {
+        const filterState = skillFilterState[skillName];
+        if (filterState) {
+          if (!filterState.available) continue;
+          if (filterState.disabledSubSkills.includes(subPlugin.name)) continue;
+        }
+        systemFunctions.push(
+          `${AgentPlugins[skillName].name}#${subPlugin.name}`
+        );
+      }
+      continue;
+    }
+
+    systemFunctions.push(AgentPlugins[skillName].name);
+  }
+
+  for (const hubId of selected) {
+    if (AgentPlugins.hasOwnProperty(hubId)) continue;
+    if (ImportedPlugin.validateImportedPluginHandler(hubId))
+      systemFunctions.push(`@@${hubId}`);
+  }
+
+  for (const uuid of overrides.flows || []) {
+    systemFunctions.push(`@@flow_${uuid}`);
+  }
+
+  const activeMcp = await new MCPCompatibilityLayer().activeMCPServers();
+  const allowedMcp = new Set(
+    (overrides.mcp || []).map((name) => `@@mcp_${name}`)
+  );
+  systemFunctions.push(...activeMcp.filter((name) => allowedMcp.has(name)));
+
   return systemFunctions;
 }
 

@@ -53,6 +53,7 @@ const Workspace = {
     "chatMode",
     "agentProvider",
     "agentModel",
+    "agentSkillOverrides",
     "queryRefusalResponse",
     "vectorSearchMode",
     "router_id",
@@ -113,6 +114,18 @@ const Workspace = {
     agentModel: (value) => {
       if (!value || typeof value !== "string") return null;
       return String(value);
+    },
+    agentSkillOverrides: (value) => {
+      const {
+        serializeSkillOverrides,
+        parseSkillOverrides,
+      } = require("../utils/agents/skillOverrides");
+      if (value === null || value === undefined || value === "") return null;
+      const parsed =
+        typeof value === "string"
+          ? parseSkillOverrides({ agentSkillOverrides: value })
+          : parseSkillOverrides({ agentSkillOverrides: JSON.stringify(value) });
+      return serializeSkillOverrides(parsed);
     },
     queryRefusalResponse: (value) => {
       if (!value || typeof value !== "string") return null;

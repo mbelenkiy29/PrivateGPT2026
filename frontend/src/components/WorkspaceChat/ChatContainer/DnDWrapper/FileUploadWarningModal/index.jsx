@@ -1,4 +1,3 @@
-import { CircleNotch } from "@phosphor-icons/react";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -12,6 +11,7 @@ import useUser from "@/hooks/useUser";
 import { Link } from "react-router-dom";
 import Paths from "@/utils/paths";
 import Workspace from "@/models/workspace";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function FileUploadWarningModal({
   show,
@@ -36,10 +36,7 @@ export default function FileUploadWarningModal({
             Embedding {embedProgress + 1} of {fileCount}{" "}
             {pluralize("file", fileCount)}
           </p>
-          <CircleNotch
-            size={32}
-            className="animate-spin text-slate-50 light:text-slate-900"
-          />
+          <LoadingState size="grid" variant="drive" />
           <p className="text-zinc-400 light:text-slate-600 text-sm mt-2">
             Please wait while we embed your files...
           </p>

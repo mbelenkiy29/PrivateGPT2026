@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { ArrowLeft, CircleNotch } from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import ModelRouter from "@/models/modelRouter";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
 import RuleBuilder from "../RuleBuilder";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function RouterRulesPage() {
   const { t } = useTranslation();
@@ -35,7 +36,7 @@ export default function RouterRulesPage() {
     return (
       <Layout t={t}>
         <div className="flex items-center justify-center py-20">
-          <CircleNotch className="h-8 w-8 text-zinc-400 light:text-slate-400 animate-spin" />
+          <LoadingState size="grid" variant="drive" />
         </div>
       </Layout>
     );

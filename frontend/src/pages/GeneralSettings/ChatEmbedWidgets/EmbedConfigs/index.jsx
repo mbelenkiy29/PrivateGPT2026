@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { CodeBlock } from "@phosphor-icons/react";
 import EmbedRow from "./EmbedRow";
 import NewEmbedModal from "./NewEmbedModal";
@@ -9,6 +7,7 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import Embed from "@/models/embed";
 import CTAButton from "@/components/lib/CTAButton";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function EmbedConfigsView() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -26,17 +25,7 @@ export default function EmbedConfigsView() {
   }, []);
 
   if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-        containerClassName="flex w-full"
-      />
-    );
+    return <LoadingState size="page" variant="drive" />;
   }
 
   return (

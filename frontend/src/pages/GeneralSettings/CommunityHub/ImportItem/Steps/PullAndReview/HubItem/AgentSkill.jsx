@@ -2,17 +2,13 @@ import CTAButton from "@/components/lib/CTAButton";
 import CommunityHubImportItemSteps from "../..";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
-import {
-  CaretLeft,
-  CaretRight,
-  CircleNotch,
-  Warning,
-} from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Warning } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import renderMarkdown from "@/utils/chat/markdown";
 import DOMPurify from "dompurify";
 import CommunityHub from "@/models/communityHub";
 import { setEventDelegatorForCodeSnippets } from "@/components/WorkspaceChat";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AgentSkill({ item, settings, setStep }) {
   const [loading, setLoading] = useState(false);
@@ -106,7 +102,7 @@ export default function AgentSkill({ item, settings, setStep }) {
         className="text-dark-text w-full mt-[18px] h-[34px] hover:bg-accent"
         onClick={importAgentSkill}
       >
-        {loading ? <CircleNotch size={16} className="animate-spin" /> : null}
+        {loading ? <LoadingState size="grid" variant="drive" /> : null}
         {loading ? "Importing..." : "Import agent skill"}
       </CTAButton>
     </div>

@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { CircleNotch, PencilSimple, X } from "@phosphor-icons/react";
+import { PencilSimple, X } from "@phosphor-icons/react";
 import ModelRouter from "@/models/modelRouter";
 import { useModal } from "@/hooks/useModal";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
 import NewRouterModal from "./NewRouterModal";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function ModelRouters() {
   const { t } = useTranslation();
@@ -51,7 +52,7 @@ export default function ModelRouters() {
   if (loading)
     return (
       <Layout t={t}>
-        <LoadingState />
+        <LoadingState size="page" variant="drive" />
       </Layout>
     );
 
@@ -126,14 +127,6 @@ function Layout({ t, showAction, onAction, children }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <CircleNotch className="h-8 w-8 text-zinc-400 animate-spin" />
     </div>
   );
 }

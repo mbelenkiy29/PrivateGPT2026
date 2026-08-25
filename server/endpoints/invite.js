@@ -40,7 +40,7 @@ function inviteEndpoints(app) {
     async (request, response) => {
       try {
         const { code } = request.params;
-        const { username, password } = reqBody(request);
+        const { username, password, firstName, lastName } = reqBody(request);
         const invite = await Invite.get({ code });
         if (!invite || invite.status !== "pending") {
           response
@@ -49,9 +49,19 @@ function inviteEndpoints(app) {
           return;
         }
 
+        if (!String(firstName || "").trim() || !String(lastName || "").trim()) {
+          response.status(200).json({
+            success: false,
+            error: "First name and last name are required.",
+          });
+          return;
+        }
+
         const { user, error } = await User.create({
           username,
           password,
+          firstName,
+          lastName,
           role: "default",
         });
         if (!user) {

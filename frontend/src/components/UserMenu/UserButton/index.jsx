@@ -4,6 +4,7 @@ import useUser from "@/hooks/useUser";
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
+import { displayInitials } from "@/utils/displayName";
 import { Person } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import AccountModal from "../AccountModal";
@@ -135,5 +136,5 @@ function UserDisplay() {
     );
   }
 
-  return user?.username?.slice(0, 2) || "AA";
+  return displayInitials(user);
 }

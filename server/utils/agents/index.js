@@ -16,7 +16,11 @@ const {
 const ImportedPlugin = require("./imported");
 const { AgentFlows } = require("../agentFlows");
 const MCPCompatibilityLayer = require("../MCP");
-const { getAndClearInvocationAttachments } = require("../chats/agents");
+const {
+  getAndClearInvocationAttachments,
+  getAndClearInvocationIncognito,
+} = require("../chats/agents");
+const { toAgentHistory } = require("../chats/incognito");
 const { DocumentManager } = require("../DocumentManager");
 
 class AgentHandler {
@@ -31,6 +35,8 @@ class AgentHandler {
   provider = null;
   model = null;
   attachments = [];
+  incognito = false;
+  incognitoHistory = [];
 
   constructor({ uuid }) {
     this.#invocationUUID = uuid;
@@ -81,6 +87,9 @@ class AgentHandler {
 
   async #chatHistory(limit = 10) {
     try {
+      if (this.incognito && this.incognitoHistory.length)
+        return toAgentHistory(this.incognitoHistory, limit);
+
       const rawHistory = (
         await WorkspaceChats.where(
           {
@@ -762,6 +771,12 @@ class AgentHandler {
 
   async init() {
     await this.#validInvocation();
+    const session = getAndClearInvocationIncognito(this.#invocationUUID);
+    this.incognito = !!session.incognito;
+    this.incognitoHistory = session.history || [];
+    if (this.incognito && session.prompt && this.invocation)
+      this.invocation.prompt = session.prompt;
+
     await this.#providerSetupAndCheck();
 
     // Retrieve cached attachments (images, etc.) from the HTTP request
@@ -851,6 +866,7 @@ class AgentHandler {
         invocation: this.invocation,
         log: this.log,
         routingMetadata: this.routingMetadata || null,
+        incognito: this.incognito,
       },
     });
 

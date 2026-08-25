@@ -2,10 +2,10 @@ import CTAButton from "@/components/lib/CTAButton";
 import CommunityHubImportItemSteps from "../..";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
-import { CircleNotch } from "@phosphor-icons/react";
 import { useState } from "react";
 import AgentFlows from "@/models/agentFlows";
 import { safeJsonParse } from "@/utils/request";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AgentFlow({ item, setStep }) {
   const flowInfo = safeJsonParse(item.flow, { steps: [] });
@@ -72,7 +72,7 @@ export default function AgentFlow({ item, setStep }) {
         className="text-dark-text w-full mt-[18px] h-[34px] hover:bg-accent"
         onClick={importAgentFlow}
       >
-        {loading ? <CircleNotch size={16} className="animate-spin" /> : null}
+        {loading ? <LoadingState size="grid" variant="drive" /> : null}
         {loading ? "Importing..." : "Import agent flow"}
       </CTAButton>
     </div>

@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { SpeakerHigh, PauseCircle, CircleNotch } from "@phosphor-icons/react";
+import { SpeakerHigh, PauseCircle } from "@phosphor-icons/react";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AsyncTTSMessage({ slug, chatId }) {
   const playerRef = useRef(null);
@@ -73,7 +74,7 @@ export default function AsyncTTSMessage({ slug, chatId }) {
         ) : (
           <>
             {loading ? (
-              <CircleNotch size={18} className="mb-1 animate-spin" />
+              <LoadingState size="grid" variant="drive" />
             ) : (
               <SpeakerHigh size={18} className="mb-1" />
             )}

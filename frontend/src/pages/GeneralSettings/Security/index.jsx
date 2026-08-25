@@ -9,6 +9,8 @@ import PreLoader from "@/components/Preloader";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
 import Toggle from "@/components/lib/Toggle";
+import Admin from "@/models/admin";
+import useUser from "@/hooks/useUser";
 import {
   USERNAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
@@ -31,6 +33,7 @@ export default function GeneralSecurity() {
         </div>
         <MultiUserMode />
         <PasswordProtection />
+        <ContentGuardSettings />
       </div>
     </div>
   );
@@ -341,5 +344,87 @@ function PasswordProtection() {
         </div>
       </div>
     </form>
+  );
+}
+
+function ContentGuardSettings() {
+  const { t } = useTranslation();
+  const { user } = useUser();
+  const [loading, setLoading] = useState(true);
+  const [enabled, setEnabled] = useState(true);
+
+  useEffect(() => {
+    async function fetchSetting() {
+      const { settings } = (await Admin.systemPreferencesByFields([
+        "content_guard_enabled",
+      ])) || { settings: {} };
+      setEnabled(settings?.content_guard_enabled !== "false");
+      setLoading(false);
+    }
+    fetchSetting();
+  }, []);
+
+  if (user?.role === "manager") return null;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px]">
+        <div className="w-full flex justify-center py-6">
+          <PreLoader />
+        </div>
+      </div>
+    );
+  }
+
+  async function toggleEnabled(next) {
+    setEnabled(next);
+    const { success, error } = await Admin.updateSystemPreferences({
+      content_guard_enabled: String(next),
+    });
+    if (success) {
+      showToast(
+        next
+          ? t("security.contentGuard.enabledToast")
+          : t("security.contentGuard.disabledToast"),
+        "success"
+      );
+      return;
+    }
+    setEnabled(!next);
+    showToast(error || t("security.contentGuard.saveFailed"), "error");
+  }
+
+  return (
+    <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px]">
+      <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
+        <div className="w-full flex flex-col gap-y-1">
+          <div className="items-center flex gap-x-4">
+            <p className="text-base font-bold text-white mt-6">
+              {t("security.contentGuard.title")}
+            </p>
+          </div>
+          <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
+            {t("security.contentGuard.description")}
+          </p>
+        </div>
+        <div className="relative w-full max-h-full">
+          <div className="relative rounded-lg">
+            <div className="flex items-start justify-between px-6 py-4"></div>
+            <div className="space-y-6 flex h-full w-full">
+              <div className="w-full flex flex-col gap-y-4">
+                <Toggle
+                  size="lg"
+                  className="mb-4"
+                  name="contentGuardEnabled"
+                  label={t("security.contentGuard.toggle")}
+                  enabled={enabled}
+                  onChange={toggleEnabled}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

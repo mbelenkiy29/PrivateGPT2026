@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { QrCode } from "@phosphor-icons/react";
 import { useModal } from "@/hooks/useModal";
 import CTAButton from "@/components/lib/CTAButton";
@@ -9,6 +7,7 @@ import MobileConnection from "@/models/mobile";
 import ConnectionModal from "./ConnectionModal";
 import DeviceRow from "./DeviceRow";
 import { isMobile } from "react-device-detect";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function MobileDevices() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -71,15 +70,7 @@ export default function MobileDevices() {
           </div>
           <div className="overflow-x-auto mt-6">
             {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
+              <LoadingState size="page" variant="drive" />
             ) : (
               <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
                 <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">

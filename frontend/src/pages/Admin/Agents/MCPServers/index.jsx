@@ -3,6 +3,7 @@ import { titleCase } from "text-case";
 import { BookOpenText, ArrowClockwise, Warning } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import MCPLogo from "@/media/agents/mcp-logo.svg";
+import McpLogo from "@/pages/Admin/SkillsMarketplace/McpLogo";
 import MCPServers from "@/models/mcpServers";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -173,6 +174,7 @@ function MCPServerItem({ server, isFirst, isLast, isSelected, handleClick }) {
             className="h-4 w-4 text-yellow-500"
           />
         )}
+        <McpLogo id={server.name} size="sm" />
         {titleCase(server.name.replace(/[_-]/g, " "))}
       </div>
       <div className="flex items-center gap-x-2">

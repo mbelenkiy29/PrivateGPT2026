@@ -10,7 +10,6 @@ import { Trans, useTranslation } from "react-i18next";
 import debounce from "lodash.debounce";
 import {
   MagnifyingGlass,
-  CircleNotch,
   Warning,
   CaretDown,
   CheckCircle,
@@ -26,6 +25,7 @@ import OutlookIcon from "./outlook.png";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function OutlookSkillPanel({
   title,
@@ -239,10 +239,7 @@ export default function OutlookSkillPanel({
 
             {loading ? (
               <div className="flex items-center justify-center py-4">
-                <CircleNotch
-                  size={24}
-                  className="animate-spin text-theme-text-primary"
-                />
+                <LoadingState size="grid" variant="drive" />
               </div>
             ) : (
               <>
@@ -489,7 +486,7 @@ function ConfigurationSection({
                 className="flex items-center justify-center gap-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 {authLoading ? (
-                  <CircleNotch size={16} className="animate-spin" />
+                  <LoadingState size="grid" variant="drive" />
                 ) : (
                   <ArrowSquareOut size={16} />
                 )}
@@ -517,7 +514,7 @@ function ConfigurationSection({
                 className="flex items-center justify-center gap-x-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 text-red-500 text-sm font-medium rounded-lg transition-colors"
               >
                 {authLoading ? (
-                  <CircleNotch size={16} className="animate-spin" />
+                  <LoadingState size="grid" variant="drive" />
                 ) : (
                   <XCircle size={16} />
                 )}

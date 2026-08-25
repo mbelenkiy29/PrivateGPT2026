@@ -1,5 +1,4 @@
 import {
-  CircleNotch,
   FileCode,
   FileCsv,
   FileDoc,
@@ -12,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { REMOVE_ATTACHMENT_EVENT } from "../../DnDWrapper";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * @param {{attachments: import("../../DnDWrapper").Attachment[]}}
@@ -63,11 +63,7 @@ function AttachmentItem({ attachment, onImageClick }) {
         <div
           className={`bg-theme-attachment-icon-spinner-bg rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
-          <CircleNotch
-            size={18}
-            weight="bold"
-            className="text-theme-attachment-icon-spinner animate-spin"
-          />
+          <LoadingState size="grid" variant="drive" />
         </div>
         <div className="flex flex-col w-[125px]">
           <p className="text-theme-attachment-text text-xs font-semibold truncate">

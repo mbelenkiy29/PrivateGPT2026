@@ -1,8 +1,5 @@
 import React, { memo, useMemo } from "react";
-import {
-  formatDateTimeAsMoment,
-  getFileExtension,
-} from "@/utils/directories";
+import { formatDateTimeAsMoment, getFileExtension } from "@/utils/directories";
 import FileTreeRow from "@/components/ui/21st/FileTreeRow";
 
 function FileRow({ item, selected, folderName, toggleSelection }) {

@@ -5,10 +5,12 @@ import { castToType } from "@/utils/types";
 import { useEffect, useRef, useState } from "react";
 import AgentLLMSelection from "./AgentLLMSelection";
 import Admin from "@/models/admin";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import paths from "@/utils/paths";
 import useUser from "@/hooks/useUser";
+import SkillsMarketplace from "@/models/skillsMarketplace";
+import Button from "@/components/ui/21st/Button";
+import LoadingState from "@/components/ui/21st/LoadingState";
+import McpLogo from "@/pages/Admin/SkillsMarketplace/McpLogo";
 
 export default function WorkspaceAgentConfiguration({ workspace }) {
   const { user } = useUser();
@@ -85,21 +87,14 @@ export default function WorkspaceAgentConfiguration({ workspace }) {
           workspace={workspace}
           setHasChanges={setHasChanges}
         />
-        {(!user || user?.role === "admin") && (
+        {(!user || ["admin", "manager"].includes(user?.role)) && (
           <>
             {!hasChanges && (
               <div className="flex flex-col gap-y-4">
-                <a
-                  className="w-fit transition-all duration-300 border border-slate-200 px-5 py-2.5 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 focus:ring-gray-800"
-                  href={paths.settings.agentSkills()}
-                >
-                  Configure Agent Skills
-                </a>
-                <p className="text-white text-opacity-60 text-xs font-medium">
-                  Customize and enhance the default agent's capabilities by
-                  enabling or disabling specific skills. These settings will be
-                  applied across all workspaces.
-                </p>
+                <WorkspaceSkillsPicker
+                  workspace={workspace}
+                  isAdmin={!user || user?.role === "admin"}
+                />
               </div>
             )}
           </>
@@ -119,30 +114,105 @@ export default function WorkspaceAgentConfiguration({ workspace }) {
   );
 }
 
+function WorkspaceSkillsPicker({ workspace, isAdmin }) {
+  const [items, setItems] = useState([]);
+  const [overrides, setOverrides] = useState({ useGlobal: true });
+  const [loading, setLoading] = useState(true);
+
+  const refresh = async () => {
+    const catalog = await SkillsMarketplace.catalog(workspace.slug);
+    setItems(
+      (catalog?.items || []).filter(
+        (skill) => skill.type !== "hub" && skill.installed !== false
+      )
+    );
+    setOverrides(catalog?.overrides || { useGlobal: true });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    refresh();
+  }, [workspace.slug]);
+
+  const toggle = async (skill) => {
+    const result = await SkillsMarketplace.assignToWorkspace({
+      slug: workspace.slug,
+      id: skill.id,
+      type: skill.type,
+      enabled: !skill.enabled,
+    });
+    if (!result?.success)
+      return showToast(result?.error || "Could not update skill.", "error");
+    await refresh();
+  };
+
+  const reset = async () => {
+    const result = await SkillsMarketplace.resetWorkspace(workspace.slug);
+    if (!result?.success)
+      return showToast(result?.error || "Could not reset.", "error");
+    showToast("This workspace now uses instance-wide skills.", "success");
+    await refresh();
+  };
+
+  return (
+    <div className="flex flex-col gap-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-theme-text-primary">
+          Skills for this workspace
+        </p>
+        {isAdmin && (
+          <a
+            href={paths.settings.skillsMarketplace(workspace.slug)}
+            className="text-xs text-sky-400 hover:underline"
+          >
+            Open marketplace
+          </a>
+        )}
+      </div>
+      <p className="text-xs text-theme-text-secondary">
+        {overrides.useGlobal !== false
+          ? "Using instance-wide skills. Toggle one to customize this workflow."
+          : "This workspace has its own skill set."}
+      </p>
+      {loading ? (
+        <p className="text-xs text-theme-text-secondary">Loading skills…</p>
+      ) : (
+        <div className="flex flex-col rounded-xl border border-theme-modal-border divide-y divide-theme-modal-border overflow-hidden max-h-72 overflow-y-auto">
+          {items.map((skill) => (
+            <button
+              key={`${skill.type}:${skill.id}`}
+              type="button"
+              onClick={() => toggle(skill)}
+              className="flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-theme-file-picker-hover"
+            >
+              <span className="flex items-center gap-2 min-w-0 text-xs text-theme-text-primary">
+                {skill.type === "mcp" && <McpLogo id={skill.id} size="sm" />}
+                <span className="truncate">{skill.name}</span>
+              </span>
+              <span
+                className={`text-[11px] font-semibold ${
+                  skill.enabled ? "text-sky-400" : "text-theme-text-secondary"
+                }`}
+              >
+                {skill.enabled ? "On" : "Off"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {overrides.useGlobal === false && (
+        <Button size="sm" variant="outline" onClick={reset}>
+          Use global skills
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function LoadingSkeleton() {
   return (
     <div id="workspace-agent-settings-container">
-      <div className="w-1/2 flex flex-col gap-y-6">
-        <Skeleton.default
-          height={100}
-          width="100%"
-          count={2}
-          highlightColor="var(--theme-bg-primary)"
-          baseColor="var(--theme-bg-secondary)"
-          enableAnimation={true}
-          containerClassName="flex flex-col gap-y-1"
-        />
-        <div className="bg-white/10 h-[1px] w-full" />
-        <Skeleton.default
-          height={100}
-          width="100%"
-          count={2}
-          highlightColor="var(--theme-bg-primary)"
-          baseColor="var(--theme-bg-secondary)"
-          enableAnimation={true}
-          containerClassName="flex flex-col gap-y-1 mt-4"
-        />
-      </div>
+      <LoadingState size="page" variant="drive" />
     </div>
   );
 }

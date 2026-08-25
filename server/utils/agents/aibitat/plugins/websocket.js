@@ -84,7 +84,8 @@ async function handleImageCommand({ aibitat, socket, message }) {
     invocation.thread_id ? { id: invocation.thread_id } : null,
     null,
     [],
-    aibitat?.abortController?.signal ?? null
+    aibitat?.abortController?.signal ?? null,
+    { incognito: !!aibitat?.handlerProps?.incognito }
   );
 
   socket.send(
@@ -456,6 +457,54 @@ const websocket = {
               socket.handleFeedback = async (message) => {
                 const data = JSON.parse(message);
                 if (data.type !== "awaitingFeedback") return;
+
+                const feedbackText = String(data.feedback || "");
+                const isBail = WEBSOCKET_BAIL_COMMANDS.includes(
+                  feedbackText.trim().toLowerCase()
+                );
+                if (!isBail) {
+                  try {
+                    const {
+                      inspect,
+                      BLOCK_ERROR,
+                    } = require("../../../contentGuard");
+                    const { logBlock } = require("../../../contentGuard/audit");
+                    const {
+                      EventLogs,
+                    } = require("../../../../models/eventLogs");
+                    const result = await inspect({ text: feedbackText });
+                    if (result.action === "block") {
+                      await logBlock(
+                        {
+                          category: result.category,
+                          source: result.source,
+                          surface: "agent_websocket",
+                          workspaceSlug:
+                            aibitat?.handlerProps?.invocation?.workspace
+                              ?.slug || null,
+                          incognito: !!aibitat?.handlerProps?.incognito,
+                          urlCount: result.urlCount,
+                        },
+                        userId,
+                        EventLogs.logEvent.bind(EventLogs)
+                      );
+                      socket.send(
+                        JSON.stringify({
+                          type: "statusResponse",
+                          content: BLOCK_ERROR,
+                          animate: false,
+                        })
+                      );
+                      armTimeout();
+                      return;
+                    }
+                  } catch (error) {
+                    console.error(
+                      "contentGuard websocket inspect failed",
+                      error.message
+                    );
+                  }
+                }
 
                 // Intercept the /img slash command so it generates an image
                 // inline instead of being sent to the agent as a normal prompt.

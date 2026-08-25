@@ -51,27 +51,34 @@ export default forwardRef(function (
 
       if (role === "user" && saveOnly) {
         const updatedHistory = [...history];
-        const targetIdx = history.findIndex((msg) => msg.chatId === chatId);
+        const targetIdx = chatId
+          ? history.findIndex((msg) => msg.chatId === chatId)
+          : -1;
         if (targetIdx < 0) return;
         updatedHistory[targetIdx].content = editedMessage;
         updateHistory(updatedHistory);
-        await Workspace.updateChat(
-          workspace.slug,
-          threadSlug,
-          chatId,
-          editedMessage,
-          "user"
-        );
+        if (chatId) {
+          await Workspace.updateChat(
+            workspace.slug,
+            threadSlug,
+            chatId,
+            editedMessage,
+            "user"
+          );
+        }
         return;
       }
 
       if (role === "user") {
-        const updatedHistory = history.slice(
-          0,
-          history.findIndex((msg) => msg.chatId === chatId) + 1
-        );
+        const targetIdx = chatId
+          ? history.findIndex((msg) => msg.chatId === chatId)
+          : history.findLastIndex((msg) => msg.role === "user");
+        if (targetIdx < 0) return;
+        const updatedHistory = history.slice(0, targetIdx + 1);
         updatedHistory[updatedHistory.length - 1].content = editedMessage;
-        await Workspace.deleteEditedChats(workspace.slug, threadSlug, chatId);
+        if (chatId) {
+          await Workspace.deleteEditedChats(workspace.slug, threadSlug, chatId);
+        }
         sendCommand({
           text: editedMessage,
           autoSubmit: true,
@@ -83,18 +90,22 @@ export default forwardRef(function (
 
       if (role === "assistant") {
         const updatedHistory = [...history];
-        const targetIdx = history.findIndex(
-          (msg) => msg.chatId === chatId && msg.role === role
-        );
+        const targetIdx = chatId
+          ? history.findIndex(
+              (msg) => msg.chatId === chatId && msg.role === role
+            )
+          : history.findLastIndex((msg) => msg.role === "assistant");
         if (targetIdx < 0) return;
         updatedHistory[targetIdx].content = editedMessage;
         updateHistory(updatedHistory);
-        await Workspace.updateChat(
-          workspace.slug,
-          threadSlug,
-          chatId,
-          editedMessage
-        );
+        if (chatId) {
+          await Workspace.updateChat(
+            workspace.slug,
+            threadSlug,
+            chatId,
+            editedMessage
+          );
+        }
         return;
       }
     },

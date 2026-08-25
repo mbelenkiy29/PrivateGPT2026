@@ -1,9 +1,10 @@
-import { CaretDown, CaretUp, CircleNotch, Info } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection from "../ImageDimensionSelection";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function OllamaImageOptions({ settings }) {
   const {
@@ -84,10 +85,7 @@ export default function OllamaImageOptions({ settings }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
-                  size={16}
-                  className="text-theme-text-secondary animate-spin"
-                />
+                <LoadingState size="grid" variant="drive" />
               ) : (
                 <>
                   {!basePathValue.value && (

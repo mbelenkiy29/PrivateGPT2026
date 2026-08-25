@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import DBConnection from "./DBConnection";
-import { Plus, Database, CircleNotch } from "@phosphor-icons/react";
+import { Plus, Database } from "@phosphor-icons/react";
 import NewSQLConnection from "./SQLConnectionModal";
 import { useModal } from "@/hooks/useModal";
 import SQLAgentImage from "@/media/agents/sql-agent.png";
 import Admin from "@/models/admin";
 import Toggle from "@/components/lib/Toggle";
 import { Tooltip } from "react-tooltip";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AgentSQLConnectorSelection({
   skill,
@@ -144,10 +145,7 @@ export default function AgentSQLConnectorSelection({
                 <div className="flex flex-col gap-y-3">
                   {loading ? (
                     <div className="flex items-center justify-center py-4">
-                      <CircleNotch
-                        size={24}
-                        className="animate-spin text-theme-text-primary"
-                      />
+                      <LoadingState size="grid" variant="drive" />
                     </div>
                   ) : (
                     connections

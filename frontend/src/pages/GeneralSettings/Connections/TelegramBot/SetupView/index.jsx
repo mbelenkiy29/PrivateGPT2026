@@ -1,14 +1,10 @@
 import { useState } from "react";
-import {
-  CircleNotch,
-  Eye,
-  EyeSlash,
-  TelegramLogo,
-} from "@phosphor-icons/react";
+import { Eye, EyeSlash, TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import CreateBotSection from "./CreateBotSection";
 import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function SetupView({ onConnected }) {
   const { t } = useTranslation();
@@ -53,7 +49,7 @@ export default function SetupView({ onConnected }) {
         >
           {connecting ? (
             <>
-              <CircleNotch className="h-4 w-4 animate-spin" />
+              <LoadingState size="grid" variant="drive" />
               {t("telegram.setup.step2.connecting")}
             </>
           ) : (

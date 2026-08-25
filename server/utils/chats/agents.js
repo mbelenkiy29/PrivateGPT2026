@@ -4,6 +4,7 @@ const {
 } = require("../../models/workspaceAgentInvocation");
 const { writeResponseChunk } = require("../helpers/chat/responses");
 const { Workspace } = require("../../models/workspace");
+const { rejectIfBlocked } = require("../contentGuard");
 
 /**
  * In-memory cache for attachments associated with agent invocations.
@@ -12,6 +13,8 @@ const { Workspace } = require("../../models/workspace");
  * @type {Map<string, Array>}
  */
 const invocationAttachmentsCache = new Map();
+/** @type {Map<string, {incognito:boolean, history:object[], prompt:string}>} */
+const invocationIncognitoCache = new Map();
 
 /**
  * Store attachments for an invocation UUID
@@ -35,6 +38,28 @@ function getAndClearInvocationAttachments(uuid) {
   return attachments;
 }
 
+function cacheInvocationIncognito(
+  uuid,
+  { incognito = false, history = [], prompt = "" } = {}
+) {
+  if (!uuid) return;
+  invocationIncognitoCache.set(uuid, {
+    incognito: !!incognito,
+    history: Array.isArray(history) ? history : [],
+    prompt: typeof prompt === "string" ? prompt : "",
+  });
+}
+
+function getAndClearInvocationIncognito(uuid) {
+  const session = invocationIncognitoCache.get(uuid) || {
+    incognito: false,
+    history: [],
+    prompt: "",
+  };
+  invocationIncognitoCache.delete(uuid);
+  return session;
+}
+
 async function grepAgents({
   uuid,
   response,
@@ -43,6 +68,8 @@ async function grepAgents({
   user = null,
   thread = null,
   attachments = [],
+  incognito = false,
+  history = [],
 }) {
   let nativeToolingEnabled = false;
 
@@ -53,6 +80,17 @@ async function grepAgents({
 
   const agentHandles = WorkspaceAgentInvocation.parseAgents(message);
   if (agentHandles.length > 0 || nativeToolingEnabled) {
+    const blocked = await rejectIfBlocked({
+      text: message,
+      user,
+      workspace,
+      incognito,
+      surface: "agent",
+      response,
+      uuid,
+    });
+    if (blocked) return true;
+
     const { invocation: newInvocation } = await WorkspaceAgentInvocation.new({
       prompt: message,
       workspace: workspace,
@@ -80,6 +118,14 @@ async function grepAgents({
 
     // Cache attachments for the websocket handler to retrieve later
     cacheInvocationAttachments(newInvocation.uuid, attachments);
+    if (incognito) {
+      cacheInvocationIncognito(newInvocation.uuid, {
+        incognito: true,
+        history,
+        prompt: message,
+      });
+      await WorkspaceAgentInvocation.scrubPrompt(newInvocation.uuid);
+    }
 
     writeResponseChunk(response, {
       id: uuid,
@@ -108,4 +154,9 @@ async function grepAgents({
   return false;
 }
 
-module.exports = { grepAgents, getAndClearInvocationAttachments };
+module.exports = {
+  grepAgents,
+  getAndClearInvocationAttachments,
+  cacheInvocationIncognito,
+  getAndClearInvocationIncognito,
+};

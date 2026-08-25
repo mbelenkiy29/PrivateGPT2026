@@ -113,6 +113,33 @@ class MCPHypervisor {
    * @param {string} name - The name of the MCP server to remove
    * @returns {boolean} - True if the MCP server was removed, false otherwise
    */
+  /**
+   * Add or replace an MCP server definition in the config file.
+   * @param {string} name
+   * @param {object} server
+   * @returns {{success: boolean, error: string|null}}
+   */
+  addMCPServerToConfig(name, server) {
+    if (!name || typeof name !== "string")
+      return { success: false, error: "Server name is required." };
+    if (!server || typeof server !== "object")
+      return { success: false, error: "Server definition is required." };
+
+    const servers = safeJsonParse(
+      fs.readFileSync(this.mcpServerJSONPath, "utf8"),
+      { mcpServers: {} }
+    );
+    if (!servers.mcpServers) servers.mcpServers = {};
+    servers.mcpServers[name] = server;
+    fs.writeFileSync(
+      this.mcpServerJSONPath,
+      JSON.stringify(servers, null, 2),
+      "utf8"
+    );
+    this.log(`MCP server ${name} written to config file`);
+    return { success: true, error: null };
+  }
+
   removeMCPServerFromConfig(name) {
     const servers = safeJsonParse(
       fs.readFileSync(this.mcpServerJSONPath, "utf8"),

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { List, Plus } from "@phosphor-icons/react";
+import { List, Plus, Kanban } from "@phosphor-icons/react";
 import NewWorkspaceModal, {
   useNewWorkspaceModal,
 } from "../Modals/NewWorkspace";
@@ -8,8 +8,8 @@ import useLogo from "@/hooks/useLogo";
 import useUser from "@/hooks/useUser";
 import Footer from "../Footer";
 import SettingsButton from "../SettingsButton";
-import { Link } from "react-router-dom";
-import paths from "@/utils/paths";
+import { Link, useLocation } from "react-router-dom";
+import paths, { isPathMatch } from "@/utils/paths";
 import { useTranslation } from "react-i18next";
 import { useSidebarToggle, ToggleSidebarButton } from "./SidebarToggle";
 import SearchBox from "./SearchBox";
@@ -63,6 +63,7 @@ export default function Sidebar() {
                 <div className="relative h-[calc(100%-60px)] flex flex-col w-full justify-between pt-[10px] overflow-y-scroll no-scroll">
                   <div className="flex flex-col gap-y-[14px]">
                     <SearchBox user={user} showNewWsModal={showNewWsModal} />
+                    <TicketsNavLink />
                     <ActiveWorkspaces />
                   </div>
                 </div>
@@ -173,6 +174,7 @@ export function SidebarMobileHeader() {
                     user={user}
                     showNewWsModal={showNewWsModal}
                   />
+                  <TicketsNavLink />
                   <ActiveWorkspaces />
                 </div>
               </div>
@@ -185,6 +187,26 @@ export function SidebarMobileHeader() {
         {showingNewWsModal && <NewWorkspaceModal hideModal={hideNewWsModal} />}
       </div>
     </>
+  );
+}
+
+function TicketsNavLink() {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const active = isPathMatch(paths.tickets(), pathname);
+
+  return (
+    <Link
+      to={paths.tickets()}
+      className={`flex items-center gap-x-2 px-2 py-[6px] rounded-[4px] text-sm font-medium transition-all duration-200 ${
+        active
+          ? "bg-theme-sidebar-item-selected text-theme-text-primary"
+          : "bg-theme-sidebar-item-default text-theme-text-secondary hover:bg-theme-sidebar-item-hover"
+      }`}
+    >
+      <Kanban size={16} weight={active ? "fill" : "regular"} />
+      {t("tickets.title")}
+    </Link>
   );
 }
 

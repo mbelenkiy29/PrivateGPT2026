@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { CaretDown } from "@phosphor-icons/react";
-
-import AgentAnimation from "@/media/animations/agent-animation.webm";
+import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 import AgentStatic from "@/media/animations/agent-static.png";
 
 export default function StatusResponse({ messages = [], isThinking = false }) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const currentThought = messages[messages.length - 1];
   const previousThoughts = messages.slice(0, -1);
@@ -26,21 +27,15 @@ export default function StatusResponse({ messages = [], isThinking = false }) {
             }}
             className="relative bg-zinc-800 light:bg-slate-100 p-4"
           >
-            <div className="absolute top-4 left-4 w-[18px] h-[18px]">
-              {isThinking ? (
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-[18px] h-[18px] scale-[165%] transition-opacity duration-200 light:invert light:opacity-50"
-                  data-tooltip-id="agent-thinking"
-                  data-tooltip-content="Agent is thinking..."
-                  aria-label="Agent is thinking..."
-                >
-                  <source src={AgentAnimation} type="video/webm" />
-                </video>
-              ) : (
+            {isThinking ? (
+              <div className="mb-3 pr-8">
+                <LoadingState
+                  variant="orbit"
+                  label={t("chat_window.agent_working")}
+                />
+              </div>
+            ) : (
+              <div className="absolute top-4 left-4 w-[18px] h-[18px]">
                 <img
                   src={AgentStatic}
                   alt="Agent complete"
@@ -49,8 +44,8 @@ export default function StatusResponse({ messages = [], isThinking = false }) {
                   data-tooltip-content="Agent has finished thinking"
                   aria-label="Agent has finished thinking"
                 />
-              )}
-            </div>
+              </div>
+            )}
             {previousThoughts?.length > 0 && (
               <button
                 onClick={handleExpandClick}
@@ -69,7 +64,7 @@ export default function StatusResponse({ messages = [], isThinking = false }) {
               </button>
             )}
             <div
-              className={`ml-[28px] mr-[26px] transition-[max-height] duration-300 ease-in-out origin-top ${isExpanded ? "" : "overflow-hidden max-h-[18px]"}`}
+              className={`${isThinking ? "mr-[26px]" : "ml-[28px] mr-[26px]"} transition-[max-height] duration-300 ease-in-out origin-top ${isExpanded ? "" : "overflow-hidden max-h-[18px]"}`}
             >
               <div className="text-zinc-200 light:text-slate-800 font-mono text-sm leading-[18px]">
                 {!isExpanded ? (

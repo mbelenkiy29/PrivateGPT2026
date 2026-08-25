@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import System from "@/models/system";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { Info } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { originOnly } from "@/utils/url";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function LemonadeSpeechToTextOptions({ settings }) {
   const {
@@ -29,7 +30,7 @@ export default function LemonadeSpeechToTextOptions({ settings }) {
                 Base URL
               </label>
               {loading ? (
-                <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+                <LoadingState size="grid" variant="drive" />
               ) : (
                 <>
                   {!basePathValue.value && (

@@ -446,6 +446,9 @@ function adminEndpoints(app) {
             case "memory_auto_extraction":
               requestedSettings[label] = setting?.value ?? "true";
               break;
+            case "content_guard_enabled":
+              requestedSettings[label] = setting?.value ?? "true";
+              break;
             default:
               break;
           }

@@ -5,7 +5,6 @@ import {
   DownloadSimple,
   Copy,
   Check,
-  CircleNotch,
   ImageBroken,
   DotsThree,
   PencilSimple,
@@ -14,6 +13,7 @@ import StorageFiles from "@/models/files";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { PASTE_ATTACHMENT_EVENT } from "@/components/WorkspaceChat/ChatContainer/DnDWrapper";
 import { PROMPT_INPUT_EVENT } from "@/components/WorkspaceChat/ChatContainer/PromptInput";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * Renders a generated image returned by the `/img` command. The serve endpoint
@@ -108,11 +108,7 @@ function ImageGenerationCard({ props }) {
           <div className="relative rounded-xl overflow-hidden bg-zinc-800 aspect-square w-[280px]">
             {status === "loading" && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <CircleNotch
-                  size={28}
-                  weight="bold"
-                  className="animate-spin text-zinc-400 light:text-slate-500"
-                />
+                <LoadingState size="grid" variant="drive" />
               </div>
             )}
 

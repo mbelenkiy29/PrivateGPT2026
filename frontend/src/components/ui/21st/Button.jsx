@@ -1,4 +1,5 @@
 import { cn } from "./cn";
+import LoadingState from "./LoadingState";
 
 /**
  * 21st.dev — originui Button + shugar rounded shape, mapped to
@@ -13,8 +14,7 @@ const VARIANTS = {
     "border border-theme-modal-border bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-file-picker-hover",
   ghost:
     "border-none bg-transparent text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-file-picker-hover",
-  destructive:
-    "border-none bg-red-600/90 text-white hover:bg-red-600",
+  destructive: "border-none bg-red-600/90 text-white hover:bg-red-600",
 };
 
 const SIZES = {
@@ -46,6 +46,9 @@ export default function Button({
       )}
       {...props}
     >
+      {loading ? (
+        <LoadingState size="grid" variant="drive" label="Loading" />
+      ) : null}
       {children}
     </button>
   );

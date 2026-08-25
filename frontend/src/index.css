@@ -375,6 +375,37 @@ a {
 
 /**
  * ==============================================
+ * 21st pixel-grid loading state
+ * ==============================================
+ */
+@keyframes pixel-on {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer-text {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-state-cell,
+  .loading-state-label {
+    animation: none !important;
+  }
+}
+
+/**
+ * ==============================================
  * Dot Falling
  * ==============================================
  */
@@ -1154,8 +1185,7 @@ does not extend the close button beyond the viewport. */
  * `content-visibility: auto` lets the browser lazily render only visible
  * messages; `contain-intrinsic-size` provides a placeholder height estimate
  * so the scrollbar stays stable.
- * Exclude :last-child because the pending reply uses a box-shadow positioning
- * trick (left: -9999px) for its dot-falling animation that containment clips.
+ * Exclude :last-child so the pending reply loader is never paint-contained.
  */
 #chat-history > div > *:not(:last-child) {
   content-visibility: auto;

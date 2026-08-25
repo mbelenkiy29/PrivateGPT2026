@@ -3,7 +3,8 @@ import PiperTTSClient from "@/utils/piperTTS";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
 import showToast from "@/utils/toast";
-import { CircleNotch, PauseCircle, PlayCircle } from "@phosphor-icons/react";
+import { PauseCircle, PlayCircle } from "@phosphor-icons/react";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function PiperTTSOptions({ settings }) {
   return (
@@ -197,7 +198,7 @@ function DemoVoiceSample({ voiceId }) {
         <>
           {loading ? (
             <>
-              <CircleNotch size={20} className="animate-spin flex-shrink-0" />
+              <LoadingState size="grid" variant="drive" />
               <p className="text-sm flex-shrink-0">Loading voice</p>
             </>
           ) : (

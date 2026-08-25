@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import truncate from "truncate";
 import moment from "moment";
 import { useModal } from "@/hooks/useModal";
 import Modal, { ModalHeader, ModalBody } from "@/components/lib/Modal";
 import Embed from "@/models/embed";
 import useQuery from "@/hooks/useQuery";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 const KIND_CONFIG = {
   unanswered: {
@@ -99,17 +98,7 @@ export default function EmbedSmbListView({ kind }) {
   if (!config) return null;
 
   if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-        containerClassName="flex w-full"
-      />
-    );
+    return <LoadingState size="page" variant="drive" />;
   }
 
   return (

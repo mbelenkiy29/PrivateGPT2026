@@ -12,7 +12,6 @@ import {
   PushPin,
   CheckCircle,
   XCircle,
-  CircleNotch,
   Clock,
   X,
 } from "@phosphor-icons/react";
@@ -27,6 +26,7 @@ import Button from "@/components/ui/21st/Button";
 import ExplorerPanel from "@/components/ui/21st/ExplorerPanel";
 import { middleTruncate } from "@/utils/directories";
 import { useEmbeddingProgress } from "@/EmbeddingProgressContext";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 function WorkspaceDirectory({
   workspace,
@@ -477,13 +477,7 @@ const STATUS_STYLES = {
     label: "Queued",
   },
   embedding: {
-    icon: (
-      <CircleNotch
-        size={16}
-        className="text-slate-100 light:text-slate-900/40 animate-spin shrink-0"
-        weight="bold"
-      />
-    ),
+    icon: <LoadingState size="grid" variant="drive" />,
     textColor: "text-slate-100 light:text-slate-900/70",
     label: "Embedding",
   },

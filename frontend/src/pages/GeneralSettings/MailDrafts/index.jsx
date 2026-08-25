@@ -3,16 +3,11 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
-import {
-  ArrowSquareOut,
-  EnvelopeSimple,
-  Warning,
-} from "@phosphor-icons/react";
+import { ArrowSquareOut, EnvelopeSimple, Warning } from "@phosphor-icons/react";
 import CTAButton from "@/components/lib/CTAButton";
 import MailDrafts from "@/models/mailDrafts";
 import paths from "@/utils/paths";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -62,9 +57,7 @@ export default function MailDraftsPage() {
   const errorMessages = useMemo(() => {
     const messages = [];
     if (fetchError) {
-      messages.push(
-        t("mailDrafts.errors.fetch", { message: fetchError })
-      );
+      messages.push(t("mailDrafts.errors.fetch", { message: fetchError }));
     }
     if (isProviderError(errors.gmail)) {
       messages.push(
@@ -125,15 +118,7 @@ export default function MailDraftsPage() {
           </div>
           <div className="overflow-x-auto mt-6">
             {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
+              <LoadingState size="page" variant="drive" />
             ) : (
               <>
                 <ErrorBanners messages={errorMessages} />

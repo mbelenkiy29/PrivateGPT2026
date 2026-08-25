@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Send a request to the specified URL
-response=$(curl --write-out '%{http_code}' --silent --output /dev/null http://localhost:3001/api/ping)
+port="${SERVER_PORT:-${PORT:-3001}}"
+response=$(curl --write-out '%{http_code}' --silent --output /dev/null "http://localhost:${port}/api/ping")
 
 # If the HTTP response code is 200 (OK), the server is up
 if [ "$response" -eq 200 ]; then

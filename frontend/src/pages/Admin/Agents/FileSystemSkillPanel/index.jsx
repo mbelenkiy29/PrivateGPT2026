@@ -13,11 +13,11 @@ import {
   ArrowsLeftRight,
   MagnifyingGlass,
   Info,
-  CircleNotch,
   Copy,
 } from "@phosphor-icons/react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export const getFileSystemSubSkills = (t) => {
   return [
@@ -212,10 +212,7 @@ export default function FileSystemSkillPanel({
               </div>
               {loading ? (
                 <div className="flex items-center justify-center py-4">
-                  <CircleNotch
-                    size={24}
-                    className="animate-spin text-theme-text-primary"
-                  />
+                  <LoadingState size="grid" variant="drive" />
                 </div>
               ) : (
                 <>

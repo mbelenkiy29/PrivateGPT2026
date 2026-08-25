@@ -1,6 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
 const { DocumentManager } = require("../DocumentManager");
-const { WorkspaceChats } = require("../../models/workspaceChats");
 const { WorkspaceParsedFiles } = require("../../models/workspaceParsedFiles");
 const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
@@ -16,6 +15,11 @@ const {
   recentChatHistory,
   sourceIdentifier,
 } = require("./index");
+const {
+  normalizeClientChatHistory,
+  persistWorkspaceChat,
+} = require("./incognito");
+const { rejectIfBlocked } = require("../contentGuard");
 
 const VALID_CHAT_MODE = ["automatic", "chat", "query"];
 
@@ -26,12 +30,27 @@ async function streamChatWithWorkspace(
   chatMode = "automatic",
   user = null,
   thread = null,
-  attachments = []
+  attachments = [],
+  { incognito = false, history = [] } = {}
 ) {
   const uuid = uuidv4();
   const updatedMessage = await grepCommand(message, user);
 
   if (Object.keys(VALID_COMMANDS).includes(updatedMessage)) {
+    // /reset is session control. /img still carries a user prompt to scan.
+    // API/embed/Slack/Teams/Telegram are not covered in v1 — see contentGuard.
+    if (updatedMessage !== "/reset") {
+      const blocked = await rejectIfBlocked({
+        text: message,
+        user,
+        workspace,
+        incognito,
+        surface: "workspace_chat",
+        response,
+        uuid,
+      });
+      if (blocked) return;
+    }
     const data = await VALID_COMMANDS[updatedMessage](
       workspace,
       message,
@@ -39,7 +58,9 @@ async function streamChatWithWorkspace(
       user,
       thread,
       response,
-      attachments
+      attachments,
+      null,
+      { incognito }
     );
     writeResponseChunk(response, data);
     return;
@@ -54,8 +75,21 @@ async function streamChatWithWorkspace(
     workspace,
     thread,
     attachments,
+    incognito,
+    history,
   });
   if (isAgentChat) return;
+
+  const blocked = await rejectIfBlocked({
+    text: updatedMessage,
+    user,
+    workspace,
+    incognito,
+    surface: "workspace_chat",
+    response,
+    uuid,
+  });
+  if (blocked) return;
 
   const {
     connector: LLMConnector,
@@ -114,7 +148,7 @@ async function streamChatWithWorkspace(
       close: true,
       error: null,
     });
-    await WorkspaceChats.new({
+    await persistWorkspaceChat(incognito, {
       workspaceId: workspace.id,
       prompt: message,
       response: {
@@ -140,13 +174,21 @@ async function streamChatWithWorkspace(
   let pinnedDocIdentifiers = [];
 
   // If the router pre-fetched context we can reuse it; otherwise fetch fresh.
+  const fetchedContext =
+    prefetchedContext ??
+    (await recentChatHistory({ user, workspace, thread, messageLimit }));
   const {
     rawHistory,
-    chatHistory,
     pinnedDocs: prefetchedPinnedDocs,
     parsedFiles: prefetchedParsedFiles,
-  } = prefetchedContext ??
-  (await recentChatHistory({ user, workspace, thread, messageLimit }));
+  } = fetchedContext;
+  const clientHistory = incognito
+    ? normalizeClientChatHistory(history, messageLimit)
+    : null;
+  const chatHistory =
+    clientHistory?.chatHistory?.length > 0
+      ? clientHistory.chatHistory
+      : fetchedContext.chatHistory || [];
 
   // Pinned docs — reuse pre-fetched if available, otherwise fetch with token cap.
   const pinnedDocs =
@@ -247,7 +289,7 @@ async function streamChatWithWorkspace(
       error: null,
     });
 
-    await WorkspaceChats.new({
+    await persistWorkspaceChat(incognito, {
       workspaceId: workspace.id,
       prompt: message,
       response: {
@@ -344,7 +386,7 @@ async function streamChatWithWorkspace(
         userId: user?.id,
       }
     );
-    const { chat } = await WorkspaceChats.new({
+    const { chat } = await persistWorkspaceChat(incognito, {
       workspaceId: workspace.id,
       prompt: message,
       response: decorated,
@@ -357,7 +399,7 @@ async function streamChatWithWorkspace(
       type: "finalizeResponseStream",
       close: true,
       error: false,
-      chatId: chat.id,
+      chatId: chat?.id || null,
       metrics,
       provenance: decorated.provenance,
     });

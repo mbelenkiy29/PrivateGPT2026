@@ -6,12 +6,12 @@ import {
   Circle,
   DotsThreeVertical,
   CloudArrowDown,
-  CircleNotch,
 } from "@phosphor-icons/react";
 import pluralize from "pluralize";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
 import MonoProviderIcon from "../MonoProviderIcon";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * @typedef {Object} ModelDefinition
@@ -318,11 +318,7 @@ function ModelRow({
         {!model.downloaded && processing && (
           <div className="flex items-center justify-center gap-x-[10px] whitespace-nowrap">
             {!downloadPercentage && (
-              <CircleNotch
-                size={16}
-                weight="bold"
-                className="text-theme-text-primary animate-spin"
-              />
+              <LoadingState size="grid" variant="drive" />
             )}
             <p className="text-theme-text-secondary text-sm">
               {downloadPercentage}%

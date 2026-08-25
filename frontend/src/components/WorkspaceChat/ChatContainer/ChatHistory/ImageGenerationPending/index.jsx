@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch, XCircle } from "@phosphor-icons/react";
+import { XCircle } from "@phosphor-icons/react";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * Placeholder shown while an `/img` generation is in progress, or after it was
@@ -38,10 +39,9 @@ function ImageGenerationPending({ aborted = false }) {
         <div className="relative rounded-xl overflow-hidden aspect-square">
           <div className="absolute inset-0 bg-gradient-to-br from-zinc-600 via-zinc-800 to-zinc-900 light:from-slate-200 light:via-slate-300 light:to-slate-100 blur-2xl animate-pulse" />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 text-center px-5">
-            <CircleNotch
-              size={32}
-              weight="bold"
-              className="animate-spin text-white light:text-slate-700"
+            <LoadingState
+              variant="orbit"
+              label={t("imageGeneration.pending.heading")}
             />
             <p className="text-white light:text-slate-800 text-sm font-semibold">
               {t("imageGeneration.pending.heading")}

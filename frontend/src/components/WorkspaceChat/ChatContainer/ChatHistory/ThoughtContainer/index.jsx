@@ -11,7 +11,8 @@ import renderMarkdown from "@/utils/chat/markdown";
 import { CaretDown } from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
 import { isMobile } from "react-device-detect";
-import ThinkingAnimation from "@/media/animations/thinking-animation.webm";
+import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 import ThinkingStatic from "@/media/animations/thinking-static.png";
 
 /**
@@ -101,6 +102,7 @@ export const ThoughtChainComponent = forwardRef(
     const [hasReadableContent, setHasReadableContent] = useState(
       contentIsNotEmpty(initialContent)
     );
+    const { t } = useTranslation();
     const { expanded: persistedExpanded, setExpanded: setPersistedExpanded } =
       useThoughtExpansion(messageId);
     const [localExpanded, setLocalExpanded] = useState(false);
@@ -153,21 +155,15 @@ export const ThoughtChainComponent = forwardRef(
               }}
               className="relative bg-zinc-800 light:bg-slate-100 p-4"
             >
-              <div className="absolute top-4 left-4 w-[18px] h-[18px]">
-                {isThinking ? (
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-[18px] h-[18px] scale-[115%] light:invert light:opacity-50"
-                    data-tooltip-id="cot-thinking"
-                    data-tooltip-content="Model is thinking..."
-                    aria-label="Model is thinking..."
-                  >
-                    <source src={ThinkingAnimation} type="video/webm" />
-                  </video>
-                ) : isComplete ? (
+              {isThinking ? (
+                <div className="mb-3 pr-8">
+                  <LoadingState
+                    variant="dots"
+                    label={t("chat_window.thinking")}
+                  />
+                </div>
+              ) : isComplete ? (
+                <div className="absolute top-4 left-4 w-[18px] h-[18px]">
                   <img
                     src={ThinkingStatic}
                     alt="Thinking complete"
@@ -176,8 +172,8 @@ export const ThoughtChainComponent = forwardRef(
                     data-tooltip-content="Model has finished thinking"
                     aria-label="Model has finished thinking"
                   />
-                ) : null}
-              </div>
+                </div>
+              ) : null}
               {canExpand && (
                 <button
                   onClick={handleExpandClick}
@@ -196,7 +192,7 @@ export const ThoughtChainComponent = forwardRef(
                 </button>
               )}
               <div
-                className={`ml-[28px] mr-[26px] transition-[max-height] duration-300 ease-in-out origin-top ${isExpanded ? "" : "overflow-hidden max-h-[18px]"}`}
+                className={`${isThinking ? "mr-[26px]" : "ml-[28px] mr-[26px]"} transition-[max-height] duration-300 ease-in-out origin-top ${isExpanded ? "" : "overflow-hidden max-h-[18px]"}`}
               >
                 <div className="text-zinc-200 light:text-slate-800 font-mono text-sm leading-[18px] [&_p]:m-0">
                   <span

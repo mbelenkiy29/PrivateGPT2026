@@ -12,8 +12,9 @@ import useAgentSkillsState from "./useAgentSkillsState";
 import useSkillSections from "./useSkillSections";
 import SkillRow from "./SkillRow";
 import SkillSection from "./SkillSection";
-import { Wrench, MagnifyingGlass, CircleNotch } from "@phosphor-icons/react";
+import { Wrench, MagnifyingGlass } from "@phosphor-icons/react";
 import { useIsAgentSessionActive } from "@/utils/chat/agent";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 const MIN_ITEMS_TO_SHOW_SEARCH = 10;
 
@@ -242,11 +243,7 @@ export default function AgentSkillsTab({
       ))}
       {mcpLoading && (
         <div className="flex items-center gap-1.5 px-2 py-1.5">
-          <CircleNotch
-            size={12}
-            className="text-zinc-500 light:text-slate-400 animate-spin"
-            weight="bold"
-          />
+          <LoadingState size="grid" variant="drive" />
           <span className="text-[10px] text-zinc-500 light:text-slate-400">
             {t("chat_window.loading_mcp_servers")}
           </span>

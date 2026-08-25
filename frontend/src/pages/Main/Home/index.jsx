@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   LAST_VISITED_WORKSPACE,
   PENDING_HOME_MESSAGE,
+  PENDING_INCOGNITO,
 } from "@/utils/constants";
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
@@ -23,7 +24,8 @@ import { safeJsonParse } from "@/utils/request";
 import QuickActions from "@/components/lib/QuickActions";
 import SuggestedMessages from "@/components/lib/SuggestedMessages";
 import useUser from "@/hooks/useUser";
-import ChatSettingsMenu from "@/components/WorkspaceChat/ChatContainer/ChatSettingsMenu";
+import ChatHeaderActions from "@/components/WorkspaceChat/ChatContainer/ChatHeaderActions";
+import { IncognitoBanner } from "@/components/WorkspaceChat/ChatContainer/IncognitoToggle";
 import WorkspaceModelPicker from "@/components/WorkspaceChat/ChatContainer/WorkspaceModelPicker";
 import { ChatTooltips } from "@/components/WorkspaceChat/ChatContainer/ChatTooltips";
 import { ChatSidebarProvider } from "@/components/WorkspaceChat/ChatContainer/ChatSidebar";
@@ -186,6 +188,7 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [incognito, setIncognito] = useState(false);
   const { files, parseAttachments } = useContext(DndUploaderContext);
 
   useEffect(() => {
@@ -216,7 +219,7 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
         setWorkspace(targetWorkspace);
       }
 
-      if (!targetThread) {
+      if (!targetThread && !incognito) {
         const { thread } = await Workspace.threads.new(targetWorkspace.slug);
         targetThread = thread?.slug;
         if (thread) setThreadSlug(thread.slug);
@@ -226,6 +229,7 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
         PENDING_HOME_MESSAGE,
         JSON.stringify({ message, attachments })
       );
+      if (incognito) sessionStorage.setItem(PENDING_INCOGNITO, "1");
 
       if (targetThread) {
         navigate(paths.workspace.thread(targetWorkspace.slug, targetThread));
@@ -288,10 +292,16 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
         style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
         className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
       >
-        <ChatSettingsMenu />
+        <ChatHeaderActions
+          incognito={incognito}
+          onIncognitoToggle={() => setIncognito((on) => !on)}
+          workspace={workspace}
+          threadSlug={threadSlug}
+        />
         <div className="flex-1 min-w-0 transition-all duration-500 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
           {isMobile && <SidebarMobileHeader />}
           <WorkspaceModelPicker workspaceSlug={workspace?.slug} />
+          <IncognitoBanner visible={incognito} />
           <DnDFileUploaderWrapper>
             <div className="flex flex-col h-full w-full items-center justify-center">
               <div className="flex flex-col items-center w-full max-w-[750px]">

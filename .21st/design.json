@@ -23,12 +23,30 @@
   },
   "components": {
     "installed": [],
-    "preferredPrimitives": [],
+    "preferredPrimitives": [
+      "frontend/src/components/ui/21st/Button",
+      "frontend/src/components/ui/21st/Input",
+      "frontend/src/components/ui/21st/Field",
+      "frontend/src/components/ui/21st/Card",
+      "frontend/src/components/ui/21st/PillTabs",
+      "frontend/src/components/ui/21st/EmptyState",
+      "frontend/src/components/ui/21st/SearchInput",
+      "frontend/src/components/ui/21st/Dropzone",
+      "frontend/src/components/ui/21st/Breadcrumb"
+    ],
     "patterns": []
   },
   "constraints": {
-    "must": [],
-    "avoid": []
+    "must": [
+      "Every UI request uses 21st.dev: search the catalog first (21st search / 21st CLI), reuse frontend/src/components/ui/21st primitives, and only generate with 21st AI when nothing fits.",
+      "Install or pull 21st results into the project stack (React + Vite + Tailwind + theme tokens + Phosphor). Do not paste sketch HTML as production code.",
+      "New UI surfaces record the 21st references used in .21st/design.json decisions."
+    ],
+    "avoid": [
+      "Hand-rolling buttons, inputs, tabs, empty states, cards, or drawers that 21st already covers.",
+      "Adding shadcn or extra UI/animation libraries.",
+      "Skipping 21st search because a similar component already exists in the repo."
+    ]
   },
   "decisions": [
     {
@@ -37,6 +55,73 @@
       "choice": "21st dual-pane explorer",
       "references": ["18106 Scroll Area File Explorer", "24877 File Tree View", "7878 Pill Morph Tabs", "19201 File Dropzone"],
       "notes": "Manage Documents is a compact dual-pane explorer. Left: source pills + local/cloud tree + compact dropzone. Right: workspace embeddings. Transfer is a circular arrow, not a full-screen stretch."
+    },
+    {
+      "id": "skills-marketplace-catalog",
+      "date": "2026-08-23",
+      "choice": "21st catalog grid marketplace",
+      "references": ["7878 Pill Morph Tabs", "originui Button/Input", "22301 Interactive Empty State"],
+      "notes": "Skills Marketplace is a searchable card grid with pill category tabs. Create/upload in a modal. Detail drawer for enable, workspace assign, and delete. No extra UI kits."
+    },
+    {
+      "id": "tickets-board-and-table",
+      "date": "2026-08-23",
+      "choice": "Main-sidebar tickets board + table",
+      "references": ["7878 Pill Morph Tabs", "originui Button/Input", "22301 Interactive Empty State"],
+      "notes": "Tickets is a first-class /tickets surface with Board and Table pill tabs, a right-hand drawer, 21st primitives, and Phosphor icons. No extra UI kits. Start runs the workspace agent with optional tool overrides."
+    },
+    {
+      "id": "always-21st-for-ui",
+      "date": "2026-08-23",
+      "choice": "21st.dev is the default component source for all UI work",
+      "references": ["frontend/src/components/ui/21st"],
+      "notes": "Search 21st first, reuse installed 21st primitives, generate with 21st AI only if the catalog has no fit. Map everything onto project tokens and Phosphor."
+    },
+    {
+      "id": "loading-state-pixel-grid",
+      "date": "2026-08-23",
+      "choice": "21st pixel-grid loader for waiters and chat thinking",
+      "references": ["frontend/src/components/ui/21st/LoadingState"],
+      "notes": "Drive/Dots/Orbit grid with Plus Jakarta shimmer label and tabular elapsed timer. Theme tokens, no shadcn. Used for fullscreen, page, chat generating, CoT, and agent thinking."
+    },
+    {
+      "id": "incognito-chat-session",
+      "date": "2026-08-23",
+      "choice": "Phosphor Detective header toggle for private chat sessions",
+      "references": ["originui Button", "frontend/src/components/ui/21st/Button"],
+      "notes": "21st catalog had only generic switches. Incognito is a 35px circular Detective control in the existing chat header cluster, matching ChatSettingsMenu. Session-level: replies stream in-tab and are not written to workspace_chats or agent history."
+    },
+    {
+      "id": "company-getting-started",
+      "date": "2026-08-24",
+      "choice": "21st-adapted Home getting-started accordion",
+      "references": [
+        "cnippet.dev Onboarding Step Tracker",
+        "originui Button/Input",
+        "frontend/src/components/ui/21st"
+      ],
+      "notes": "Company-admin Getting Started on Home. Accordion checklist rebuilt with 21st Button, Field, Dropzone, LoadingState, Phosphor, and theme tokens (sky done-state to match selected controls). No shadcn, base-ui, lucide, or TypeScript. Wires to workspace update/create, invite links, and existing Slack/Teams/Telegram/Drive settings."
+    },
+    {
+      "id": "mcp-catalog-brand-logos",
+      "date": "2026-08-24",
+      "choice": "Per-MCP brand mark on marketplace cards",
+      "references": [
+        "@lobehub/icons",
+        "frontend/src/pages/Admin/SkillsMarketplace/McpLogo.jsx",
+        "frontend/src/media/mcp"
+      ],
+      "notes": "Every curated MCP has a logo in Skills Marketplace cards, the detail drawer, Connect modal, Agent Skills MCP list, and the workspace skill picker. Brand MCPs use official marks (Slack, YouTube, Postgres, Brave, GitHub, Google). Generic MCPs use compact SVG marks. Unknown servers fall back to the MCP icon. 21st primitives unchanged."
+    },
+    {
+      "id": "content-guardrails",
+      "date": "2026-08-24",
+      "choice": "Server-side content policy, not an @agent skill",
+      "references": [
+        "frontend/src/components/lib/Toggle",
+        "frontend/src/pages/GeneralSettings/Security"
+      ],
+      "notes": "In-app chat and agent prompts are scanned before any model sees them, including private sessions. Admin toggle lives on Settings → Security using the existing Toggle so it matches Multi-User and Password Protection. Blocks write a sanitized event log with no message body. No extra UI kit."
     }
   ],
   "evidence": [],

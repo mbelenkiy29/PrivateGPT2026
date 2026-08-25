@@ -10,3 +10,4 @@ export { default as PillTabs } from "./PillTabs";
 export { default as EmptyState } from "./EmptyState";
 export { default as FileTreeRow } from "./FileTreeRow";
 export { default as ExplorerPanel } from "./ExplorerPanel";
+export { default as LoadingState } from "./LoadingState";

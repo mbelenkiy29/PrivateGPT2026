@@ -1,8 +1,5 @@
 import { memo, useState } from "react";
-import {
-  formatDateTimeAsMoment,
-  getFileExtension,
-} from "@/utils/directories";
+import { formatDateTimeAsMoment, getFileExtension } from "@/utils/directories";
 import { ArrowUUpLeft, Eye, PushPin } from "@phosphor-icons/react";
 import FileTreeRow from "@/components/ui/21st/FileTreeRow";
 import Workspace from "@/models/workspace";

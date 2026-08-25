@@ -3,9 +3,8 @@ import { useEffect, useState, Fragment } from "react";
 import { isMobile } from "react-device-detect";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import Highlighter from "react-highlight-words";
+import LoadingState from "@/components/ui/21st/LoadingState";
 import SystemPromptVariable from "@/models/systemPromptVariable";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
@@ -129,27 +128,7 @@ export default function DefaultSystemPrompt() {
           </div>
           <div>
             {systemPromptForm.isLoading ? (
-              <div className="mt-8 flex flex-col gap-y-4">
-                <Skeleton.default
-                  height={20}
-                  width={160}
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                />
-                <Skeleton.default
-                  height={120}
-                  width="100%"
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                  className="rounded-lg"
-                />
-                <Skeleton.default
-                  height={36}
-                  width={140}
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                />
-              </div>
+              <LoadingState size="page" variant="drive" />
             ) : (
               <div className="mt-6">
                 <form onSubmit={handleSubmit} className="space-y-3">

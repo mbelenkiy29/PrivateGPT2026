@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { PlusCircle } from "@phosphor-icons/react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import BrowserExtensionApiKeyRow from "./BrowserExtensionApiKeyRow";
@@ -12,6 +10,7 @@ import Modal from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
 import { fullApiUrl } from "@/utils/constants";
 import { Tooltip } from "react-tooltip";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function BrowserExtensionApiKeys() {
   const [loading, setLoading] = useState(true);
@@ -69,15 +68,7 @@ export default function BrowserExtensionApiKeys() {
           </div>
           <div className="overflow-x-auto mt-6">
             {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
+              <LoadingState size="page" variant="drive" />
             ) : error ? (
               <div className="text-red-500 mt-6">Error: {error}</div>
             ) : (

@@ -21,6 +21,8 @@ const chatHistory = {
           aibitat._aborted = true;
         });
 
+        if (aibitat.handlerProps?.incognito) return;
+
         // pre-register a workspace chat ID to secure it in the DB
         aibitat.onMessage(async (message) => {
           if (message.from !== "USER") return;

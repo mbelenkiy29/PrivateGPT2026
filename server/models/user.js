@@ -11,7 +11,13 @@ const { EventLogs } = require("./eventLogs");
  * @property {string} role
  * @property {boolean} suspended
  * @property {number|null} dailyMessageLimit
+ * @property {string|null} firstName
+ * @property {string|null} lastName
+ * @property {boolean} onboardingComplete
+ * @property {Date|null} onboardingCompletedAt
  */
+
+const NAME_MAX_LENGTH = 80;
 
 const User = {
   usernameRegex: new RegExp(/^[a-z][a-z0-9._@-]*$/),
@@ -24,6 +30,8 @@ const User = {
     "suspended",
     "dailyMessageLimit",
     "bio",
+    "firstName",
+    "lastName",
   ],
   validations: {
     /**
@@ -73,6 +81,23 @@ const User = {
         throw new Error("Bio cannot be longer than 1,000 characters");
       return String(bio);
     },
+    firstName: (value = "") =>
+      User.validations._personName(value, "First name"),
+    lastName: (value = "") => User.validations._personName(value, "Last name"),
+    _personName: (value = "", label = "Name") => {
+      if (value === null || value === undefined) return null;
+      const name = String(value).trim();
+      if (!name) return null;
+      if (name.length > NAME_MAX_LENGTH)
+        throw new Error(
+          `${label} cannot be longer than ${NAME_MAX_LENGTH} characters`
+        );
+      if (!/^[\p{L}\p{M}][\p{L}\p{M}\s.'’-]*$/u.test(name))
+        throw new Error(
+          `${label} can only contain letters, spaces, hyphens, apostrophes, and periods`
+        );
+      return name;
+    },
   },
   // validations for the above writable fields.
   castColumnValue: function (key, value) {
@@ -94,6 +119,22 @@ const User = {
     } = user;
     return { ...rest };
   },
+
+  markOnboardingComplete: async function (userId) {
+    try {
+      const user = await prisma.users.update({
+        where: { id: Number(userId) },
+        data: {
+          onboardingComplete: true,
+          onboardingCompletedAt: new Date(),
+        },
+      });
+      return { user: this.filterFields(user), error: null };
+    } catch (error) {
+      console.error("FAILED TO MARK ONBOARDING COMPLETE.", error.message);
+      return { user: null, error: error.message };
+    }
+  },
   _identifyErrorAndFormatMessage: function (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // P2002 is the unique constraint violation error code
@@ -111,6 +152,8 @@ const User = {
     role = "default",
     dailyMessageLimit = null,
     bio = "",
+    firstName = null,
+    lastName = null,
   }) {
     const passwordCheck = this.checkPasswordComplexity(password);
     if (!passwordCheck.checkedOK) {
@@ -129,6 +172,10 @@ const User = {
           password: hashedPassword,
           role: this.validations.role(role),
           bio: this.validations.bio(bio),
+          firstName: this.validations.firstName(firstName),
+          lastName: this.validations.lastName(lastName),
+          onboardingComplete: false,
+          onboardingCompletedAt: null,
           dailyMessageLimit:
             this.validations.dailyMessageLimit(dailyMessageLimit),
         },

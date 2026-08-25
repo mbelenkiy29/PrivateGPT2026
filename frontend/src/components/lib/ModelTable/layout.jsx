@@ -1,9 +1,6 @@
 import { useState } from "react";
-import {
-  ArrowClockwise,
-  CircleNotch,
-  MagnifyingGlass,
-} from "@phosphor-icons/react";
+import LoadingState from "@/components/ui/21st/LoadingState";
+import { ArrowClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 
 export default function ModelTableLayout({
   children,
@@ -59,7 +56,7 @@ export default function ModelTableLayout({
             className="border-none text-theme-text-secondary text-sm font-medium hover:bg-white/10 light:hover:bg-black/5 rounded-lg px-2 h-full flex items-center gap-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRefreshing ? (
-              <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+              <LoadingState size="grid" variant="drive" />
             ) : (
               <ArrowClockwise
                 weight="bold"

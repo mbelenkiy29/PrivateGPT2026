@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { EnvelopeSimple } from "@phosphor-icons/react";
 import Admin from "@/models/admin";
 import InviteRow from "./InviteRow";
@@ -10,6 +8,7 @@ import NewInviteModal from "./NewInviteModal";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AdminInvites() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -56,15 +55,7 @@ export default function AdminInvites() {
           </div>
           <div className="overflow-x-auto mt-6">
             {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
+              <LoadingState size="page" variant="drive" />
             ) : (
               <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
                 <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">

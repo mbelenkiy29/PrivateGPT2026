@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { CircleNotch } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import ConnectedView from "./ConnectedView";
 import SetupView from "./SetupView";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import paths from "@/utils/paths";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function TelegramBotSettings() {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export default function TelegramBotSettings() {
     return (
       <ConnectionsLayout>
         <div className="flex items-center justify-center h-full">
-          <CircleNotch className="h-8 w-8 text-zinc-400 light:text-slate-400 animate-spin" />
+          <LoadingState size="grid" variant="drive" />
         </div>
       </ConnectionsLayout>
     );

@@ -23,6 +23,9 @@ export default {
   home: () => {
     return "/";
   },
+  tickets: (options = {}) => {
+    return applyOptions("/tickets", options);
+  },
   login: (noTry = false) => {
     return `/login${noTry ? "?nt=1" : ""}`;
   },
@@ -59,6 +62,9 @@ export default {
     connectDrive: () => {
       return "/onboarding/connect-drive";
     },
+  },
+  userOnboarding: () => {
+    return "/user-onboarding";
   },
   docs: (path = "") => {
     return `https://docs.anythingllm.com${path}`;
@@ -152,6 +158,9 @@ export default {
     },
     agentSkills: () => {
       return "/settings/agents";
+    },
+    skillsMarketplace: () => {
+      return "/settings/skills";
     },
     mailDrafts: () => {
       return "/settings/mail-drafts";

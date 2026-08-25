@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { X, CircleNotch, Warning } from "@phosphor-icons/react";
+import { X, Warning } from "@phosphor-icons/react";
 import Workspace from "@/models/workspace";
 import { nFormatter } from "@/utils/numbers";
 import showToast from "@/utils/toast";
 import pluralize from "pluralize";
 import { PARSED_FILE_ATTACHMENT_REMOVED_EVENT } from "../../../DnDWrapper";
 import useUser from "@/hooks/useUser";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function ParsedFilesMenu({
   onEmbeddingChange,
@@ -150,7 +151,7 @@ export default function ParsedFilesMenu({
           >
             {isEmbedding ? (
               <>
-                <CircleNotch size={14} className="animate-spin" />
+                <LoadingState size="grid" variant="drive" />
                 Embedding {embedProgress} of {files.length} files...
               </>
             ) : (
@@ -182,7 +183,7 @@ export default function ParsedFilesMenu({
           ))}
         {isLoading && (
           <div className="flex items-center justify-center gap-2 text-xs text-theme-text-secondary text-center py-2">
-            <CircleNotch size={16} className="animate-spin" />
+            <LoadingState size="grid" variant="drive" />
             Loading...
           </div>
         )}

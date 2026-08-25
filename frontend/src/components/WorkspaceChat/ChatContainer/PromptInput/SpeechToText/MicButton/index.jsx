@@ -1,8 +1,9 @@
 import { useCallback, useEffect } from "react";
-import { Microphone, CircleNotch } from "@phosphor-icons/react";
+import { Microphone } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import { PROMPT_INPUT_EVENT } from "../../../PromptInput";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * Shared microphone button for all speech-to-text providers. Owns the Ctrl+M
@@ -58,11 +59,7 @@ export default function MicButton({
       }`}
     >
       {processing ? (
-        <CircleNotch
-          size={18}
-          weight="bold"
-          className="pointer-events-none text-white light:text-slate-800 animate-spin shrink-0"
-        />
+        <LoadingState size="grid" variant="drive" />
       ) : (
         <Microphone
           weight="regular"

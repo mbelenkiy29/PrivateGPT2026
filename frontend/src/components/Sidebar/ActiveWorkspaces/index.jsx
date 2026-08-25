@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import Workspace from "@/models/workspace";
 import ManageWorkspace, {
   useManageWorkspaceModal,
@@ -14,6 +12,7 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import showToast from "@/utils/toast";
 import { LAST_VISITED_WORKSPACE } from "@/utils/constants";
 import { safeJsonParse } from "@/utils/request";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function ActiveWorkspaces() {
   const navigate = useNavigate();
@@ -37,15 +36,9 @@ export default function ActiveWorkspaces() {
 
   if (loading) {
     return (
-      <Skeleton.default
-        height={40}
-        width="100%"
-        count={5}
-        baseColor="var(--theme-sidebar-item-default)"
-        highlightColor="var(--theme-sidebar-item-hover)"
-        enableAnimation={true}
-        className="my-1"
-      />
+      <div className="flex items-center justify-center py-4">
+        <LoadingState size="grid" variant="drive" />
+      </div>
     );
   }
 

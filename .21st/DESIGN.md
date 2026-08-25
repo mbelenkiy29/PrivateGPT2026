@@ -11,6 +11,31 @@ Generated from project sources at 2026-08-22T20:43:27.097Z.
 - Color mode: dark (default) with light variant
 - Density: compact
 
+## MCP catalog
+
+Skills Marketplace MCP tab is a curated connect grid, not an open npm scrape.
+Connect uses a 21st drawer (`Field` + `Button`). New servers start stopped
+(`autoStart: false`) until the user enables them. Each catalog MCP has a brand
+mark (`McpLogo`) on cards, the drawer, Connect, Agent Skills, and the workspace
+picker.
+
+## Skills marketplace
+
+Settings → Agent Skills → Skills Marketplace (`/settings/skills`). Searchable
+card grid with pill tabs (All / Installed / Built-in / Hub / My skills / MCP).
+Create a local `plugin.json` skill or an Agent Flow. Per-workspace assignment
+lives on the workspace Agent tab. Use `frontend/src/components/ui/21st`.
+
+## Tickets
+
+`/tickets` is a first-class board + table (Notion-like). Sidebar link on the main nav.
+Use 21st `Button`, `Field`, `PillTabs`, `EmptyState`, `SearchInput`. Ticket detail is a right drawer.
+Start runs the workspace agent; tools are optional overrides from the scheduled-jobs catalog.
+
+## Company getting started
+
+Home shows a Getting Started accordion for admin/manager after first-run (not a replacement of `/onboarding`). Rebuild of the 21st Onboarding Step Tracker with `Button`, `Field`, `Dropzone`, `LoadingState`, Phosphor, and theme tokens. Sky (not emerald) for completed steps so it matches selected controls elsewhere. Invite step mints `/accept-invite/:code` links assigned to the company workspace. No extra UI kits.
+
 ## File explorer
 
 Manage Documents is a dual-pane explorer (21st 18106 + 24877 + pill tabs).
@@ -28,7 +53,7 @@ Do not stretch the modal full-screen. Use theme tokens, Phosphor icons, and
 ## Components
 
 - Installed: None detected
-- Preferred primitives: None detected
+- Preferred primitives: `frontend/src/components/ui/21st` (`Button`, `Input`, `Field`, `Card`, `PillTabs`, `EmptyState`, `SearchInput`, `Dropzone`, `Breadcrumb`)
 
 ## Tokens
 
@@ -36,13 +61,21 @@ Do not stretch the modal full-screen. Use theme tokens, Phosphor icons, and
 
 ### Must
 
-- None recorded
+- Every UI request uses 21st.dev: search the catalog first (`21st search`), reuse `frontend/src/components/ui/21st` primitives, and only generate with 21st AI when nothing fits.
+- Install or pull 21st results into this stack (React, Vite, Tailwind, theme tokens, Phosphor). Do not paste sketch HTML as production code.
+- New UI surfaces record the 21st references used in `.21st/design.json` decisions.
+- Waiters (page load, chat generating, model thinking, agent working) use `frontend/src/components/ui/21st/LoadingState` (pixel grid, Plus Jakarta, theme tokens).
+- Chat Incognito is a Detective icon in the top-right header cluster (left of chat settings). While on, replies stay in the tab and are not written to chat history. The instance still applies content policy; allowed messages can still be seen by the model and tools.
+- Content policy is a server-side gate (not an @agent skill). Admin toggle is on Settings → Security using the existing Toggle, matching Multi-User Mode.
 
 ### Avoid
 
-- None recorded
+- Hand-rolling buttons, inputs, tabs, empty states, cards, or drawers that 21st already covers.
+- Adding shadcn or extra UI/animation libraries.
+- Skipping 21st search because a similar component already exists in the repo.
 
 ## Decisions
 
-- None recorded
+- Incognito chat: Phosphor Detective toggle in the existing circular header cluster. No extra UI kit; 21st catalog only had generic switches.
+- Content guardrails: Settings → Security toggle (existing `Toggle`), not a new 21st surface. Policy runs on the server for in-app chat and agents, including private sessions.
 

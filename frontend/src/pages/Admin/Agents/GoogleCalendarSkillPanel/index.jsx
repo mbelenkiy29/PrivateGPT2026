@@ -10,7 +10,6 @@ import { Trans, useTranslation } from "react-i18next";
 import debounce from "lodash.debounce";
 import {
   MagnifyingGlass,
-  CircleNotch,
   Warning,
   CaretDown,
   CheckCircle,
@@ -24,6 +23,7 @@ import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
 import GoogleCalendarIcon from "./google-calendar.png";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function GoogleCalendarSkillPanel({
   title,
@@ -161,10 +161,7 @@ export default function GoogleCalendarSkillPanel({
 
             {loading ? (
               <div className="flex items-center justify-center py-4">
-                <CircleNotch
-                  size={24}
-                  className="animate-spin text-theme-text-primary"
-                />
+                <LoadingState size="grid" variant="drive" />
               </div>
             ) : (
               <>

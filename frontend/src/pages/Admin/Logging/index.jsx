@@ -3,11 +3,11 @@ import useQuery from "@/hooks/useQuery";
 import System from "@/models/system";
 import { useEffect, useState } from "react";
 import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
 import LogRow from "./LogRow";
 import showToast from "@/utils/toast";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function AdminLogs() {
   const query = useQuery();
@@ -105,17 +105,7 @@ function LogsContainer({
 }) {
   const { t } = useTranslation();
   if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-        containerClassName="flex w-full"
-      />
-    );
+    return <LoadingState size="page" variant="drive" />;
   }
 
   return (

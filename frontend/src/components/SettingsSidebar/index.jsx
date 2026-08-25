@@ -11,6 +11,7 @@ import {
   Nut,
   Toolbox,
   Plugs,
+  Storefront,
 } from "@phosphor-icons/react";
 import AgentIcon from "@/media/animations/agent-static.png";
 import CommunityHubIcon from "@/media/illustrations/community-hub.png";
@@ -311,6 +312,14 @@ const SidebarOptions = ({ user = null, t }) => (
               roles: ["admin"],
             },
           ]}
+        />
+        <Option
+          btnText={t("settings.skills-marketplace")}
+          icon={<Storefront className="h-5 w-5 flex-shrink-0" />}
+          href={paths.settings.skillsMarketplace()}
+          flex={true}
+          user={user}
+          roles={["admin"]}
         />
         <Option
           btnText={t("settings.agent-skills")}

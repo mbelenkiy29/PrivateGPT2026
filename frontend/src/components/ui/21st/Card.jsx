@@ -3,12 +3,7 @@ import { cn } from "./cn";
 /**
  * 21st.dev — card surface used by search results / settings groups.
  */
-export default function Card({
-  title,
-  description,
-  children,
-  className = "",
-}) {
+export default function Card({ title, description, children, className = "" }) {
   return (
     <section
       className={cn(

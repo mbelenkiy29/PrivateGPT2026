@@ -40,7 +40,13 @@ function agentWebsocket(app) {
         // in-flight LLM requests are cancelled and no further turns run.
         agentHandler.aibitat?.abort();
         agentHandler.closeAlert();
-        WorkspaceAgentInvocation.close(String(request.params.uuid));
+        if (agentHandler.incognito) {
+          WorkspaceAgentInvocation.delete({
+            uuid: String(request.params.uuid),
+          });
+        } else {
+          WorkspaceAgentInvocation.close(String(request.params.uuid));
+        }
         return;
       });
 

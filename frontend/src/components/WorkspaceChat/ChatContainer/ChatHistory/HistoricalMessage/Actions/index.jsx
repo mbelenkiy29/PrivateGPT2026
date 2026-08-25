@@ -129,7 +129,6 @@ function CopyMessage({ message }) {
 
 function RegenerateMessage({ regenerateMessage, chatId }) {
   const { t } = useTranslation();
-  if (!chatId) return null;
   return (
     <div className="mt-3 relative">
       <button

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import System from "@/models/system";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, Info, CircleNotch } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { originOnly } from "@/utils/url";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function LemonadeEmbeddingOptions({ settings }) {
   const {
@@ -133,10 +134,7 @@ export default function LemonadeEmbeddingOptions({ settings }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
-                  size={16}
-                  className="text-theme-text-secondary animate-spin"
-                />
+                <LoadingState size="grid" variant="drive" />
               ) : (
                 <>
                   {!basePathValue.value && (

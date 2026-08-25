@@ -26,7 +26,7 @@ import SpeechRecognition, {
 import { ChatTooltips } from "./ChatTooltips";
 import { MetricsProvider } from "./ChatHistory/HistoricalMessage/Actions/RenderMetrics";
 import useChatContainerQuickScroll from "@/hooks/useChatContainerQuickScroll";
-import { PENDING_HOME_MESSAGE } from "@/utils/constants";
+import { PENDING_HOME_MESSAGE, PENDING_INCOGNITO } from "@/utils/constants";
 import { consumeStarterKitPrompt } from "@/utils/starterKit";
 import { clearPromptInputDraft } from "@/hooks/usePromptInputStorage";
 import { safeJsonParse } from "@/utils/request";
@@ -34,11 +34,42 @@ import { useTranslation } from "react-i18next";
 import paths from "@/utils/paths";
 import QuickActions from "@/components/lib/QuickActions";
 import SuggestedMessages from "@/components/lib/SuggestedMessages";
-import ChatSettingsMenu from "./ChatSettingsMenu";
+import ChatHeaderActions from "./ChatHeaderActions";
 import WorkspaceModelPicker from "./WorkspaceModelPicker";
 import { ChatSidebarProvider } from "./ChatSidebar";
 import SourcesSidebar from "./SourcesSidebar";
 import MemoriesSidebar from "./MemoriesSidebar";
+import { IncognitoBanner } from "./IncognitoToggle";
+
+function consumePendingIncognito() {
+  if (sessionStorage.getItem(PENDING_INCOGNITO) !== "1") return false;
+  sessionStorage.removeItem(PENDING_INCOGNITO);
+  return true;
+}
+
+function priorTranscript(remHistory = [], currentPrompt = "") {
+  const msgs = remHistory.filter(
+    (m) =>
+      (m.role === "user" || m.role === "assistant") &&
+      typeof m.content === "string" &&
+      m.content.trim() &&
+      !m.pending
+  );
+  if (
+    msgs.length &&
+    msgs[msgs.length - 1].role === "user" &&
+    msgs[msgs.length - 1].content === currentPrompt
+  ) {
+    msgs.pop();
+  }
+  return msgs.map((m) => ({
+    role: m.role,
+    content: m.content,
+    ...(Array.isArray(m.attachments) && m.attachments.length
+      ? { attachments: m.attachments }
+      : {}),
+  }));
+}
 
 export default function ChatContainer({
   workspace,
@@ -49,8 +80,11 @@ export default function ChatContainer({
   const { t } = useTranslation();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
+  const [incognito, setIncognito] = useState(consumePendingIncognito);
   const [socketId, setSocketId] = useState(null);
   const [websocket, setWebsocket] = useState(null);
+  const incognitoRef = useRef(incognito);
+  incognitoRef.current = incognito;
   const { files, parseAttachments } = useContext(DndUploaderContext);
   const { chatHistoryRef } = useChatContainerQuickScroll();
   const pendingMessageChecked = useRef(false);
@@ -109,7 +143,8 @@ export default function ChatContainer({
 
     // If we're on a bare workspace route (no thread) and no chats exist yet,
     // create a new thread and navigate to it — mimicking Home page behavior.
-    if (!activeThreadSlug && chatHistory.length === 0) {
+    // Incognito stays on this workspace route so nothing is persisted.
+    if (!activeThreadSlug && chatHistory.length === 0 && !incognito) {
       const { thread } = await Workspace.threads.new(workspace.slug);
       if (thread) {
         sessionStorage.setItem(
@@ -196,7 +231,12 @@ export default function ChatContainer({
 
     // If on a bare workspace route with no thread and no chat yet, create a
     // virtual thread and navigate — same as handleSubmit does.
-    if (!activeThreadSlug && chatHistory.length === 0 && history.length === 0) {
+    if (
+      !activeThreadSlug &&
+      chatHistory.length === 0 &&
+      history.length === 0 &&
+      !incognito
+    ) {
       const { thread } = await Workspace.threads.new(workspace.slug);
       if (thread) {
         sessionStorage.setItem(
@@ -263,15 +303,19 @@ export default function ChatContainer({
       const lastUserMessage = filteredHistory.findLast(
         (msg) => msg.role === "user"
       );
+      const resubmit = () =>
+        sendCommandRef.current({
+          text: lastUserMessage.content,
+          autoSubmit: true,
+          history: filteredHistory,
+          attachments: lastUserMessage?.attachments,
+        });
+      if (!chatId) {
+        resubmit();
+        return;
+      }
       Workspace.deleteChats(workspace.slug, [chatId])
-        .then(() =>
-          sendCommandRef.current({
-            text: lastUserMessage.content,
-            autoSubmit: true,
-            history: filteredHistory,
-            attachments: lastUserMessage?.attachments,
-          })
-        )
+        .then(resubmit)
         .catch((e) => console.error(e));
     },
     [workspace.slug]
@@ -337,6 +381,7 @@ export default function ChatContainer({
       const attachments = promptMessage?.attachments ?? parseAttachments();
       window.dispatchEvent(new CustomEvent(CLEAR_ATTACHMENTS_EVENT));
 
+      const privateSession = incognitoRef.current;
       await Workspace.multiplexStream({
         workspaceSlug: workspace.slug,
         threadSlug: activeThreadSlug,
@@ -351,6 +396,10 @@ export default function ChatContainer({
             setSocketId
           ),
         attachments,
+        incognito: privateSession,
+        history: privateSession
+          ? priorTranscript(remHistory, promptMessage.userMessage)
+          : [],
       });
       return;
     }
@@ -470,7 +519,9 @@ export default function ChatContainer({
           style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
           className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
         >
-          <ChatSettingsMenu
+          <ChatHeaderActions
+            incognito={incognito}
+            onIncognitoToggle={() => setIncognito((on) => !on)}
             history={chatHistory}
             workspace={workspace}
             threadSlug={activeThreadSlug}
@@ -478,6 +529,7 @@ export default function ChatContainer({
           <div className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
             {isMobile && <SidebarMobileHeader />}
             <WorkspaceModelPicker workspaceSlug={workspace.slug} />
+            <IncognitoBanner visible={incognito} />
             <DnDFileUploaderWrapper>
               <div className="flex flex-col h-full w-full items-center justify-center">
                 <div className="flex flex-col items-center w-full max-w-[750px]">
@@ -527,7 +579,9 @@ export default function ChatContainer({
         style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
         className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
       >
-        <ChatSettingsMenu
+        <ChatHeaderActions
+          incognito={incognito}
+          onIncognitoToggle={() => setIncognito((on) => !on)}
           history={chatHistory}
           workspace={workspace}
           threadSlug={activeThreadSlug}
@@ -535,6 +589,7 @@ export default function ChatContainer({
         <div className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white text-white light:text-slate-900 h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
           {isMobile && <SidebarMobileHeader />}
           <WorkspaceModelPicker workspaceSlug={workspace.slug} />
+          <IncognitoBanner visible={incognito} />
           <DnDFileUploaderWrapper>
             <div className="flex flex-col h-full w-full pb-20 md:pb-0">
               <div className="contents">

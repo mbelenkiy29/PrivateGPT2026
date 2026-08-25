@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import CommunityHub from "@/models/communityHub";
 import paths from "@/utils/paths";
 import HubItemCard from "./HubItemCard";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+import LoadingState from "@/components/ui/21st/LoadingState";
 import { readableType, typeToPath } from "../../utils";
 
 const DEFAULT_EXPLORE_ITEMS = {
@@ -88,48 +87,5 @@ function HubCategory({ loading, exploreItems }) {
 }
 
 export function HubItemCardSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-lg w-full">
-        <div className="flex justify-between items-center">
-          <Skeleton.default
-            height="40px"
-            width="300px"
-            highlightColor="var(--theme-settings-input-active)"
-            baseColor="var(--theme-settings-input-bg)"
-            count={1}
-          />
-        </div>
-        <Skeleton.default
-          height="200px"
-          width="300px"
-          highlightColor="var(--theme-settings-input-active)"
-          baseColor="var(--theme-settings-input-bg)"
-          count={4}
-          className="rounded-lg"
-          containerClassName="flex flex-wrap gap-2 mt-1"
-        />
-      </div>
-      <div className="rounded-lg w-full">
-        <div className="flex justify-between items-center">
-          <Skeleton.default
-            height="40px"
-            width="300px"
-            highlightColor="var(--theme-settings-input-active)"
-            baseColor="var(--theme-settings-input-bg)"
-            count={1}
-          />
-        </div>
-        <Skeleton.default
-          height="200px"
-          width="300px"
-          highlightColor="var(--theme-settings-input-active)"
-          baseColor="var(--theme-settings-input-bg)"
-          count={4}
-          className="rounded-lg"
-          containerClassName="flex flex-wrap gap-2 mt-1"
-        />
-      </div>
-    </div>
-  );
+  return <LoadingState size="page" variant="drive" />;
 }

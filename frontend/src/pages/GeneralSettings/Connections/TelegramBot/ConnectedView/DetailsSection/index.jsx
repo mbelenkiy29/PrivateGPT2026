@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { CircleNotch } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function DetailsSection({ config, onDisconnected }) {
   const { t } = useTranslation();
@@ -78,7 +78,7 @@ function DisconnectButton({ onDisconnected }) {
     >
       {disconnecting ? (
         <>
-          <CircleNotch className="h-4 w-4 animate-spin" />
+          <LoadingState size="grid" variant="drive" />
           {t("telegram.connected.disconnecting")}
         </>
       ) : (

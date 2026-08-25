@@ -93,7 +93,11 @@ const EventBadge = ({ event }) => {
       bg: "bg-yellow-600/20",
       text: "text-yellow-400 light:text-yellow-800",
     };
-  if (event.includes("failed_") || event.includes("deleted"))
+  if (
+    event.includes("failed_") ||
+    event.includes("deleted") ||
+    event.includes("content_guard")
+  )
     colorTheme = {
       bg: "bg-red-600/20",
       text: "text-red-400 light:text-red-800",

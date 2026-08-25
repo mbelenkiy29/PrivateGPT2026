@@ -79,6 +79,21 @@ const WorkspaceAgentInvocation = {
     }
   },
 
+  /** Blank the stored prompt so incognito text does not sit in SQLite. */
+  scrubPrompt: async function (uuid) {
+    if (!uuid) return false;
+    try {
+      await prisma.workspace_agent_invocations.update({
+        where: { uuid: String(uuid) },
+        data: { prompt: "" },
+      });
+      return true;
+    } catch (error) {
+      console.error(error.message);
+      return false;
+    }
+  },
+
   where: async function (clause = {}, limit = null, orderBy = null) {
     try {
       const results = await prisma.workspace_agent_invocations.findMany({

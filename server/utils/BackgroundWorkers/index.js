@@ -24,6 +24,10 @@ class BackgroundService {
   // outlives the cascade-delete of its scheduled_job_runs row and throws when
   // it tries to write the result back (prisma.update on a missing row).
   #scheduledJobWorkers = new Map();
+  #ticketQueue = new PQueue({
+    concurrency: Number(process.env.TICKET_MAX_CONCURRENT) || 1,
+  });
+  #ticketWorkers = new Map();
 
   #alwaysRunJobs = [
     {
@@ -115,6 +119,7 @@ class BackgroundService {
     const { DocumentSyncQueue } = require("../../models/documentSyncQueue");
     const { SystemSettings } = require("../../models/systemSettings");
     const { ScheduledJobRun } = require("../../models/scheduledJobRun");
+    const { TicketRun } = require("../../models/ticketRun");
 
     this.documentSyncEnabled = await DocumentSyncQueue.enabled();
     this.memoryExtractionEnabled = await SystemSettings.autoMemoriesEnabled();
@@ -125,6 +130,11 @@ class BackgroundService {
       this.#log(
         `Marked ${orphanedCount} orphaned scheduled job run(s) as failed`
       );
+    }
+
+    const orphanedTickets = await TicketRun.failOrphanedRuns();
+    if (orphanedTickets > 0) {
+      this.#log(`Marked ${orphanedTickets} orphaned ticket run(s) as failed`);
     }
 
     const jobsToRun = this.jobs();
@@ -159,6 +169,7 @@ class BackgroundService {
       this.#scheduledJobTimers.delete(id);
     }
     this.#scheduledJobQueue.clear();
+    this.#ticketQueue.clear();
   }
 
   async stop() {
@@ -437,6 +448,86 @@ class BackgroundService {
       if (workers) {
         workers.delete(worker);
         if (workers.size === 0) this.#scheduledJobWorkers.delete(jobId);
+      }
+      await this.removeJob(workerId).catch(() => {});
+    }
+  }
+
+  /**
+   * Kill in-flight ticket workers. The caller should mark the run killed
+   * if this returns false (worker already gone).
+   * @param {number} ticketId
+   * @param {number} _runId
+   * @returns {boolean}
+   */
+  killTicketRun(ticketId, _runId) {
+    const workers = this.#ticketWorkers.get(Number(ticketId));
+    if (!workers || workers.size === 0) return false;
+
+    let killed = false;
+    for (const worker of workers) {
+      try {
+        worker.kill("SIGTERM");
+        killed = true;
+      } catch {
+        /* worker may have already exited */
+      }
+    }
+    return killed;
+  }
+
+  /**
+   * Enqueue a ticket for agent execution. TicketRun.start() rejects a second
+   * in-flight run for the same ticket.
+   * @param {number} ticketId
+   * @param {{ threadId?: number, invocationUuid?: string }} [extra]
+   * @returns {Promise<object|null>}
+   */
+  async enqueueTicket(ticketId, extra = {}) {
+    const { TicketRun } = require("../../models/ticketRun");
+    const { v4: uuidv4 } = require("uuid");
+
+    const run = await TicketRun.start(ticketId, {
+      threadId: extra.threadId,
+      invocationUuid: extra.invocationUuid || uuidv4(),
+    });
+    if (!run) return null;
+
+    this.#ticketQueue.add(() =>
+      this.#runTicketWorker(ticketId, run.id).catch(async (err) => {
+        this.#log(`Ticket ${ticketId} failed: ${err.message}`);
+        await TicketRun.failIfNotTerminal(run.id, err.message);
+      })
+    );
+    return run;
+  }
+
+  async #runTicketWorker(ticketId, runId) {
+    const scriptPath = path.resolve(this.jobsRoot, "run-ticket.js");
+    const { worker, jobId: workerId } = await this.spawnWorker(scriptPath);
+
+    if (!this.#ticketWorkers.has(ticketId)) {
+      this.#ticketWorkers.set(ticketId, new Set());
+    }
+    this.#ticketWorkers.get(ticketId).add(worker);
+
+    try {
+      worker.send({ ticketId, runId });
+      await new Promise((resolve, reject) => {
+        worker.on("exit", (code, signal) => {
+          if (code === 0 || code == null || signal === "SIGTERM") {
+            resolve();
+          } else {
+            reject(new Error(`Worker exited with code ${code}`));
+          }
+        });
+        worker.on("error", reject);
+      });
+    } finally {
+      const workers = this.#ticketWorkers.get(ticketId);
+      if (workers) {
+        workers.delete(worker);
+        if (workers.size === 0) this.#ticketWorkers.delete(ticketId);
       }
       await this.removeJob(workerId).catch(() => {});
     }

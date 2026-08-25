@@ -7,9 +7,9 @@ import {
   FileDoc,
   FilePdf,
   FileText,
-  CircleNotch,
 } from "@phosphor-icons/react";
 import Admin from "@/models/admin";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export const getCreateFileSkills = (t) => [
   {
@@ -137,10 +137,7 @@ export default function CreateFileSkillPanel({
               </p>
               {loading ? (
                 <div className="flex items-center justify-center py-4">
-                  <CircleNotch
-                    size={24}
-                    className="animate-spin text-theme-text-primary"
-                  />
+                  <LoadingState size="grid" variant="drive" />
                 </div>
               ) : (
                 <div className="flex flex-col gap-y-2">

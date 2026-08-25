@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { SpeakerHigh, PauseCircle, CircleNotch } from "@phosphor-icons/react";
+import { SpeakerHigh, PauseCircle } from "@phosphor-icons/react";
 import PiperTTSClient from "@/utils/piperTTS";
 import messageToSpeech from "@/utils/chat/messageToSpeech";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function PiperTTS({ chatId, voiceId = null, message }) {
   const playerRef = useRef(null);
@@ -173,7 +174,7 @@ export default function PiperTTS({ chatId, voiceId = null, message }) {
         ) : (
           <>
             {loading ? (
-              <CircleNotch size={18} className="mb-1 animate-spin" />
+              <LoadingState size="grid" variant="drive" />
             ) : (
               <SpeakerHigh size={18} className="mb-1" />
             )}

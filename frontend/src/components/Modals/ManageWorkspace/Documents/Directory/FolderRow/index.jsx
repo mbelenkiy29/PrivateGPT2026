@@ -1,8 +1,8 @@
 import { useState } from "react";
 import FileRow from "../FileRow";
-import { CircleNotch } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import FileTreeRow from "@/components/ui/21st/FileTreeRow";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 /**
  * A folder in the document picker. Purely presentational - every piece of
@@ -69,7 +69,7 @@ export default function FolderRow({
         meta={displayCount > 0 ? String(displayCount) : undefined}
         badge={
           loading && files.length > 0 ? (
-            <CircleNotch size={12} className="animate-spin shrink-0" weight="bold" />
+            <LoadingState size="grid" variant="drive" />
           ) : null
         }
         onToggle={() => onToggleFolder(item)}
@@ -81,7 +81,7 @@ export default function FolderRow({
       />
       {expanded && loading && files.length === 0 && (
         <div className="flex items-center gap-2 py-2 pl-10 text-xs text-theme-text-secondary">
-          <CircleNotch size={14} className="animate-spin" weight="bold" />
+          <LoadingState size="grid" variant="drive" />
           <span>{t("common.loading")}...</span>
         </div>
       )}

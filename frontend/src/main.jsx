@@ -6,6 +6,7 @@ import PrivateRoute, {
   AdminRoute,
   ManagerRoute,
   SingleUserRoute,
+  UserOnboardingRoute,
 } from "@/components/PrivateRoute";
 import Login from "@/pages/Login";
 import SimpleSSOPassthrough from "@/pages/Login/SSO/simple";
@@ -25,6 +26,13 @@ const router = createBrowserRouter([
         lazy: async () => {
           const { default: Main } = await import("@/pages/Main");
           return { element: <PrivateRoute Component={Main} /> };
+        },
+      },
+      {
+        path: "/tickets",
+        lazy: async () => {
+          const { default: TicketsPage } = await import("@/pages/Tickets");
+          return { element: <PrivateRoute Component={TicketsPage} /> };
         },
       },
       {
@@ -59,6 +67,17 @@ const router = createBrowserRouter([
         lazy: async () => {
           const { default: InvitePage } = await import("@/pages/Invite");
           return { element: <InvitePage /> };
+        },
+      },
+      {
+        path: "/user-onboarding",
+        lazy: async () => {
+          const { default: UserOnboardingPage } = await import(
+            "@/pages/UserOnboarding"
+          );
+          return {
+            element: <UserOnboardingRoute Component={UserOnboardingPage} />,
+          };
         },
       },
       // Admin routes
@@ -142,6 +161,17 @@ const router = createBrowserRouter([
         lazy: async () => {
           const { default: AdminAgents } = await import("@/pages/Admin/Agents");
           return { element: <AdminRoute Component={AdminAgents} /> };
+        },
+      },
+      {
+        path: "/settings/skills",
+        lazy: async () => {
+          const { default: SkillsMarketplacePage } = await import(
+            "@/pages/Admin/SkillsMarketplace"
+          );
+          return {
+            element: <AdminRoute Component={SkillsMarketplacePage} />,
+          };
         },
       },
       {

@@ -10,6 +10,7 @@ export default function ChatSettingsMenu({
   history = [],
   workspace = null,
   threadSlug = null,
+  clustered = false,
 }) {
   const mode = useLoginMode();
   const [showMenu, setShowMenu] = useState(false);
@@ -33,11 +34,12 @@ export default function ChatSettingsMenu({
   }, [showMenu]);
 
   const hasUserIcon = mode !== null;
+  const positionClass = clustered
+    ? "relative"
+    : `absolute top-3 md:top-5 z-30 ${hasUserIcon ? "right-[55px] md:right-[67px]" : "right-4 md:right-6"}`;
 
   return (
-    <div
-      className={`absolute top-3 md:top-5 z-30 ${hasUserIcon ? "right-[55px] md:right-[67px]" : "right-4 md:right-6"}`}
-    >
+    <div className={positionClass}>
       <button
         ref={buttonRef}
         type="button"

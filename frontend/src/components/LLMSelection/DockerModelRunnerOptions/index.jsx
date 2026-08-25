@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import System from "@/models/system";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { Info } from "@phosphor-icons/react";
 import strDistance from "js-levenshtein";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
 import { DOCKER_MODEL_RUNNER_COMMON_URLS } from "@/utils/constants";
@@ -12,6 +12,7 @@ import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import DMRUtils from "@/models/utils/dmrUtils";
 import showToast from "@/utils/toast";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function DockerModelRunnerOptions({ settings }) {
   const {
@@ -41,7 +42,7 @@ export default function DockerModelRunnerOptions({ settings }) {
                 Base URL
               </label>
               {loading ? (
-                <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+                <LoadingState size="grid" variant="drive" />
               ) : (
                 <>
                   {!basePathValue.value && (

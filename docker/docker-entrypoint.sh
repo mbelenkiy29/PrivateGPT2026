@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Render (and similar hosts) inject PORT for the public HTTP listener.
+# AnythingLLM binds SERVER_PORT; default local Docker is still 3001.
+export SERVER_PORT="${SERVER_PORT:-${PORT:-3001}}"
+
 # Check if STORAGE_DIR is set
 if [ -z "$STORAGE_DIR" ]; then
     echo "================================================================"

@@ -45,7 +45,12 @@ export default function ExplorerPanel({
         </div>
       ) : null}
 
-      <div className={cn("min-h-[280px] max-h-[320px] overflow-y-auto", bodyClassName)}>
+      <div
+        className={cn(
+          "min-h-[280px] max-h-[320px] overflow-y-auto",
+          bodyClassName
+        )}
+      >
         {children}
       </div>
 

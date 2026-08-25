@@ -5,9 +5,17 @@ import validateSessionTokenForUser from "@/utils/session";
 import paths from "@/utils/paths";
 import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
 import { userFromStorage } from "@/utils/request";
+import { needsUserOnboarding } from "@/utils/displayName";
 import System from "@/models/system";
 import UserMenu from "../UserMenu";
 import { KeyboardShortcutWrapper } from "@/utils/keyboardShortcuts";
+
+function userOnboardingRedirect(isAuthd, multiUserMode) {
+  if (!isAuthd || !multiUserMode) return null;
+  const user = userFromStorage();
+  if (needsUserOnboarding(user)) return paths.userOnboarding();
+  return null;
+}
 
 // Used only for Multi-user mode only as we permission specific pages based on auth role.
 // When in single user mode we just bypass any authchecks.
@@ -85,6 +93,11 @@ export function AdminRoute({ Component, hideUserMenu = false }) {
     return <Navigate to={paths.onboarding.home()} />;
   }
 
+  const userOnboardingPath = userOnboardingRedirect(isAuthd, multiUserMode);
+  if (userOnboardingPath) {
+    return <Navigate to={userOnboardingPath} />;
+  }
+
   const user = userFromStorage();
   return isAuthd && (user?.role === "admin" || !multiUserMode) ? (
     hideUserMenu ? (
@@ -112,6 +125,11 @@ export function ManagerRoute({ Component }) {
 
   if (shouldRedirectToOnboarding) {
     return <Navigate to={paths.onboarding.home()} />;
+  }
+
+  const userOnboardingPath = userOnboardingRedirect(isAuthd, multiUserMode);
+  if (userOnboardingPath) {
+    return <Navigate to={userOnboardingPath} />;
   }
 
   const user = userFromStorage();
@@ -145,12 +163,44 @@ export function SingleUserRoute({ Component }) {
   );
 }
 
+export function UserOnboardingRoute({ Component }) {
+  const { isAuthd, shouldRedirectToOnboarding, multiUserMode } =
+    useIsAuthenticated();
+  if (isAuthd === null) return <FullScreenLoader />;
+
+  if (shouldRedirectToOnboarding) {
+    return <Navigate to={paths.onboarding.home()} />;
+  }
+
+  if (!isAuthd) {
+    return <Navigate to={paths.login(true)} />;
+  }
+
+  if (!multiUserMode || !needsUserOnboarding(userFromStorage())) {
+    return <Navigate to={paths.home()} />;
+  }
+
+  return (
+    <KeyboardShortcutWrapper>
+      <UserMenu>
+        <Component />
+      </UserMenu>
+    </KeyboardShortcutWrapper>
+  );
+}
+
 export default function PrivateRoute({ Component }) {
-  const { isAuthd, shouldRedirectToOnboarding } = useIsAuthenticated();
+  const { isAuthd, shouldRedirectToOnboarding, multiUserMode } =
+    useIsAuthenticated();
   if (isAuthd === null) return <FullScreenLoader />;
 
   if (shouldRedirectToOnboarding) {
     return <Navigate to="/onboarding" />;
+  }
+
+  const userOnboardingPath = userOnboardingRedirect(isAuthd, multiUserMode);
+  if (userOnboardingPath) {
+    return <Navigate to={userOnboardingPath} />;
   }
 
   return isAuthd ? (

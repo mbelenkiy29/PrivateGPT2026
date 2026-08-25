@@ -9,8 +9,7 @@ import VariableRow from "./VariableRow";
 import Modal from "@/components/lib/Modal";
 import AddVariableModal from "./AddVariableModal";
 import { useModal } from "@/hooks/useModal";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function SystemPromptVariables() {
   const [variables, setVariables] = useState([]);
@@ -66,15 +65,7 @@ export default function SystemPromptVariables() {
 
           <div className="overflow-x-auto">
             {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm mt-8"
-                containerClassName="flex w-full"
-              />
+              <LoadingState size="page" variant="drive" />
             ) : variables.length === 0 ? (
               <div className="text-center py-4 text-theme-text-secondary">
                 No variables found

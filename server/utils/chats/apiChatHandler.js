@@ -521,6 +521,8 @@ async function streamChat({
   attachments = [],
   reset = false,
 }) {
+  // v1 contentGuard covers in-app workspace/thread/agent chat only.
+  // Developer API, OpenAI-compatible, embed, and Slack/Teams/Telegram are not scanned here.
   const uuid = uuidv4();
   const chatMode = mode ?? workspace?.chatMode ?? "automatic";
 

@@ -66,6 +66,10 @@ model users {
   role                         String                        @default("default")
   suspended                    Int                           @default(0)
   seen_recovery_codes          Boolean?                      @default(false)
+  firstName                    String?
+  lastName                     String?
+  onboardingComplete           Boolean                       @default(true)
+  onboardingCompletedAt        DateTime?
   createdAt                    DateTime                      @default(now())
   lastUpdatedAt                DateTime                      @default(now())
   dailyMessageLimit            Int?
@@ -87,6 +91,8 @@ model users {
   desktop_mobile_devices       desktop_mobile_devices[]
   workspace_parsed_files       workspace_parsed_files[]
   memories                     memories[]
+  ticketsAssigned              tickets[]                 @relation("TicketAssignee")
+  ticketsCreated               tickets[]                 @relation("TicketCreator")
 }
 
 model recovery_codes {
@@ -137,6 +143,7 @@ model workspaces {
   pfpFilename                  String?
   agentProvider                String?
   agentModel                   String?
+  agentSkillOverrides          String?
   queryRefusalResponse         String?
   vectorSearchMode             String?                        @default("default")
   router_id                    Int? // No relation to prevent whole table migration (SQLite limitation)
@@ -151,6 +158,7 @@ model workspaces {
   memories                     memories[]
   knowledge_sources            knowledge_sources[]
   channel_workspace_bindings   channel_workspace_bindings[]
+  tickets                      tickets[]
 }
 
 model workspace_threads {
@@ -600,4 +608,45 @@ model channel_workspace_bindings {
   workspace       workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([connector_type, external_id])
+}
+
+model tickets {
+  id              Int       @id @default(autoincrement())
+  workspaceId     Int
+  title           String
+  description     String    @default("")
+  status          String    @default("todo") // backlog | todo | in_progress | done | cancelled
+  priority        String    @default("none") // none | low | medium | high | urgent
+  position        Float     @default(0)
+  dueDate         DateTime?
+  tools           String? // JSON array of tool ids; null/[] = workspace default agent skills
+  properties      String? // JSON bag reserved for later custom fields
+  assigneeUserId  Int?
+  createdByUserId Int?
+  createdAt       DateTime  @default(now())
+  lastUpdatedAt   DateTime  @default(now())
+
+  workspace workspaces    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignee  users?        @relation("TicketAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  createdBy users?        @relation("TicketCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  runs      ticket_runs[]
+
+  @@index([workspaceId, status])
+  @@index([assigneeUserId])
+}
+
+model ticket_runs {
+  id             Int      @id @default(autoincrement())
+  ticketId       Int
+  status         String   @default("queued") // queued | running | completed | failed | timed_out | killed
+  result         String? // JSON execution trace
+  error          String?
+  threadId       Int?
+  invocationUuid String?
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+
+  ticket tickets @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
 }

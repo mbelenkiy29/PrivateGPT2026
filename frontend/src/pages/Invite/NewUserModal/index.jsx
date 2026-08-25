@@ -35,7 +35,7 @@ export default function NewUserModal() {
       if (valid && !!token && !!user) {
         window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
         window.localStorage.setItem(AUTH_TOKEN, token);
-        window.location = paths.home();
+        window.location = paths.userOnboarding();
       } else {
         setError(message);
       }
@@ -48,6 +48,22 @@ export default function NewUserModal() {
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
       <ModalHeader title="Create a new account" />
       <ModalBody>
+        <ModalInput
+          label={t("userOnboarding.firstName")}
+          name="firstName"
+          type="text"
+          placeholder={t("userOnboarding.firstName")}
+          required={true}
+          autoComplete="given-name"
+        />
+        <ModalInput
+          label={t("userOnboarding.lastName")}
+          name="lastName"
+          type="text"
+          placeholder={t("userOnboarding.lastName")}
+          required={true}
+          autoComplete="family-name"
+        />
         <ModalInput
           label="Username"
           name="username"

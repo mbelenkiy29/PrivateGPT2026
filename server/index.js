@@ -39,6 +39,11 @@ const { mobileEndpoints } = require("./endpoints/mobile");
 const { webPushEndpoints } = require("./endpoints/webPush");
 const { telegramEndpoints } = require("./endpoints/telegram");
 const { scheduledJobEndpoints } = require("./endpoints/scheduledJobs");
+const { ticketEndpoints } = require("./endpoints/tickets");
+const { userOnboardingEndpoints } = require("./endpoints/userOnboarding");
+const {
+  requireOnboardingComplete,
+} = require("./utils/middleware/userOnboarding");
 const { mailDraftEndpoints } = require("./endpoints/mailDrafts");
 const {
   outlookAgentEndpoints,
@@ -48,6 +53,7 @@ const {
 } = require("./endpoints/utils/googleAgentSkillEndpoints");
 const { memoryEndpoints } = require("./endpoints/memory");
 const { fileSourcesEndpoints } = require("./endpoints/fileSources");
+const { skillsMarketplaceEndpoints } = require("./endpoints/skillsMarketplace");
 const { teamsChannelEndpoints } = require("./endpoints/channels/teams");
 require("./utils/knowledgeSources/register");
 const { slackEndpoints } = require("./endpoints/slack");
@@ -102,7 +108,9 @@ if (!!process.env.ENABLE_HTTPS) {
 }
 
 app.use("/api", apiRouter);
+apiRouter.use(requireOnboardingComplete);
 systemEndpoints(apiRouter);
+userOnboardingEndpoints(apiRouter);
 extensionEndpoints(apiRouter);
 workspaceEndpoints(apiRouter);
 workspaceThreadEndpoints(apiRouter);
@@ -125,11 +133,13 @@ mobileEndpoints(apiRouter);
 webPushEndpoints(apiRouter);
 telegramEndpoints(apiRouter);
 scheduledJobEndpoints(apiRouter);
+ticketEndpoints(apiRouter);
 mailDraftEndpoints(apiRouter);
 outlookAgentEndpoints(apiRouter);
 googleAgentSkillEndpoints(apiRouter);
 memoryEndpoints(apiRouter);
 fileSourcesEndpoints(apiRouter);
+skillsMarketplaceEndpoints(apiRouter);
 slackEndpoints(apiRouter);
 emailInboxEndpoints(apiRouter);
 knowledgeSourcesEndpoints(apiRouter);

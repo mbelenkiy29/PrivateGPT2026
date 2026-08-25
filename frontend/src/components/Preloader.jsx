@@ -1,9 +1,7 @@
-export default function PreLoader({ size = "16" }) {
-  return (
-    <div
-      className={`h-${size} w-${size} animate-spin rounded-full border-4 border-solid border-primary border-t-transparent`}
-    ></div>
-  );
+import LoadingState from "@/components/ui/21st/LoadingState";
+
+export default function PreLoader() {
+  return <LoadingState size="grid" variant="drive" label="Loading" />;
 }
 
 export function FullScreenLoader() {
@@ -12,7 +10,7 @@ export function FullScreenLoader() {
       id="preloader"
       className="fixed left-0 top-0 z-999999 flex h-screen w-screen items-center justify-center bg-theme-bg-primary"
     >
-      <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-[var(--theme-loader)] border-t-transparent"></div>
+      <LoadingState variant="drive" label="Loading" />
     </div>
   );
 }

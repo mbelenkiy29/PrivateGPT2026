@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch, DownloadSimple } from "@phosphor-icons/react";
+import { DownloadSimple } from "@phosphor-icons/react";
 import StorageFiles from "@/models/files";
 import showToast from "@/utils/toast";
 import { humanFileSize } from "@/utils/numbers";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 // File extension → display badge/colors. Lifted out of RunDetailPage with
 // the file card itself; nothing else uses this map so it lives here.
@@ -124,7 +125,7 @@ export default function GeneratedFileCard({ file }) {
         className="border-none text-zinc-400 light:text-slate-600 hover:text-zinc-50 light:hover:text-slate-950 transition-colors shrink-0 ml-4 disabled:opacity-50"
       >
         {downloading ? (
-          <CircleNotch size={16} weight="bold" className="animate-spin" />
+          <LoadingState size="grid" variant="drive" />
         ) : (
           <DownloadSimple size={16} weight="bold" />
         )}

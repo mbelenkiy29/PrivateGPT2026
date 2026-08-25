@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch } from "@phosphor-icons/react";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -16,6 +15,7 @@ import showToast from "@/utils/toast";
 import LLMProviderModelPicker from "../../LLMProviderModelPicker";
 import CalculatedFields from "./CalculatedFields";
 import LLMDescriptionField from "./LLMDescriptionField";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 function createRuleTypes(t) {
   return [
@@ -196,7 +196,7 @@ export default function RuleForm({
           <ModalPrimaryButton type="submit" disabled={loading}>
             {loading ? (
               <>
-                <CircleNotch className="h-4 w-4 animate-spin" />
+                <LoadingState size="grid" variant="drive" />
                 {t("model-router.rule-form.saving")}
               </>
             ) : isEditing ? (

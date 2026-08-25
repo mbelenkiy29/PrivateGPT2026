@@ -1,0 +1,34 @@
+# Demo host for this AnythingLLM fork on Render.
+# Single Docker web service (frontend + server + collector) with a persistent disk
+# for SQLite / LanceDB / documents. LLM API keys are set in the live app on first run.
+services:
+  - type: web
+    name: privategpt-demo
+    runtime: docker
+    plan: standard
+    region: oregon
+    repo: https://github.com/mbelenkiy29/anything-llm
+    branch: render-demo
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/ping
+    autoDeployTrigger: commit
+    previews:
+      generation: off
+    disk:
+      name: privategpt-data
+      mountPath: /app/server/storage
+      sizeGB: 10
+    envVars:
+      - key: STORAGE_DIR
+        value: /app/server/storage
+      - key: SERVER_PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SIG_KEY
+        generateValue: true
+      - key: SIG_SALT
+        generateValue: true

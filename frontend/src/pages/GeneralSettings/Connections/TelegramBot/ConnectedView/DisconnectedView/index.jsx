@@ -1,13 +1,9 @@
 import { useState } from "react";
-import {
-  CircleNotch,
-  Eye,
-  EyeSlash,
-  TelegramLogo,
-} from "@phosphor-icons/react";
+import { Eye, EyeSlash, TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function DisconnectedView({
   config,
@@ -89,7 +85,7 @@ export default function DisconnectedView({
             className="flex items-center justify-center gap-x-1.5 text-sm font-medium bg-zinc-50 light:bg-slate-900 text-zinc-900 light:text-white rounded-lg h-8 px-5 hover:opacity-90 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {reconnecting ? (
-              <CircleNotch className="h-4 w-4 animate-spin" />
+              <LoadingState size="grid" variant="drive" />
             ) : (
               t("telegram.connected.reconnect")
             )}

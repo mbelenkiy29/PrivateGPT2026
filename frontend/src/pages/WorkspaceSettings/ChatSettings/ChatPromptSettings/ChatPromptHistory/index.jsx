@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import PromptHistory from "@/models/promptHistory";
 import PromptHistoryItem from "./PromptHistoryItem";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default forwardRef(function ChatPromptHistory(
   { show, workspaceSlug, onRestore, onClose, onPublishClick },
@@ -103,15 +102,5 @@ export default forwardRef(function ChatPromptHistory(
 });
 
 function LoaderSkeleton() {
-  const highlightColor = "var(--theme-bg-primary)";
-  const baseColor = "var(--theme-bg-secondary)";
-  return (
-    <Skeleton.default
-      height="85px"
-      width="100%"
-      highlightColor={highlightColor}
-      baseColor={baseColor}
-      count={8}
-    />
-  );
+  return <LoadingState size="page" variant="drive" />;
 }

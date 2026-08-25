@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch } from "@phosphor-icons/react";
 import ModelRouter from "@/models/modelRouter";
 import System from "@/models/system";
 import Modal, {
@@ -12,6 +11,7 @@ import Modal, {
   ModalInput,
 } from "@/components/lib/Modal";
 import LLMProviderModelPicker from "../LLMProviderModelPicker";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function NewRouterModal({
   isOpen,
@@ -136,7 +136,7 @@ export default function NewRouterModal({
           <ModalPrimaryButton type="submit" disabled={loading}>
             {loading ? (
               <>
-                <CircleNotch className="h-4 w-4 animate-spin" />
+                <LoadingState size="grid" variant="drive" />
                 {t("common.saving")}
               </>
             ) : isEdit ? (

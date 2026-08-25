@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import System from "@/models/system";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, Info, CircleNotch } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function OllamaLLMOptions({ settings }) {
   const {
@@ -79,10 +80,7 @@ export default function OllamaLLMOptions({ settings }) {
                   />
                 </div>
                 {loading ? (
-                  <CircleNotch
-                    size={16}
-                    className="text-theme-text-secondary animate-spin"
-                  />
+                  <LoadingState size="grid" variant="drive" />
                 ) : (
                   <>
                     {!basePathValue.value && (

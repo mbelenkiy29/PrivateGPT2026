@@ -85,7 +85,6 @@ export default function KnowledgeSourcesSettings() {
   useEffect(() => {
     loadStatus();
     refresh({ loadDropbox: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedChannels = useMemo(

@@ -2,6 +2,7 @@
 import { memo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Warning } from "@phosphor-icons/react";
+import LoadingState from "@/components/ui/21st/LoadingState";
 import renderMarkdown from "@/utils/chat/markdown";
 import DOMPurify from "@/utils/chat/purify";
 import Citations from "../Citation";
@@ -30,10 +31,12 @@ const PromptReply = ({ uuid, reply, pending, error, sources = [] }) => {
           <span className="sr-only" role="status">
             {t("chat_window.generating_response")}
           </span>
-          <div
-            className="mt-3 ml-1 dot-falling light:invert"
-            aria-hidden="true"
-          ></div>
+          <div className="mt-3 ml-1" aria-hidden="true">
+            <LoadingState
+              variant="dots"
+              label={t("chat_window.generating_response")}
+            />
+          </div>
         </div>
       </div>
     );

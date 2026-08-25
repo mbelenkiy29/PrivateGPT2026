@@ -2,18 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import {
-  CircleNotch,
-  Copy,
-  Check,
-  Eye,
-  EyeSlash,
-  SlackLogo,
-} from "@phosphor-icons/react";
+import { Copy, Check, Eye, EyeSlash, SlackLogo } from "@phosphor-icons/react";
 import Slack from "@/models/slack";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
 import { useTranslation } from "react-i18next";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function SlackBotSettings() {
   const [loading, setLoading] = useState(true);
@@ -32,7 +26,7 @@ export default function SlackBotSettings() {
     return (
       <ConnectionsLayout>
         <div className="flex items-center justify-center h-full">
-          <CircleNotch className="h-8 w-8 text-zinc-400 light:text-slate-400 animate-spin" />
+          <LoadingState size="grid" variant="drive" />
         </div>
       </ConnectionsLayout>
     );
@@ -196,7 +190,7 @@ function SlackBotPanel({ config, onChange }) {
           >
             {saving ? (
               <>
-                <CircleNotch className="h-4 w-4 animate-spin" />
+                <LoadingState size="grid" variant="drive" />
                 {t("slack-bot.enabling")}
               </>
             ) : (

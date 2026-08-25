@@ -10,10 +10,13 @@ jest.mock("../../../models/systemPromptVariables");
 jest.mock("../../../models/systemSettings");
 jest.mock("../../../utils/agents/imported", () => ({
   activeImportedPlugins: jest.fn().mockReturnValue([]),
+  listImportedPlugins: jest.fn().mockReturnValue([]),
+  validateImportedPluginHandler: jest.fn().mockReturnValue(false),
 }));
 jest.mock("../../../utils/agentFlows", () => ({
   AgentFlows: {
     activeFlowPlugins: jest.fn().mockReturnValue([]),
+    loadFlow: jest.fn().mockReturnValue(null),
   },
 }));
 jest.mock("../../../utils/MCP", () => {
@@ -33,6 +36,7 @@ describe("WORKSPACE_AGENT.getDefinition", () => {
     );
     // Mock SystemSettings to return empty arrays for agent skills
     SystemSettings.getValueOrFallback = jest.fn().mockResolvedValue("[]");
+    SystemSettings.isMultiUserMode = jest.fn().mockResolvedValue(false);
   });
 
   it("should use saneDefaultSystemPrompt when workspace has no openAiPrompt", async () => {
@@ -138,5 +142,27 @@ describe("WORKSPACE_AGENT.getDefinition", () => {
       null,
       workspace.id
     );
+  });
+
+  it("loads only workspace-assigned skills when overrides are set", async () => {
+    const workspace = {
+      id: 1,
+      openAiPrompt: null,
+      agentSkillOverrides: JSON.stringify({
+        useGlobal: false,
+        skills: ["rag-memory"],
+        flows: ["flow-1"],
+        mcp: [],
+      }),
+    };
+    const definition = await WORKSPACE_AGENT.getDefinition(
+      "openai",
+      workspace,
+      null
+    );
+    expect(definition.functions).toContain("rag-memory");
+    expect(definition.functions).toContain("@@flow_flow-1");
+    expect(definition.functions).not.toContain("document-summarizer");
+    expect(definition.functions).not.toContain("web-scraping");
   });
 });

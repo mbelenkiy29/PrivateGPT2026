@@ -4,18 +4,17 @@ import { cn } from "./cn";
 /**
  * 21st.dev — Pill Breadcrumb (shadcnspace), without shadcn primitives.
  */
-export default function Breadcrumb({
-  items = [],
-  onSelect,
-  className = "",
-}) {
+export default function Breadcrumb({ items = [], onSelect, className = "" }) {
   return (
     <nav aria-label="breadcrumb" className={className}>
       <ol className="flex flex-wrap items-center gap-1 h-8 rounded-full border border-theme-modal-border px-2.5 text-xs text-theme-text-secondary overflow-x-auto">
         {items.map((item, index) => {
           const last = index === items.length - 1;
           return (
-            <li key={item.id || index} className="inline-flex items-center gap-1">
+            <li
+              key={item.id || index}
+              className="inline-flex items-center gap-1"
+            >
               {index > 0 && (
                 <CaretRight
                   size={12}

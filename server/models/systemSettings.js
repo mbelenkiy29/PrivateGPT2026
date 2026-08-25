@@ -65,6 +65,7 @@ const SystemSettings = {
     "meta_page_favicon",
     "memory_enabled",
     "memory_auto_extraction",
+    "content_guard_enabled",
   ],
   supportedFields: [
     "logo_filename",
@@ -112,6 +113,9 @@ const SystemSettings = {
 
     // Trust / retention
     "chat_retention_days",
+
+    // Content policy (in-app chat + agents, including private sessions)
+    "content_guard_enabled",
   ],
   validations: {
     chat_retention_days: (update) => {
@@ -427,6 +431,10 @@ const SystemSettings = {
     agent_clarifying_questions_enabled: (update) => {
       if (typeof update === "boolean") return update ? "true" : "false";
       return String(update) === "true" ? "true" : "false";
+    },
+    content_guard_enabled: (update) => {
+      if (typeof update === "boolean") return update ? "true" : "false";
+      return String(update) === "false" ? "false" : "true";
     },
     agent_clarifying_questions_max_per_turn: (update) => {
       const n = Number(update);

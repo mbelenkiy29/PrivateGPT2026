@@ -1,9 +1,10 @@
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import System from "@/models/system";
 import { OMLX_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, CircleNotch, Info } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Tooltip } from "react-tooltip";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 export default function OMLXOptions({ settings }) {
   const {
@@ -78,10 +79,7 @@ export default function OMLXOptions({ settings }) {
                   />
                 </div>
                 {loading ? (
-                  <CircleNotch
-                    size={16}
-                    className="text-theme-text-secondary animate-spin"
-                  />
+                  <LoadingState size="grid" variant="drive" />
                 ) : (
                   <>
                     {!basePathValue.value && (

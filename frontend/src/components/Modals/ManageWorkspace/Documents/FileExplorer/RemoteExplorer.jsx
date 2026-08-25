@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Plugs,
-  CircleNotch,
-  Cloud,
-  FolderNotch,
-  File,
-  Plus,
-} from "@phosphor-icons/react";
+import { Plugs, Cloud, FolderNotch, File, Plus } from "@phosphor-icons/react";
 import FileSources from "@/models/fileSources";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
@@ -17,6 +10,7 @@ import Button from "@/components/ui/21st/Button";
 import SearchInput from "@/components/ui/21st/SearchInput";
 import Breadcrumb from "@/components/ui/21st/Breadcrumb";
 import ExplorerPanel from "@/components/ui/21st/ExplorerPanel";
+import LoadingState from "@/components/ui/21st/LoadingState";
 
 const PROVIDER_LABELS = {
   "google-drive": "Google Drive",
@@ -231,7 +225,7 @@ export default function RemoteExplorer({ source, workspace, onIndexed }) {
       )}
       {loading ? (
         <div className="flex items-center justify-center h-[240px] text-theme-text-secondary">
-          <CircleNotch size={18} className="animate-spin" />
+          <LoadingState size="grid" variant="drive" />
         </div>
       ) : visible.length === 0 ? (
         <p className="text-xs text-theme-text-secondary p-4">

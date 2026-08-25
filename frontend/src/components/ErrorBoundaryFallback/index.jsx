@@ -1,6 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { House, ArrowClockwise, Copy, Check } from "@phosphor-icons/react";
+import {
+  House,
+  ArrowClockwise,
+  Copy,
+  Check,
+  ChatTeardropText,
+} from "@phosphor-icons/react";
 import { useState } from "react";
+import { openSentryFeedback } from "@/components/FeedbackButton";
 
 export default function ErrorBoundaryFallback({ error, resetErrorBoundary }) {
   const [copied, setCopied] = useState(false);
@@ -87,6 +94,16 @@ ${details.stack}
           <House className="w-4 h-4" />
           Home
         </NavLink>
+        {import.meta.env.VITE_SENTRY_DSN && (
+          <button
+            type="button"
+            onClick={openSentryFeedback}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-theme-bg-secondary text-theme-text-primary rounded-lg hover:bg-theme-sidebar-item-hover transition-all duration-300 w-full md:w-auto"
+          >
+            <ChatTeardropText className="w-4 h-4" weight="fill" />
+            Report this error
+          </button>
+        )}
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import React, { useEffect, useState } from "react";
 import SettingsButton from "../SettingsButton";
+import FeedbackButton from "../FeedbackButton";
 import { isMobile } from "react-device-detect";
 import { Tooltip } from "react-tooltip";
 
@@ -49,6 +50,7 @@ export default function Footer() {
     return (
       <div className="flex justify-center mb-2">
         <div className="flex space-x-4">
+          <FeedbackButton />
           <SettingsButton />
         </div>
         <Tooltip
@@ -82,7 +84,12 @@ export default function Footer() {
             )}
           </a>
         ))}
-        {!isMobile && <SettingsButton />}
+        {!isMobile && (
+          <>
+            <FeedbackButton />
+            <SettingsButton />
+          </>
+        )}
       </div>
       <Tooltip
         id="footer-item"

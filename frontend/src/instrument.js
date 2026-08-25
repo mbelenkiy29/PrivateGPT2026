@@ -6,28 +6,8 @@ import {
   useLocation,
   useNavigationType,
 } from "react-router-dom";
-
-const SENSITIVE_KEY =
-  /^(message|prompt|content|text|token|password|authorization|cookie|document|chat|query)$/i;
-
-function scrubEvent(event) {
-  if (event.request) {
-    delete event.request.data;
-    delete event.request.cookies;
-    if (event.request.headers) {
-      delete event.request.headers.Authorization;
-      delete event.request.headers.authorization;
-      delete event.request.headers.cookie;
-      delete event.request.headers.Cookie;
-    }
-  }
-  if (event.extra) {
-    for (const key of Object.keys(event.extra)) {
-      if (SENSITIVE_KEY.test(key)) delete event.extra[key];
-    }
-  }
-  return event;
-}
+import { FEEDBACK_INTEGRATION_OPTIONS } from "@/utils/sentryFeedback";
+import { scrubEvent } from "@/utils/sentryScrub";
 
 const dsn = import.meta.env.VITE_SENTRY_DSN;
 if (dsn) {
@@ -50,6 +30,7 @@ if (dsn) {
         createRoutesFromChildren,
         matchRoutes,
       }),
+      Sentry.feedbackIntegration(FEEDBACK_INTEGRATION_OPTIONS),
     ],
     tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.1,
     tracePropagationTargets: ["localhost", /^https?:\/\/localhost(:\d+)?/],

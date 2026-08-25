@@ -8,6 +8,7 @@ import useLogo from "@/hooks/useLogo";
 import useUser from "@/hooks/useUser";
 import Footer from "../Footer";
 import SettingsButton from "../SettingsButton";
+import FeedbackButton from "../FeedbackButton";
 import { Link, useLocation } from "react-router-dom";
 import paths, { isPathMatch } from "@/utils/paths";
 import { useTranslation } from "react-i18next";
@@ -159,11 +160,10 @@ export function SidebarMobileHeader() {
                   style={{ objectFit: "contain" }}
                 />
               </div>
-              {(!user || user?.role !== "default") && (
-                <div className="flex gap-x-2 items-center text-slate-500 shink-0">
-                  <SettingsButton />
-                </div>
-              )}
+              <div className="flex gap-x-2 items-center text-slate-500 shrink-0">
+                <FeedbackButton />
+                {(!user || user?.role !== "default") && <SettingsButton />}
+              </div>
             </div>
 
             {/* Primary Body */}

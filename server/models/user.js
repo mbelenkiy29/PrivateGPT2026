@@ -32,6 +32,7 @@ const User = {
     "bio",
     "firstName",
     "lastName",
+    "email",
   ],
   validations: {
     /**
@@ -84,6 +85,13 @@ const User = {
     firstName: (value = "") =>
       User.validations._personName(value, "First name"),
     lastName: (value = "") => User.validations._personName(value, "Last name"),
+    email: (value = "") => {
+      const { normalizeEmail, emailIsValid } = require("../utils/tenant");
+      if (value === null || value === undefined || value === "") return null;
+      const email = normalizeEmail(value);
+      if (!emailIsValid(email)) throw new Error("A valid email is required");
+      return email;
+    },
     _personName: (value = "", label = "Name") => {
       if (value === null || value === undefined) return null;
       const name = String(value).trim();
@@ -154,6 +162,7 @@ const User = {
     bio = "",
     firstName = null,
     lastName = null,
+    email = null,
   }) {
     const passwordCheck = this.checkPasswordComplexity(password);
     if (!passwordCheck.checkedOK) {
@@ -169,6 +178,7 @@ const User = {
       const user = await prisma.users.create({
         data: {
           username: validatedUsername,
+          email: this.validations.email(email),
           password: hashedPassword,
           role: this.validations.role(role),
           bio: this.validations.bio(bio),
@@ -333,6 +343,79 @@ const User = {
     } catch (error) {
       console.error(error.message);
       return null;
+    }
+  },
+
+  /**
+   * Login may use email or username. Usernames stay globally unique in v1;
+   * email is globally unique when present.
+   */
+  getByLogin: async function (identifier) {
+    const { normalizeEmail } = require("../utils/tenant");
+    const value = String(identifier || "").trim();
+    if (!value) return null;
+    const email = normalizeEmail(value);
+    const user = await this._get({
+      OR: [{ username: value }, ...(email ? [{ email }] : [])],
+    });
+    return user;
+  },
+
+  uniqueUsernameFromEmail: async function (email) {
+    const { usernameFromEmail } = require("../utils/tenant");
+    const base = usernameFromEmail(email);
+    let candidate = base;
+    let n = 0;
+    while (n < 50) {
+      const existing = await this._get({ username: candidate });
+      if (!existing) return candidate;
+      n += 1;
+      candidate = `${base.slice(0, 50)}${n}`;
+    }
+    return `${base.slice(0, 40)}${Date.now().toString().slice(-8)}`;
+  },
+
+  whereForOrganization: async function (
+    organizationId,
+    clause = {},
+    limit = null
+  ) {
+    const { assertTenant } = require("../utils/tenant");
+    assertTenant({}, organizationId);
+    try {
+      const members = await prisma.organization_users.findMany({
+        where: { organizationId: Number(organizationId) },
+        select: { userId: true, role: true },
+      });
+      const ids = members.map((row) => row.userId);
+      if (!ids.length) return [];
+      const users = await this.where({ ...clause, id: { in: ids } }, limit);
+      const roleByUser = Object.fromEntries(
+        members.map((row) => [row.userId, row.role])
+      );
+      return users.map((user) => ({
+        ...user,
+        role: roleByUser[user.id] || user.role,
+      }));
+    } catch (error) {
+      console.error(error.message);
+      return [];
+    }
+  },
+
+  isMemberOf: async function (userId, organizationId) {
+    if (!userId || !organizationId) return false;
+    try {
+      const row = await prisma.organization_users.findFirst({
+        where: {
+          userId: Number(userId),
+          organizationId: Number(organizationId),
+        },
+      });
+      return !!row;
+    } catch (error) {
+      console.error(error.message);
+      return false;
     }
   },
 

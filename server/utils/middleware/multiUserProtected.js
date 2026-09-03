@@ -41,7 +41,8 @@ function strictMultiUserRoleValid(allowedRoles = DEFAULT_ROLES) {
 
     const user =
       response.locals?.user ?? (await userFromSession(request, response));
-    if (allowedRoles.includes(user?.role)) {
+    const role = response.locals?.membership?.role || user?.role;
+    if (allowedRoles.includes(role)) {
       next();
       return;
     }
@@ -75,7 +76,8 @@ function flexUserRoleValid(allowedRoles = DEFAULT_ROLES) {
 
     const user =
       response.locals?.user ?? (await userFromSession(request, response));
-    if (allowedRoles.includes(user?.role)) {
+    const role = response.locals?.membership?.role || user?.role;
+    if (allowedRoles.includes(role)) {
       next();
       return;
     }

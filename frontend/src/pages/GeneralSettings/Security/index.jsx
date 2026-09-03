@@ -46,6 +46,8 @@ function MultiUserMode() {
   const [multiUserModeEnabled, setMultiUserModeEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
+  const { user } = useUser();
+  const isTenantAdmin = Boolean(user?.organization?.id);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,6 +98,8 @@ function MultiUserMode() {
       </div>
     );
   }
+
+  if (isTenantAdmin) return null;
 
   return (
     <form

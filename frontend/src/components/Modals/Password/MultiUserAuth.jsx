@@ -311,6 +311,7 @@ export default function MultiUserAuth() {
               <input
                 name="username"
                 type="text"
+                placeholder="Username or email"
                 className="border-none bg-zinc-800 light:bg-slate-200 text-zinc-200 light:text-zinc-600 text-sm rounded-lg p-2.5 w-[300px] h-[34px] focus:outline-none focus:ring-1 focus:ring-sky-300"
                 required={true}
                 autoComplete="off"
@@ -351,6 +352,12 @@ export default function MultiUserAuth() {
               {t("login.multi-user.reset")}
             </b>
           </button>
+          <a
+            href={paths.signup()}
+            className="text-zinc-200 light:text-zinc-600 hover:text-sky-300 light:hover:text-sky-600 hover:underline text-sm"
+          >
+            New team? Create a workspace
+          </a>
         </div>
       </form>
 

@@ -13,6 +13,7 @@ const {
   CURSOR_CHAR,
 } = require("../telegramBot/constants");
 const { editMessage, sendFormattedMessage } = require("../telegramBot/utils");
+const { vectorNamespace } = require("../tenant");
 const { sendVoiceResponse } = require("../telegramBot/utils/media");
 const { safeJsonParse } = require("../http");
 const { handleAgentResponse } = require("../telegramBot/chat/agent");
@@ -106,7 +107,9 @@ async function streamResponse({
       attachments,
     });
   const VectorDb = getVectorDbClass();
-  const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+  const embeddingsCount = await VectorDb.namespaceCount(
+    vectorNamespace(workspace)
+  );
 
   const {
     contextTexts: pinnedContextTexts,
@@ -227,7 +230,7 @@ async function buildSearchContext({
   const vectorSearchResults =
     embeddingsCount !== 0
       ? await VectorDb.performSimilaritySearch({
-          namespace: workspace.slug,
+          namespace: vectorNamespace(workspace),
           input: message,
           LLMConnector,
           similarityThreshold: workspace?.similarityThreshold,

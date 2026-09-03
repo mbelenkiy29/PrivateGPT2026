@@ -49,7 +49,9 @@ function workspaceEndpoints(app) {
       try {
         const user = await userFromSession(request, response);
         const { name = null } = reqBody(request);
-        const { workspace, message } = await Workspace.new(name, user?.id);
+        const { workspace, message } = await Workspace.new(name, user?.id, {
+          organizationId: response.locals?.tenantId || user?.organizationId,
+        });
         await Telemetry.sendTelemetry(
           "workspace_created",
           {
@@ -147,9 +149,16 @@ function workspaceEndpoints(app) {
         const user = await userFromSession(request, response);
         const { slug = null } = request.params;
         const data = reqBody(request);
+        const tenantId = response.locals?.tenantId || user?.organizationId;
         const currWorkspace = multiUserMode(response)
-          ? await Workspace.getWithUser(user, { slug })
-          : await Workspace.get({ slug });
+          ? await Workspace.getWithUser(user, {
+              slug,
+              ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+            })
+          : await Workspace.get({
+              slug,
+              ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+            });
 
         if (!currWorkspace) {
           response.sendStatus(400).end();
@@ -441,9 +450,14 @@ function workspaceEndpoints(app) {
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
+        const tenantId = response.locals?.tenantId || user?.organizationId;
         const workspaces = multiUserMode(response)
-          ? await Workspace.whereWithUser(user)
-          : await Workspace.where();
+          ? await Workspace.whereWithUser(user, {
+              ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+            })
+          : await Workspace.where(
+              tenantId ? { organizationId: Number(tenantId) } : {}
+            );
 
         response.status(200).json({ workspaces });
       } catch (e) {

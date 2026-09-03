@@ -10,6 +10,7 @@ const { chatPrompt, sourceIdentifier } = require("./index");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
 
 const { PassThrough } = require("stream");
+const { vectorNamespace } = require("../tenant");
 
 async function chatSync({
   workspace,
@@ -37,8 +38,12 @@ async function chatSync({
     });
 
   const VectorDb = getVectorDbClass();
-  const hasVectorizedSpace = await VectorDb.hasNamespace(workspace.slug);
-  const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+  const hasVectorizedSpace = await VectorDb.hasNamespace(
+    vectorNamespace(workspace)
+  );
+  const embeddingsCount = await VectorDb.namespaceCount(
+    vectorNamespace(workspace)
+  );
 
   // User is trying to query-mode chat a workspace that has no data in it - so
   // we should exit early as no information can be found under these conditions.
@@ -100,7 +105,7 @@ async function chatSync({
   const vectorSearchResults =
     embeddingsCount !== 0
       ? await VectorDb.performSimilaritySearch({
-          namespace: workspace.slug,
+          namespace: vectorNamespace(workspace),
           input: String(prompt),
           LLMConnector,
           similarityThreshold: workspace?.similarityThreshold,
@@ -267,8 +272,12 @@ async function streamChat({
   abortConnectorOnClientDisconnect(response, LLMConnector);
 
   const VectorDb = getVectorDbClass();
-  const hasVectorizedSpace = await VectorDb.hasNamespace(workspace.slug);
-  const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+  const hasVectorizedSpace = await VectorDb.hasNamespace(
+    vectorNamespace(workspace)
+  );
+  const embeddingsCount = await VectorDb.namespaceCount(
+    vectorNamespace(workspace)
+  );
 
   // We don't want to write a new method for every LLM to support openAI calls
   // via the `handleStreamResponseV2` method handler. So here we create a passthrough
@@ -353,7 +362,7 @@ async function streamChat({
   const vectorSearchResults =
     embeddingsCount !== 0
       ? await VectorDb.performSimilaritySearch({
-          namespace: workspace.slug,
+          namespace: vectorNamespace(workspace),
           input: String(prompt),
           LLMConnector,
           similarityThreshold: workspace?.similarityThreshold,

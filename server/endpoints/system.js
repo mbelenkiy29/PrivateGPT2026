@@ -8,6 +8,7 @@ const {
   getDocumentsByFolder,
   searchDocuments,
   getDocumentsByDocPaths,
+  tenantDocumentsPath,
 } = require("../utils/files");
 const { purgeDocument, purgeFolder } = require("../utils/files/purgeDocument");
 const { getVectorDbClass } = require("../utils/helpers");
@@ -15,6 +16,7 @@ const { updateENV, dumpENV } = require("../utils/helpers/updateENV");
 const {
   reqBody,
   makeJWT,
+  sessionTokenForUser,
   userFromSession,
   multiUserMode,
   queryParams,
@@ -27,6 +29,8 @@ const {
 const { v4 } = require("uuid");
 const { SystemSettings } = require("../models/systemSettings");
 const { User } = require("../models/user");
+const { Organization } = require("../models/organization");
+const { sessionUserPayload, vectorNamespace } = require("../utils/tenant");
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
 const fs = require("fs");
 const path = require("path");
@@ -189,7 +193,11 @@ function systemEndpoints(app) {
 
         return response.status(200).json({
           success: true,
-          user: User.filterFields(user),
+          user: sessionUserPayload(
+            user,
+            response.locals?.membership,
+            response.locals?.tenant
+          ),
           message: null,
         });
       } catch (e) {
@@ -219,7 +227,7 @@ function systemEndpoints(app) {
         }
 
         const { username, password } = reqBody(request);
-        const existingUser = await User._get({ username: String(username) });
+        const existingUser = await User.getByLogin(username);
 
         if (!existingUser) {
           await EventLogs.logEvent(
@@ -292,15 +300,24 @@ function systemEndpoints(app) {
 
         // Generate a session token for the user then check if they have seen the recovery codes
         // and if not, generate recovery codes and return them to the frontend.
-        const sessionToken = makeJWT(
-          { id: existingUser.id, username: existingUser.username },
+        const { organization, membership } = await Organization.resolveForUser(
+          existingUser.id
+        );
+        const sessionToken = sessionTokenForUser(
+          existingUser,
+          organization,
           process.env.JWT_EXPIRY
+        );
+        const userPayload = sessionUserPayload(
+          existingUser,
+          membership,
+          organization
         );
         if (!existingUser.seen_recovery_codes) {
           const plainTextCodes = await generateRecoveryCodes(existingUser.id);
           response.status(200).json({
             valid: true,
-            user: User.filterFields(existingUser),
+            user: userPayload,
             token: sessionToken,
             message: null,
             recoveryCodes: plainTextCodes,
@@ -310,7 +327,7 @@ function systemEndpoints(app) {
 
         response.status(200).json({
           valid: true,
-          user: User.filterFields(existingUser),
+          user: userPayload,
           token: sessionToken,
           message: null,
         });
@@ -455,7 +472,12 @@ function systemEndpoints(app) {
         const query = queryParams(request);
         const VectorDb = getVectorDbClass();
         const vectorCount = !!query.slug
-          ? await VectorDb.namespaceCount(query.slug)
+          ? await VectorDb.namespaceCount(
+              vectorNamespace({
+                slug: query.slug,
+                organizationId: response.locals?.tenantId,
+              })
+            )
           : await VectorDb.totalVectors();
         response.status(200).json({ vectorCount });
       } catch (e) {
@@ -516,13 +538,18 @@ function systemEndpoints(app) {
     async (request, response) => {
       try {
         const { folder, offset, limit } = queryParams(request);
+        const docsRoot = tenantDocumentsPath(response.locals?.tenant);
         if (folder) {
           // Passed through as-is: getDocumentsByFolder clamps the window and
           // understands `limit=all`.
-          const result = await getDocumentsByFolder(folder, { offset, limit });
+          const result = await getDocumentsByFolder(folder, {
+            offset,
+            limit,
+            basePath: docsRoot,
+          });
           response.status(result.code).json(result);
         } else {
-          const localFiles = listFolders();
+          const localFiles = listFolders(docsRoot);
           response.status(200).json({ localFiles });
         }
       } catch (e) {
@@ -674,6 +701,16 @@ function systemEndpoints(app) {
             error: error || "Failed to enable multi-user mode.",
           });
           return;
+        }
+
+        const { Organization } = require("../models/organization");
+        const defaultOrg = await Organization.ensureDefault();
+        if (defaultOrg) {
+          await Organization.addMember({
+            organizationId: defaultOrg.id,
+            userId: user.id,
+            role: ROLES.admin,
+          });
         }
 
         await SystemSettings._updateSettings({
@@ -1178,13 +1215,15 @@ function systemEndpoints(app) {
     async (request, response) => {
       try {
         const { offset = 0, limit = 20 } = reqBody(request);
+        const tenantId = response.locals?.tenantId;
+        const chatClause = tenantId ? { organizationId: Number(tenantId) } : {};
         const chats = await WorkspaceChats.whereWithData(
-          {},
+          chatClause,
           limit,
           offset * limit,
           { id: "desc" }
         );
-        const totalChats = await WorkspaceChats.count();
+        const totalChats = await WorkspaceChats.count(chatClause);
         const hasPages = totalChats > (offset + 1) * limit;
 
         response.status(200).json({ chats: chats, hasPages, totalChats });

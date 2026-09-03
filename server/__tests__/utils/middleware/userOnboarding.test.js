@@ -33,6 +33,8 @@ describe("onboarding API gate", () => {
     expect(isAllowedWhileOnboarding("POST", "/workspace/new")).toBe(true);
     expect(isAllowedWhileOnboarding("GET", "/workspaces")).toBe(true);
     expect(isAllowedWhileOnboarding("POST", "/invite/abc")).toBe(true);
+    expect(isAllowedWhileOnboarding("POST", "/signup")).toBe(true);
+    expect(isAllowedWhileOnboarding("GET", "/signup/enabled")).toBe(true);
   });
 
   it("blocks chat while onboarding", () => {

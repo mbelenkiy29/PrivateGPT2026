@@ -106,8 +106,11 @@ async function validateMultiUserRequest(request, response, next) {
   }
 
   response.locals.user = user;
+  response.locals.jwtTenantId = valid.tenantId || null;
   UserMetaCache.setFromRequest(request, user.id);
-  next();
+
+  const { resolveTenant } = require("./resolveTenant");
+  return resolveTenant()(request, response, next);
 }
 
 module.exports = {

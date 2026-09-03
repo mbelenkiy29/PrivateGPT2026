@@ -136,15 +136,19 @@ function knowledgeSourcesEndpoints(app) {
   app.get(
     "/knowledge-sources",
     [validatedRequest, flexUserRoleValid([ROLES.admin])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
+        const tenantId = response.locals?.tenantId;
+        const tenantClause = tenantId
+          ? { organizationId: Number(tenantId) }
+          : {};
         const [sources, notionToken, dropboxOauth, dropbox, workspaces] =
           await Promise.all([
-            KnowledgeSource.where(),
+            KnowledgeSource.where(tenantClause),
             getNotionToken(),
             getDropboxOAuthConfig(),
             dropboxConnection(),
-            Workspace.where(),
+            Workspace.where(tenantClause),
           ]);
         const byId = Object.fromEntries(workspaces.map((ws) => [ws.id, ws]));
         response.status(200).json({

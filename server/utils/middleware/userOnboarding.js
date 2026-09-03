@@ -23,6 +23,7 @@ function isAllowedWhileOnboarding(method, path) {
   }
   if (path.startsWith("/request-token")) return true;
   if (path.startsWith("/invite/")) return true;
+  if (path === "/signup" || path === "/signup/enabled") return true;
   if (path === "/system/refresh-user") return true;
   if (
     path === "/system/support-email" ||

@@ -122,6 +122,17 @@
         "frontend/src/pages/GeneralSettings/Security"
       ],
       "notes": "In-app chat and agent prompts are scanned before any model sees them, including private sessions. Admin toggle lives on Settings → Security using the existing Toggle so it matches Multi-User and Password Protection. Blocks write a sanitized event log with no message body. No extra UI kit."
+    },
+    {
+      "id": "public-signup-21st",
+      "date": "2026-09-03",
+      "choice": "Signup page using existing 21st Field/Button/Card",
+      "references": [
+        "frontend/src/components/ui/21st/Field",
+        "frontend/src/components/ui/21st/Button",
+        "frontend/src/components/ui/21st/Card"
+      ],
+      "notes": "Public /signup matches Login dark theme tokens. Reuses installed 21st primitives instead of a new catalog install. After signup, users land on existing Getting Started / user-onboarding."
     }
   ],
   "evidence": [],

@@ -9,8 +9,13 @@ const ApiKey = {
     return uuidAPIKey.create().apiKey;
   },
 
-  create: async function (createdByUserId = null, name = null) {
+  create: async function (
+    createdByUserId = null,
+    name = null,
+    organizationId = null
+  ) {
     try {
+      const { assertTenant } = require("../utils/tenant");
       const normalizedName =
         typeof name === "string" && name.trim().length > 0 ? name.trim() : null;
       const apiKey = await prisma.api_keys.create({
@@ -18,6 +23,11 @@ const ApiKey = {
           name: normalizedName,
           secret: this.makeSecret(),
           createdBy: createdByUserId,
+          ...(organizationId
+            ? {
+                organizationId: assertTenant({}, organizationId).organizationId,
+              }
+            : {}),
         },
       });
 
@@ -69,6 +79,11 @@ const ApiKey = {
       console.error("FAILED TO GET API KEYS.", error.message);
       return [];
     }
+  },
+
+  whereForOrganization: async function (organizationId, clause = {}, limit) {
+    const { assertTenant } = require("../utils/tenant");
+    return this.where(assertTenant(clause, organizationId), limit);
   },
 
   whereWithUser: async function (clause = {}, limit) {

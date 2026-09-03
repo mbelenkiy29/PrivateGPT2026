@@ -5,6 +5,7 @@ const { CollectorApi } = require("../utils/collectorApi");
 const { fileData } = require("../utils/files");
 const { log, conclude, updateSourceDocument } = require("./helpers/index.js");
 const { getVectorDbClass } = require("../utils/helpers/index.js");
+const { vectorNamespace } = require("../utils/tenant");
 const { DocumentSyncRun } = require("../models/documentSyncRun.js");
 
 (async () => {
@@ -151,11 +152,11 @@ const { DocumentSyncRun } = require("../models/documentSyncRun.js");
       // same value or a pinned document will be injected as full-text and as chunks.
       const publishedAt = new Date().toLocaleString();
       await vectorDatabase.deleteDocumentFromNamespace(
-        workspace.slug,
+        vectorNamespace(workspace),
         document.docId
       );
       await vectorDatabase.addDocumentToNamespace(
-        workspace.slug,
+        vectorNamespace(workspace),
         {
           ...currentDocumentData,
           pageContent: newContent,

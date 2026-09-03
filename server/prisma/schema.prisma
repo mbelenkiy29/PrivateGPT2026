@@ -15,13 +15,52 @@ datasource db {
   url      = "file:../storage/anythingllm.db"
 }
 
-model api_keys {
+model organizations {
   id            Int      @id @default(autoincrement())
-  name          String?
-  secret        String?  @unique
-  createdBy     Int?
+  name          String
+  slug          String   @unique
+  status        String   @default("active")
   createdAt     DateTime @default(now())
   lastUpdatedAt DateTime @default(now())
+  members       organization_users[]
+  settings      tenant_settings[]
+}
+
+model organization_users {
+  id             Int           @id @default(autoincrement())
+  organizationId Int
+  userId         Int
+  role           String        @default("default")
+  createdAt      DateTime      @default(now())
+  organization   organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model tenant_settings {
+  id             Int           @id @default(autoincrement())
+  organizationId Int
+  label          String
+  value          String?
+  createdAt      DateTime      @default(now())
+  lastUpdatedAt  DateTime      @default(now())
+  organization   organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, label])
+}
+
+model api_keys {
+  id             Int      @id @default(autoincrement())
+  name           String?
+  secret         String?  @unique
+  createdBy      Int?
+  organizationId Int?
+  createdAt      DateTime @default(now())
+  lastUpdatedAt  DateTime @default(now())
+
+  @@index([organizationId])
 }
 
 model workspace_documents {
@@ -40,14 +79,17 @@ model workspace_documents {
 }
 
 model invites {
-  id            Int      @id @default(autoincrement())
-  code          String   @unique
-  status        String   @default("pending")
-  claimedBy     Int?
-  workspaceIds  String?
-  createdAt     DateTime @default(now())
-  createdBy     Int
-  lastUpdatedAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  status         String   @default("pending")
+  claimedBy      Int?
+  workspaceIds   String?
+  organizationId Int?
+  createdAt      DateTime @default(now())
+  createdBy      Int
+  lastUpdatedAt  DateTime @default(now())
+
+  @@index([organizationId])
 }
 
 model system_settings {
@@ -61,6 +103,7 @@ model system_settings {
 model users {
   id                           Int                           @id @default(autoincrement())
   username                     String?                       @unique
+  email                        String?                       @unique
   password                     String
   pfpFilename                  String?
   role                         String                        @default("default")
@@ -93,6 +136,7 @@ model users {
   memories                     memories[]
   ticketsAssigned              tickets[]                 @relation("TicketAssignee")
   ticketsCreated               tickets[]                 @relation("TicketCreator")
+  organization_users           organization_users[]
 }
 
 model recovery_codes {
@@ -127,7 +171,8 @@ model document_vectors {
 model workspaces {
   id                           Int                            @id @default(autoincrement())
   name                         String
-  slug                         String                         @unique
+  slug                         String
+  organizationId               Int?
   vectorTag                    String?
   createdAt                    DateTime                       @default(now())
   openAiTemp                   Float?
@@ -159,6 +204,9 @@ model workspaces {
   knowledge_sources            knowledge_sources[]
   channel_workspace_bindings   channel_workspace_bindings[]
   tickets                      tickets[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 model workspace_threads {
@@ -192,6 +240,7 @@ model workspace_suggested_messages {
 model workspace_chats {
   id             Int      @id @default(autoincrement())
   workspaceId    Int
+  organizationId Int?
   prompt         String
   response       String
   include        Boolean  @default(true)
@@ -203,6 +252,8 @@ model workspace_chats {
   feedbackScore   Boolean?
   memoryProcessed Boolean? @map("memory_processed")
   users           users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([organizationId])
 }
 
 model workspace_agent_invocations {
@@ -245,6 +296,7 @@ model cache_data {
 model embed_configs {
   id                         Int           @id @default(autoincrement())
   uuid                       String        @unique
+  organizationId             Int?
   enabled                    Boolean       @default(false)
   chat_mode                  String        @default("query")
   allowlist_domains          String?
@@ -270,6 +322,8 @@ model embed_configs {
   embed_handoffs             embed_handoffs[]
   embed_unanswered           embed_unanswered[]
   users                      users?        @relation(fields: [usersId], references: [id])
+
+  @@index([organizationId])
 }
 
 model embed_chats {
@@ -411,26 +465,33 @@ model workspace_parsed_files {
 }
 
 model external_communication_connectors {
-  id            Int      @id @default(autoincrement())
-  type          String   @unique
-  config        String   @default("{}")
-  active        Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  lastUpdatedAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  type           String
+  organizationId Int?
+  config         String   @default("{}")
+  active         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  lastUpdatedAt  DateTime @default(now())
+
+  @@unique([organizationId, type])
+  @@index([organizationId])
 }
 
 model scheduled_jobs {
-  id        Int                  @id @default(autoincrement())
-  name      String
-  prompt    String
-  tools     String? // JSON array of tool identifiers (null = use all enabled agent skills)
-  schedule  String // Cron expression
-  enabled   Boolean              @default(true)
-  lastRunAt DateTime?
-  nextRunAt DateTime?
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @default(now())
-  runs      scheduled_job_runs[]
+  id             Int                  @id @default(autoincrement())
+  name           String
+  prompt         String
+  tools          String? // JSON array of tool identifiers (null = use all enabled agent skills)
+  schedule       String // Cron expression
+  enabled        Boolean              @default(true)
+  organizationId Int?
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @default(now())
+  runs           scheduled_job_runs[]
+
+  @@index([organizationId])
 }
 
 model scheduled_job_runs {
@@ -448,25 +509,28 @@ model scheduled_job_runs {
 }
 
 model memories {
-  id          Int       @id @default(autoincrement())
-  userId      Int?      @map("user_id")
-  workspaceId Int?      @map("workspace_id")
-  scope       String    @default("workspace")
-  content     String
-  lastUsedAt  DateTime? @map("last_used_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @map("updated_at")
+  id             Int       @id @default(autoincrement())
+  userId         Int?      @map("user_id")
+  workspaceId    Int?      @map("workspace_id")
+  organizationId Int?
+  scope          String    @default("workspace")
+  content        String
+  lastUsedAt     DateTime? @map("last_used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @map("updated_at")
 
   user      users?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace workspaces? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([userId, workspaceId])
   @@index([userId, scope])
+  @@index([organizationId])
 }
 
 model model_routers {
   id                Int                  @id @default(autoincrement())
-  name              String               @unique
+  name              String
+  organizationId    Int?
   description       String?
   fallback_provider String
   fallback_model    String
@@ -475,6 +539,9 @@ model model_routers {
   createdAt         DateTime             @default(now())
   lastUpdatedAt     DateTime             @default(now())
   rules             model_router_rules[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model model_router_rules {
@@ -507,23 +574,26 @@ model model_router_rules {
 }
 
 model connected_file_sources {
-  id                    Int      @id @default(autoincrement())
-  provider              String
-  account_email         String?
-  account_name          String?
+  id                      Int      @id @default(autoincrement())
+  provider                String
+  organizationId          Int?
+  account_email           String?
+  account_name            String?
   encrypted_access_token  String?
   encrypted_refresh_token String?
-  token_expires_at      DateTime?
-  createdAt             DateTime @default(now())
-  lastUpdatedAt         DateTime @default(now())
+  token_expires_at        DateTime?
+  createdAt               DateTime @default(now())
+  lastUpdatedAt           DateTime @default(now())
 
-  @@unique([provider, account_email])
+  @@unique([organizationId, provider, account_email])
+  @@index([organizationId])
 }
 
 model knowledge_sources {
   id               Int      @id @default(autoincrement())
   provider         String
   workspaceId      Int
+  organizationId   Int?
   display_name     String
   remote_id        String?
   encrypted_config String?
@@ -538,6 +608,7 @@ model knowledge_sources {
 
   @@index([workspaceId])
   @@index([provider])
+  @@index([organizationId])
 }
 
 model knowledge_source_sync_runs {
@@ -552,6 +623,7 @@ model knowledge_source_sync_runs {
 model usage_events {
   id                Int      @id @default(autoincrement())
   workspaceId       Int?
+  organizationId    Int?
   userId            Int?
   provider          String?
   model             String?
@@ -564,6 +636,7 @@ model usage_events {
 
   @@index([workspaceId, createdAt])
   @@index([userId])
+  @@index([organizationId])
 }
 
 model embed_leads {
@@ -613,6 +686,7 @@ model channel_workspace_bindings {
 model tickets {
   id              Int       @id @default(autoincrement())
   workspaceId     Int
+  organizationId  Int?
   title           String
   description     String    @default("")
   status          String    @default("todo") // backlog | todo | in_progress | done | cancelled
@@ -633,6 +707,7 @@ model tickets {
 
   @@index([workspaceId, status])
   @@index([assigneeUserId])
+  @@index([organizationId])
 }
 
 model ticket_runs {

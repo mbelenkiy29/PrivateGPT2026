@@ -211,10 +211,21 @@ const Workspace = {
    */
   new: async function (name = null, creatorId = null, additionalFields = {}) {
     if (!name) return { workspace: null, message: "name cannot be null" };
+    const organizationId =
+      additionalFields.organizationId ||
+      additionalFields.organization_id ||
+      null;
+    if (additionalFields.organizationId) delete additionalFields.organizationId;
+    if (additionalFields.organization_id)
+      delete additionalFields.organization_id;
+
     var slug = this.slugify(name, { lower: true });
     slug = slug || uuidv4();
 
-    const existingBySlug = await this.get({ slug });
+    const existingBySlug = await this.get({
+      slug,
+      ...(organizationId ? { organizationId: Number(organizationId) } : {}),
+    });
     if (existingBySlug !== null) {
       const slugSeed = Math.floor(10000000 + Math.random() * 90000000);
       slug = this.slugify(`${name}-${slugSeed}`, { lower: true });
@@ -237,6 +248,7 @@ const Workspace = {
           chatMode: "automatic",
           ...this.validateFields(additionalFields),
           slug,
+          ...(organizationId ? { organizationId: Number(organizationId) } : {}),
         },
       });
 
@@ -308,6 +320,10 @@ const Workspace = {
   },
 
   getWithUser: async function (user = null, clause = {}) {
+    const organizationId = clause.organizationId ?? user?.organizationId;
+    if (organizationId != null)
+      clause = { ...clause, organizationId: Number(organizationId) };
+
     if ([ROLES.admin, ROLES.manager].includes(user.role))
       return this.get(clause);
 
@@ -379,6 +395,21 @@ const Workspace = {
     return LLMProvider?.promptWindowLimit?.(model) || null;
   },
 
+  /**
+   * LanceDB / vector-store table name for this workspace.
+   */
+  vectorNamespace: function (workspace) {
+    const { vectorNamespace } = require("../utils/tenant");
+    return vectorNamespace(workspace);
+  },
+
+  getBySlug: async function (slug, organizationId = null) {
+    return this.get({
+      slug: String(slug),
+      ...(organizationId ? { organizationId: Number(organizationId) } : {}),
+    });
+  },
+
   get: async function (clause = {}) {
     try {
       const workspace = await prisma.workspaces.findFirst({
@@ -434,6 +465,10 @@ const Workspace = {
     limit = null,
     orderBy = null
   ) {
+    const organizationId = clause.organizationId ?? user?.organizationId;
+    if (organizationId != null)
+      clause = { ...clause, organizationId: Number(organizationId) };
+
     if ([ROLES.admin, ROLES.manager].includes(user.role))
       return await this.where(clause, limit, orderBy);
 

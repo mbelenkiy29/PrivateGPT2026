@@ -12,6 +12,7 @@ const {
 } = require("../helpers/chat/responses");
 const { DocumentManager } = require("../DocumentManager");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
+const { vectorNamespace } = require("../tenant");
 
 async function streamChatWithForEmbed(
   response,
@@ -68,8 +69,12 @@ async function streamChatWithForEmbed(
   const VectorDb = getVectorDbClass();
 
   const messageLimit = embed.message_limit ?? 20;
-  const hasVectorizedSpace = await VectorDb.hasNamespace(embed.workspace.slug);
-  const embeddingsCount = await VectorDb.namespaceCount(embed.workspace.slug);
+  const hasVectorizedSpace = await VectorDb.hasNamespace(
+    vectorNamespace(embed.workspace)
+  );
+  const embeddingsCount = await VectorDb.namespaceCount(
+    vectorNamespace(embed.workspace)
+  );
 
   // User is trying to query-mode chat a workspace that has no data in it - so
   // we should exit early as no information can be found under these conditions.
@@ -116,7 +121,7 @@ async function streamChatWithForEmbed(
   const vectorSearchResults =
     embeddingsCount !== 0
       ? await VectorDb.performSimilaritySearch({
-          namespace: embed.workspace.slug,
+          namespace: vectorNamespace(embed.workspace),
           input: message,
           LLMConnector,
           similarityThreshold: embed.workspace?.similarityThreshold,

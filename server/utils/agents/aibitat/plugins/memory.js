@@ -4,6 +4,7 @@ const {
   resolveProviderConnector,
 } = require("../../../helpers");
 const { Deduplicator } = require("../utils/dedupe");
+const { vectorNamespace } = require("../../../tenant");
 
 const memory = {
   name: "rag-memory",
@@ -92,7 +93,7 @@ const memory = {
               const vectorDB = getVectorDbClass();
               const { contextTexts = [], sources = [] } =
                 await vectorDB.performSimilaritySearch({
-                  namespace: workspace.slug,
+                  namespace: vectorNamespace(workspace),
                   input: query,
                   LLMConnector,
                   topN: workspace?.topN ?? 4,
@@ -127,7 +128,7 @@ const memory = {
               const workspace = this.super.handlerProps.invocation.workspace;
               const vectorDB = getVectorDbClass();
               const { error } = await vectorDB.addDocumentToNamespace(
-                workspace.slug,
+                vectorNamespace(workspace),
                 {
                   docId: v4(),
                   id: v4(),

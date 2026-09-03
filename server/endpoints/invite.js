@@ -40,7 +40,8 @@ function inviteEndpoints(app) {
     async (request, response) => {
       try {
         const { code } = request.params;
-        const { username, password, firstName, lastName } = reqBody(request);
+        const { username, password, firstName, lastName, email } =
+          reqBody(request);
         const invite = await Invite.get({ code });
         if (!invite || invite.status !== "pending") {
           response
@@ -57,11 +58,15 @@ function inviteEndpoints(app) {
           return;
         }
 
+        const resolvedUsername =
+          username ||
+          (email ? await User.uniqueUsernameFromEmail(email) : null);
         const { user, error } = await User.create({
-          username,
+          username: resolvedUsername,
           password,
           firstName,
           lastName,
+          email: email || null,
           role: "default",
         });
         if (!user) {

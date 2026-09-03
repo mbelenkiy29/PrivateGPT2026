@@ -28,6 +28,14 @@ function makeJWT(info = {}, expiry = "30d") {
   return JWT.sign(info, process.env.JWT_SECRET, { expiresIn: expiry });
 }
 
+function sessionTokenForUser(user, organization = null, expiry) {
+  const { jwtPayload } = require("../tenant");
+  return makeJWT(
+    jwtPayload(user, organization),
+    expiry || process.env.JWT_EXPIRY
+  );
+}
+
 /**
  * Gets the user from the session
  * Note: Only valid for multi-user mode
@@ -54,6 +62,7 @@ async function userFromSession(request, response = null) {
   }
 
   const user = await User.get({ id: valid.id });
+  if (user && valid.tenantId) user.organizationId = valid.tenantId;
   return user;
 }
 
@@ -131,6 +140,7 @@ module.exports = {
   multiUserMode,
   queryParams,
   makeJWT,
+  sessionTokenForUser,
   decodeJWT,
   userFromSession,
   parseAuthHeader,

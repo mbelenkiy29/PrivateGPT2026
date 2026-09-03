@@ -72,7 +72,10 @@ function apiWorkspaceThreadEndpoints(app) {
       try {
         const wslug = request.params.slug;
         let { userId = null, name = null, slug = null } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(wslug) });
+        const workspace = await Workspace.getBySlug(
+          String(wslug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.sendStatus(400).end();
@@ -166,7 +169,10 @@ function apiWorkspaceThreadEndpoints(app) {
       try {
         const { slug, threadSlug } = request.params;
         const { name } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
         if (!workspace) {
           response.status(404).json({ message: "Workspace not found" });
           return;
@@ -223,7 +229,10 @@ function apiWorkspaceThreadEndpoints(app) {
     */
       try {
         const { slug, threadSlug } = request.params;
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.sendStatus(400).end();
@@ -292,7 +301,10 @@ function apiWorkspaceThreadEndpoints(app) {
       */
       try {
         const { slug, threadSlug } = request.params;
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
         if (!workspace) {
           response.status(404).json({ message: "Workspace not found" });
           return;
@@ -398,7 +410,10 @@ function apiWorkspaceThreadEndpoints(app) {
           attachments = [],
           reset = false,
         } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
         if (!workspace) {
           response.status(404).json({
             id: uuidv4(),
@@ -581,7 +596,10 @@ function apiWorkspaceThreadEndpoints(app) {
           attachments = [],
           reset = false,
         } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
         const thread = await WorkspaceThread.get({
           slug: String(threadSlug),
           workspace_id: workspace.id,

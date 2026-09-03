@@ -29,6 +29,9 @@ export default {
   login: (noTry = false) => {
     return `/login${noTry ? "?nt=1" : ""}`;
   },
+  signup: () => {
+    return "/signup";
+  },
   sso: {
     login: () => {
       return "/sso/simple";

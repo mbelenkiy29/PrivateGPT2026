@@ -1,4 +1,4 @@
-const prisma = require("../utils/prisma");
+const prisma = require("../prisma");
 const { Organization } = require("../../models/organization");
 const { DEFAULT_ORG_SLUG, setCachedDefaultOrgId } = require("../tenant");
 

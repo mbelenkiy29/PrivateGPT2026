@@ -7,13 +7,19 @@ const Invite = {
     return uuidAPIKey.create().apiKey;
   },
 
-  create: async function ({ createdByUserId = 0, workspaceIds = [] }) {
+  create: async function ({
+    createdByUserId = 0,
+    workspaceIds = [],
+    organizationId = null,
+  }) {
+    const { assertTenant } = require("../utils/tenant");
     try {
       const invite = await prisma.invites.create({
         data: {
           code: this.makeCode(),
           createdBy: createdByUserId,
           workspaceIds: JSON.stringify(workspaceIds),
+          organizationId: assertTenant({}, organizationId).organizationId,
         },
       });
       return { invite, error: null };
@@ -49,10 +55,24 @@ const Invite = {
       });
 
       try {
+        const { Organization } = require("./organization");
+        if (invite?.organizationId) {
+          await Organization.addMember({
+            organizationId: invite.organizationId,
+            userId: user.id,
+            role: "default",
+          });
+        }
+
         if (!!invite?.workspaceIds) {
           const { Workspace } = require("./workspace");
           const { WorkspaceUser } = require("./workspaceUsers");
-          const workspaceIds = (await Workspace.where({})).map(
+          const tenantWorkspaces = await Workspace.where(
+            invite.organizationId
+              ? { organizationId: Number(invite.organizationId) }
+              : {}
+          );
+          const workspaceIds = tenantWorkspaces.map(
             (workspace) => workspace.id
           );
           const ids = safeJsonParse(invite.workspaceIds)
@@ -115,6 +135,11 @@ const Invite = {
       console.error(error.message);
       return [];
     }
+  },
+
+  whereForOrganization: async function (organizationId, clause = {}, limit) {
+    const { assertTenant } = require("../utils/tenant");
+    return this.where(assertTenant(clause, organizationId), limit);
   },
 
   whereWithUsers: async function (clause = {}, limit) {

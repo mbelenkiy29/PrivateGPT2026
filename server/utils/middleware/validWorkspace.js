@@ -6,9 +6,18 @@ const { userFromSession, multiUserMode } = require("../http");
 async function validWorkspaceSlug(request, response, next) {
   const { slug } = request.params;
   const user = await userFromSession(request, response);
+  const tenantId = response.locals?.tenantId || user?.organizationId || null;
+  if (multiUserMode(response) && !tenantId) {
+    response.status(403).json({ error: "No tenant context." });
+    return;
+  }
+  const clause = {
+    slug,
+    ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+  };
   const workspace = multiUserMode(response)
-    ? await Workspace.getWithUser(user, { slug })
-    : await Workspace.get({ slug });
+    ? await Workspace.getWithUser(user, clause)
+    : await Workspace.get(clause);
 
   if (!workspace) {
     response.status(404).send("Workspace does not exist.");
@@ -23,9 +32,18 @@ async function validWorkspaceSlug(request, response, next) {
 async function validWorkspaceAndThreadSlug(request, response, next) {
   const { slug, threadSlug } = request.params;
   const user = await userFromSession(request, response);
+  const tenantId = response.locals?.tenantId || user?.organizationId || null;
+  if (multiUserMode(response) && !tenantId) {
+    response.status(403).json({ error: "No tenant context." });
+    return;
+  }
+  const clause = {
+    slug,
+    ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+  };
   const workspace = multiUserMode(response)
-    ? await Workspace.getWithUser(user, { slug })
-    : await Workspace.get({ slug });
+    ? await Workspace.getWithUser(user, clause)
+    : await Workspace.get(clause);
 
   if (!workspace) {
     response.status(404).send("Workspace does not exist.");

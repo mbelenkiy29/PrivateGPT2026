@@ -5,6 +5,7 @@ const { Telemetry } = require("./telemetry");
 const { EventLogs } = require("./eventLogs");
 const { safeJsonParse } = require("../utils/http");
 const { getModelTag } = require("../endpoints/utils");
+const { vectorNamespace } = require("../utils/tenant");
 
 const Document = {
   writable: ["pinned", "watched", "lastUpdatedAt"],
@@ -135,7 +136,7 @@ const Document = {
       };
 
       const { vectorized, error } = await VectorDb.addDocumentToNamespace(
-        workspace.slug,
+        vectorNamespace(workspace),
         { ...data, docId },
         path
       );
@@ -212,7 +213,7 @@ const Document = {
       });
       if (!document) continue;
       await VectorDb.deleteDocumentFromNamespace(
-        workspace.slug,
+        vectorNamespace(workspace),
         document.docId
       );
 

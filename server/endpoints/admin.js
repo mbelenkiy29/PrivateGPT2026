@@ -24,6 +24,9 @@ const {
   ROLES,
 } = require("../utils/middleware/multiUserProtected");
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
+const { tenantIdFrom } = require("../utils/middleware/resolveTenant");
+const { Organization } = require("../models/organization");
+const { vectorNamespace } = require("../utils/tenant");
 const ImportedPlugin = require("../utils/agents/imported");
 const {
   simpleSSOLoginDisabledMiddleware,
@@ -38,9 +41,10 @@ function adminEndpoints(app) {
   app.get(
     "/admin/users",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const users = await User.where();
+        const tenantId = tenantIdFrom(response);
+        const users = tenantId ? await User.whereForOrganization(tenantId) : [];
         response.status(200).json({ users });
       } catch (e) {
         console.error(e);
@@ -67,6 +71,14 @@ function adminEndpoints(app) {
 
         const { user: newUser, error } = await User.create(newUserParams);
         if (!!newUser) {
+          const tenantId = tenantIdFrom(response);
+          if (tenantId) {
+            await Organization.addMember({
+              organizationId: tenantId,
+              userId: newUser.id,
+              role: newUserParams.role || "default",
+            });
+          }
           await EventLogs.logEvent(
             "user_created",
             {
@@ -93,7 +105,14 @@ function adminEndpoints(app) {
         const currUser = await userFromSession(request, response);
         const { id } = request.params;
         const updates = reqBody(request);
+        const tenantId = tenantIdFrom(response);
         const user = await User.get({ id: Number(id) });
+        if (!user || !(await User.isMemberOf(user.id, tenantId))) {
+          response
+            .status(200)
+            .json({ success: false, error: "User not found" });
+          return;
+        }
 
         const canModify = validCanModify(currUser, user);
         if (!canModify.valid) {
@@ -109,7 +128,11 @@ function adminEndpoints(app) {
           return;
         }
 
-        const validAdminRoleModification = await canModifyAdmin(user, updates);
+        const validAdminRoleModification = await canModifyAdmin(
+          user,
+          updates,
+          tenantId
+        );
         if (!validAdminRoleModification.valid) {
           response
             .status(200)
@@ -118,6 +141,13 @@ function adminEndpoints(app) {
         }
 
         const { success, error } = await User.update(id, updates);
+        if (success && tenantId && updates.role) {
+          await Organization.updateMemberRole(
+            tenantId,
+            Number(id),
+            updates.role
+          );
+        }
         response.status(200).json({ success, error });
       } catch (e) {
         console.error(e);
@@ -133,7 +163,14 @@ function adminEndpoints(app) {
       try {
         const currUser = await userFromSession(request, response);
         const { id } = request.params;
+        const tenantId = tenantIdFrom(response);
         const user = await User.get({ id: Number(id) });
+        if (!user || !(await User.isMemberOf(user.id, tenantId))) {
+          response
+            .status(200)
+            .json({ success: false, error: "User not found" });
+          return;
+        }
 
         const canModify = validCanModify(currUser, user);
         if (!canModify.valid) {
@@ -162,9 +199,12 @@ function adminEndpoints(app) {
   app.get(
     "/admin/invites",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const invites = await Invite.whereWithUsers();
+        const tenantId = tenantIdFrom(response);
+        const invites = tenantId
+          ? await Invite.whereWithUsers({ organizationId: Number(tenantId) })
+          : [];
         response.status(200).json({ invites });
       } catch (e) {
         console.error(e);
@@ -187,6 +227,7 @@ function adminEndpoints(app) {
         const { invite, error } = await Invite.create({
           createdByUserId: user.id,
           workspaceIds: body?.workspaceIds || [],
+          organizationId: tenantIdFrom(response),
         });
 
         await EventLogs.logEvent(
@@ -211,6 +252,17 @@ function adminEndpoints(app) {
     async (request, response) => {
       try {
         const { id } = request.params;
+        const tenantId = tenantIdFrom(response);
+        const existing = await Invite.get({
+          id: Number(id),
+          ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+        });
+        if (!existing) {
+          response
+            .status(200)
+            .json({ success: false, error: "Invite not found" });
+          return;
+        }
         const { success, error } = await Invite.deactivate(id);
         await EventLogs.logEvent(
           "invite_deleted",
@@ -228,9 +280,12 @@ function adminEndpoints(app) {
   app.get(
     "/admin/workspaces",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const workspaces = await Workspace.whereWithUsers();
+        const tenantId = tenantIdFrom(response);
+        const workspaces = tenantId
+          ? await Workspace.whereWithUsers({ organizationId: Number(tenantId) })
+          : [];
         response.status(200).json({ workspaces });
       } catch (e) {
         console.error(e);
@@ -245,6 +300,15 @@ function adminEndpoints(app) {
     async (request, response) => {
       try {
         const { workspaceId } = request.params;
+        const tenantId = tenantIdFrom(response);
+        const workspace = await Workspace.get({
+          id: Number(workspaceId),
+          ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+        });
+        if (!workspace) {
+          response.sendStatus(404).end();
+          return;
+        }
         const users = await Workspace.workspaceUsers(workspaceId);
         response.status(200).json({ users });
       } catch (e) {
@@ -263,7 +327,8 @@ function adminEndpoints(app) {
         const { name } = reqBody(request);
         const { workspace, message: error } = await Workspace.new(
           name,
-          user.id
+          user.id,
+          { organizationId: tenantIdFrom(response) }
         );
         response.status(200).json({ workspace, error });
       } catch (e) {
@@ -280,6 +345,15 @@ function adminEndpoints(app) {
       try {
         const { workspaceId } = request.params;
         const { userIds } = reqBody(request);
+        const tenantId = tenantIdFrom(response);
+        const workspace = await Workspace.get({
+          id: Number(workspaceId),
+          ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+        });
+        if (!workspace) {
+          response.sendStatus(404).end();
+          return;
+        }
         const { success, error } = await Workspace.updateUsers(
           workspaceId,
           userIds
@@ -303,7 +377,12 @@ function adminEndpoints(app) {
       try {
         const { id } = request.params;
         const VectorDb = getVectorDbClass();
-        const workspace = await Workspace.get({ id: Number(id) });
+        const workspace = await Workspace.get({
+          id: Number(id),
+          ...(tenantIdFrom(response)
+            ? { organizationId: Number(tenantIdFrom(response)) }
+            : {}),
+        });
         if (!workspace) {
           response.sendStatus(404).end();
           return;
@@ -314,7 +393,9 @@ function adminEndpoints(app) {
         await Document.delete({ workspaceId: Number(workspace.id) });
         await Workspace.delete({ id: Number(workspace.id) });
         try {
-          await VectorDb["delete-namespace"]({ namespace: workspace.slug });
+          await VectorDb["delete-namespace"]({
+            namespace: vectorNamespace(workspace),
+          });
         } catch (e) {
           console.error(e.message);
         }
@@ -502,9 +583,12 @@ function adminEndpoints(app) {
   app.get(
     "/admin/api-keys",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const apiKeys = await ApiKey.whereWithUser({});
+        const tenantId = tenantIdFrom(response);
+        const apiKeys = tenantId
+          ? await ApiKey.whereWithUser({ organizationId: Number(tenantId) })
+          : [];
         return response.status(200).json({
           apiKeys,
           error: null,
@@ -526,7 +610,11 @@ function adminEndpoints(app) {
       try {
         const user = await userFromSession(request, response);
         const { name = null } = reqBody(request);
-        const { apiKey, error } = await ApiKey.create(user.id, name);
+        const { apiKey, error } = await ApiKey.create(
+          user.id,
+          name,
+          tenantIdFrom(response)
+        );
         await EventLogs.logEvent(
           "api_key_created",
           { createdBy: user?.username, name: apiKey?.name },
@@ -550,6 +638,12 @@ function adminEndpoints(app) {
       try {
         const { id } = request.params;
         if (!id || isNaN(Number(id))) return response.sendStatus(400).end();
+        const tenantId = tenantIdFrom(response);
+        const existing = await ApiKey.get({
+          id: Number(id),
+          ...(tenantId ? { organizationId: Number(tenantId) } : {}),
+        });
+        if (!existing) return response.sendStatus(404).end();
         await ApiKey.delete({ id: Number(id) });
 
         await EventLogs.logEvent(

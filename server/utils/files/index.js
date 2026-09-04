@@ -2,8 +2,13 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { v5: uuidv5, v4: uuidv4 } = require("uuid");
+const { documentsPathFor } = require("../tenant");
 const { Document } = require("../../models/documents");
 const { DocumentSyncQueue } = require("../../models/documentSyncQueue");
+
+function tenantDocumentsPath(organization) {
+  return documentsPathFor(organization);
+}
 const documentsPath =
   process.env.NODE_ENV === "development"
     ? path.resolve(__dirname, `../../storage/documents`)
@@ -37,13 +42,13 @@ async function fileData(filePath = null) {
   return JSON.parse(data);
 }
 
-function listFolders() {
-  if (!fs.existsSync(documentsPath)) fs.mkdirSync(documentsPath);
+function listFolders(basePath = documentsPath) {
+  if (!fs.existsSync(basePath)) fs.mkdirSync(basePath, { recursive: true });
   const folders = [];
 
-  for (const file of fs.readdirSync(documentsPath)) {
+  for (const file of fs.readdirSync(basePath)) {
     if (path.extname(file) === ".md") continue;
-    const folderPath = path.resolve(documentsPath, file);
+    const folderPath = path.resolve(basePath, file);
     if (!fs.lstatSync(folderPath).isDirectory()) continue;
 
     const fileCount = fs
@@ -182,6 +187,7 @@ function normalizePagination({ offset, limit } = {}) {
  * @returns {Promise<{folder: string, documents: any[], totalCount: number, hasMore: boolean, code: number, error: string}>}
  */
 async function getDocumentsByFolder(folderName = "", pagination = {}) {
+  const root = pagination.basePath || documentsPath;
   const { offset, limit } = normalizePagination(pagination);
   if (!folderName) {
     return {
@@ -194,9 +200,9 @@ async function getDocumentsByFolder(folderName = "", pagination = {}) {
     };
   }
 
-  const folderPath = path.resolve(documentsPath, normalizePath(folderName));
+  const folderPath = path.resolve(root, normalizePath(folderName));
   if (
-    !isWithin(documentsPath, folderPath) ||
+    !isWithin(root, folderPath) ||
     !fs.existsSync(folderPath) ||
     !fs.lstatSync(folderPath).isDirectory()
   ) {
@@ -965,4 +971,6 @@ module.exports = {
   listFolders,
   searchDocuments,
   getDocumentsByDocPaths,
+  tenantDocumentsPath,
+  documentsPathFor,
 };

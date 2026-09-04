@@ -32,10 +32,16 @@ async function canAccessWorkspace(user, multiUser, workspaceId) {
   return ids.includes(Number(workspaceId));
 }
 
-async function listScope(user, multiUser) {
-  if (!multiUser || !user || isPrivileged(user)) return {};
+async function listScope(user, multiUser, organizationId = null) {
+  const tenantClause = organizationId
+    ? { organizationId: Number(organizationId) }
+    : {};
+  if (!multiUser || !user || isPrivileged(user)) return tenantClause;
   const ids = await memberWorkspaceIds(user);
-  return { workspaceId: { in: ids.length ? ids : [-1] } };
+  return {
+    workspaceId: { in: ids.length ? ids : [-1] },
+    ...tenantClause,
+  };
 }
 
 function ticketEndpoints(app) {
@@ -94,7 +100,11 @@ function ticketEndpoints(app) {
       try {
         const user = await userFromSession(request, response);
         const multiUser = await SystemSettings.isMultiUserMode();
-        const scope = await listScope(user, multiUser);
+        const scope = await listScope(
+          user,
+          multiUser,
+          response.locals?.tenantId
+        );
         const clause = { ...scope };
 
         const workspaceId = Number(request.query.workspaceId);

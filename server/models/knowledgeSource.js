@@ -61,12 +61,23 @@ const KnowledgeSource = {
       const encrypted_config =
         data.config != null
           ? this.encryptConfig(data.config)
-          : (data.encrypted_config ?? null);
+          : data.encrypted_config ?? null;
+
+      const workspaceId = Number(data.workspaceId);
+      let organizationId = data.organizationId || null;
+      if (!organizationId) {
+        const workspace = await prisma.workspaces.findFirst({
+          where: { id: workspaceId },
+          select: { organizationId: true },
+        });
+        organizationId = workspace?.organizationId || null;
+      }
 
       return await prisma.knowledge_sources.create({
         data: {
           provider: String(data.provider),
-          workspaceId: Number(data.workspaceId),
+          workspaceId,
+          organizationId,
           display_name: String(data.display_name),
           remote_id: data.remote_id ?? null,
           encrypted_config,

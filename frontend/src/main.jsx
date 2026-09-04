@@ -19,6 +19,7 @@ import PrivateRoute, {
   UserOnboardingRoute,
 } from "@/components/PrivateRoute";
 import Login from "@/pages/Login";
+import SignupPage from "@/pages/Signup";
 import SimpleSSOPassthrough from "@/pages/Login/SSO/simple";
 import OnboardingFlow from "@/pages/OnboardingFlow";
 import "@/index.css";
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login />,
+      },
+      {
+        path: "/signup",
+        element: <SignupPage />,
       },
       {
         path: "/sso/simple",

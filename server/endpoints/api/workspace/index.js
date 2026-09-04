@@ -12,6 +12,7 @@ const { multiUserMode, reqBody } = require("../../../utils/http");
 const { validApiKey } = require("../../../utils/middleware/validApiKey");
 const { VALID_CHAT_MODE } = require("../../../utils/chats/stream");
 const { EventLogs } = require("../../../models/eventLogs");
+const { vectorNamespace } = require("../../../utils/tenant");
 const {
   convertToChatHistory,
   writeResponseChunk,
@@ -77,11 +78,11 @@ function apiWorkspaceEndpoints(app) {
     */
     try {
       const { name = null, ...additionalFields } = reqBody(request);
-      const { workspace, message } = await Workspace.new(
-        name,
-        null,
-        additionalFields
-      );
+      const { workspace, message } = await Workspace.new(name, null, {
+        ...additionalFields,
+        organizationId:
+          additionalFields.organizationId || response.locals?.tenantId,
+      });
 
       if (!workspace) {
         response.status(400).json({ workspace: null, message });
@@ -247,7 +248,10 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug = "" } = request.params;
         const VectorDb = getVectorDbClass();
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.sendStatus(400).end();
@@ -335,7 +339,10 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug = null } = request.params;
         const data = reqBody(request);
-        const currWorkspace = await Workspace.get({ slug: String(slug) });
+        const currWorkspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!currWorkspace) {
           response.sendStatus(400).end();
@@ -424,7 +431,10 @@ function apiWorkspaceEndpoints(app) {
           limit = 100,
           orderBy = "asc",
         } = request.query;
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.sendStatus(400).end();
@@ -511,7 +521,10 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug = null } = request.params;
         const { adds = [], deletes = [] } = reqBody(request);
-        const currWorkspace = await Workspace.get({ slug: String(slug) });
+        const currWorkspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!currWorkspace) {
           response.sendStatus(400).end();
@@ -579,7 +592,10 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug = null } = request.params;
         const { docPath, pinStatus = false } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         const document = await Document.get({
           workspaceId: workspace.id,
@@ -664,7 +680,10 @@ function apiWorkspaceEndpoints(app) {
           attachments = [],
           reset = false,
         } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.status(400).json({
@@ -819,7 +838,10 @@ function apiWorkspaceEndpoints(app) {
           attachments = [],
           reset = false,
         } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace) {
           response.status(400).json({
@@ -955,7 +977,10 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug } = request.params;
         const { query, topN, scoreThreshold } = reqBody(request);
-        const workspace = await Workspace.get({ slug: String(slug) });
+        const workspace = await Workspace.getBySlug(
+          String(slug),
+          response.locals?.tenantId
+        );
 
         if (!workspace)
           return response.status(400).json({
@@ -968,8 +993,12 @@ function apiWorkspaceEndpoints(app) {
           });
 
         const VectorDb = getVectorDbClass();
-        const hasVectorizedSpace = await VectorDb.hasNamespace(workspace.slug);
-        const embeddingsCount = await VectorDb.namespaceCount(workspace.slug);
+        const hasVectorizedSpace = await VectorDb.hasNamespace(
+          vectorNamespace(workspace)
+        );
+        const embeddingsCount = await VectorDb.namespaceCount(
+          vectorNamespace(workspace)
+        );
 
         if (!hasVectorizedSpace || embeddingsCount === 0)
           return response.status(200).json({
@@ -996,7 +1025,7 @@ function apiWorkspaceEndpoints(app) {
         });
 
         const results = await VectorDb.performSimilaritySearch({
-          namespace: workspace.slug,
+          namespace: vectorNamespace(workspace),
           input: String(query),
           LLMConnector,
           similarityThreshold: parseSimilarityThreshold(),

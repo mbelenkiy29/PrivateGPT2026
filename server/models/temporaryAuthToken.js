@@ -1,4 +1,3 @@
-const { makeJWT } = require("../utils/http");
 const prisma = require("../utils/prisma");
 
 /**
@@ -83,11 +82,18 @@ const TemporaryAuthToken = {
       if (token.expiresAt < new Date()) throw new Error("Token expired.");
       if (token.user.suspended) throw new Error("User account suspended.");
 
-      // Create a new session token for the user valid for 30 days
-      const sessionToken = makeJWT(
-        { id: token.user.id, username: token.user.username },
-        process.env.JWT_EXPIRY
+      const { Organization } = require("./organization");
+      const { organization, membership } = await Organization.resolveForUser(
+        token.user.id
       );
+      if (!organization || !membership) {
+        throw new Error("No organization membership.");
+      }
+      if (organization.status && organization.status !== "active") {
+        throw new Error("Organization is suspended.");
+      }
+      const { sessionTokenForUser } = require("../utils/http");
+      const sessionToken = sessionTokenForUser(token.user, organization);
 
       return { sessionToken, token, error: null };
     } catch (error) {

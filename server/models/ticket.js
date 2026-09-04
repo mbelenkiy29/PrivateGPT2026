@@ -169,9 +169,19 @@ const Ticket = {
         this.validations.position(data.position) ??
         (await this.nextPosition(workspaceId, status));
 
+      let organizationId = data.organizationId || null;
+      if (!organizationId) {
+        const workspace = await prisma.workspaces.findFirst({
+          where: { id: workspaceId },
+          select: { organizationId: true },
+        });
+        organizationId = workspace?.organizationId || null;
+      }
+
       const ticket = await prisma.tickets.create({
         data: {
           workspaceId,
+          organizationId,
           title: this.validations.title(data.title),
           description: this.validations.description(data.description),
           status,

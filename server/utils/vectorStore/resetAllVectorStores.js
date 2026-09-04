@@ -15,6 +15,7 @@ async function resetAllVectorStores({ vectorDbKey }) {
   const { EventLogs } = require("../../models/eventLogs");
   const { purgeEntireVectorCache } = require("../files");
   const { getVectorDbClass } = require("../helpers");
+  const { vectorNamespace } = require("../tenant");
   try {
     const workspaces = await Workspace.where();
     purgeEntireVectorCache(); // Purges the entire vector-cache folder.
@@ -41,7 +42,9 @@ async function resetAllVectorStores({ vectorDbKey }) {
     } else {
       for (const workspace of workspaces) {
         try {
-          await VectorDb["delete-namespace"]({ namespace: workspace.slug });
+          await VectorDb["delete-namespace"]({
+            namespace: vectorNamespace(workspace),
+          });
         } catch (e) {
           console.error(e.message);
         }

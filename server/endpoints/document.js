@@ -1,5 +1,10 @@
 const { Document } = require("../models/documents");
-const { normalizePath, documentsPath, isWithin } = require("../utils/files");
+const {
+  normalizePath,
+  documentsPath,
+  isWithin,
+  tenantDocumentsPath,
+} = require("../utils/files");
 const { reqBody } = require("../utils/http");
 const {
   flexUserRoleValid,
@@ -17,8 +22,10 @@ function documentEndpoints(app) {
     async (request, response) => {
       try {
         const { name } = reqBody(request);
-        const storagePath = path.join(documentsPath, normalizePath(name));
-        if (!isWithin(path.resolve(documentsPath), path.resolve(storagePath)))
+        const docsRoot =
+          tenantDocumentsPath(response.locals?.tenant) || documentsPath;
+        const storagePath = path.join(docsRoot, normalizePath(name));
+        if (!isWithin(path.resolve(docsRoot), path.resolve(storagePath)))
           throw new Error("Invalid folder name.");
 
         if (fs.existsSync(storagePath)) {

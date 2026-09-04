@@ -5,6 +5,7 @@ const { CommunicationKey } = require("../comKey");
 const setupTelemetry = require("../telemetry");
 const eagerLoadContextWindows = require("./eagerLoadContextWindows");
 const markOnboarded = require("./markOnboarded");
+const { ensureDefaultTenant } = require("./ensureDefaultTenant");
 const { PushNotifications } = require("../PushNotifications");
 const { TelegramBotService } = require("../telegramBot");
 
@@ -32,6 +33,7 @@ function bootSSL(app, port = 3001) {
     server
       .listen(port, async () => {
         await markOnboarded();
+        await ensureDefaultTenant();
         await setupTelemetry();
         new CommunicationKey(true);
         new EncryptionManager();
@@ -65,6 +67,7 @@ function bootHTTP(app, port = 3001) {
   app
     .listen(port, async () => {
       await markOnboarded();
+      await ensureDefaultTenant();
       await setupTelemetry();
       new CommunicationKey(true);
       new EncryptionManager();

@@ -25,7 +25,18 @@ function queryParams(request) {
 function makeJWT(info = {}, expiry = "30d") {
   if (!process.env.JWT_SECRET)
     throw new Error("Cannot create JWT as JWT_SECRET is unset.");
-  return JWT.sign(info, process.env.JWT_SECRET, { expiresIn: expiry });
+  return JWT.sign(info, process.env.JWT_SECRET, {
+    expiresIn: expiry,
+    algorithm: "HS256",
+  });
+}
+
+function sessionTokenForUser(user, organization = null, expiry) {
+  const { jwtPayload } = require("../tenant");
+  return makeJWT(
+    jwtPayload(user, organization),
+    expiry || process.env.JWT_EXPIRY
+  );
 }
 
 /**
@@ -53,13 +64,15 @@ async function userFromSession(request, response = null) {
     return null;
   }
 
-  const user = await User.get({ id: valid.id });
-  return user;
+  if (request) request.decodedJwt = valid;
+  return await User.get({ id: valid.id });
 }
 
 function decodeJWT(jwtToken) {
   try {
-    return JWT.verify(jwtToken, process.env.JWT_SECRET);
+    return JWT.verify(jwtToken, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
   } catch {}
   return { p: null, id: null, username: null };
 }
@@ -131,6 +144,7 @@ module.exports = {
   multiUserMode,
   queryParams,
   makeJWT,
+  sessionTokenForUser,
   decodeJWT,
   userFromSession,
   parseAuthHeader,

@@ -10,11 +10,21 @@ const WorkspaceChats = {
     threadId = null,
     include = true,
     apiSessionId = null,
+    organizationId = null,
   }) {
     try {
+      let orgId = organizationId || user?.organizationId || null;
+      if (!orgId && workspaceId) {
+        const workspace = await prisma.workspaces.findFirst({
+          where: { id: Number(workspaceId) },
+          select: { organizationId: true },
+        });
+        orgId = workspace?.organizationId || null;
+      }
       const chat = await prisma.workspace_chats.create({
         data: {
           workspaceId,
+          organizationId: orgId,
           prompt,
           response: safeJSONStringify(response),
           user_id: user?.id || null,
@@ -219,6 +229,22 @@ const WorkspaceChats = {
       console.error(error.message);
       return [];
     }
+  },
+
+  whereForOrganization: async function (
+    organizationId,
+    clause = {},
+    limit = null,
+    orderBy = null,
+    offset = null
+  ) {
+    const { assertTenant } = require("../utils/tenant");
+    return this.where(
+      assertTenant(clause, organizationId),
+      limit,
+      orderBy,
+      offset
+    );
   },
 
   count: async function (clause = {}) {

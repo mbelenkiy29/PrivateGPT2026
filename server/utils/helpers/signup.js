@@ -8,6 +8,25 @@ const {
   sessionUserPayload,
 } = require("../tenant");
 const { sessionTokenForUser } = require("../http");
+const prisma = require("../prisma");
+
+async function rollbackSignup(organizationId, userId) {
+  try {
+    if (userId) {
+      await prisma.organization_users.deleteMany({
+        where: { userId: Number(userId) },
+      });
+      await prisma.users.delete({ where: { id: Number(userId) } });
+    }
+    if (organizationId) {
+      await prisma.organizations.delete({
+        where: { id: Number(organizationId) },
+      });
+    }
+  } catch (error) {
+    console.error("signup rollback failed:", error.message);
+  }
+}
 
 const signupAttempts = new Map();
 const SIGNUP_WINDOW_MS = 15 * 60 * 1000;
@@ -104,14 +123,24 @@ async function signupTenant({
     email: normalizedEmail,
   });
   if (!user) {
+    await rollbackSignup(organization.id, null);
     return { user: null, organization: null, token: null, error: userError };
   }
 
-  await Organization.addMember({
+  const { membership, error: memberError } = await Organization.addMember({
     organizationId: organization.id,
     userId: user.id,
     role: "admin",
   });
+  if (!membership) {
+    await rollbackSignup(organization.id, user.id);
+    return {
+      user: null,
+      organization: null,
+      token: null,
+      error: memberError || "Could not attach organization membership.",
+    };
+  }
 
   await Workspace.new(String(companyName).trim().slice(0, 255), user.id, {
     organizationId: organization.id,

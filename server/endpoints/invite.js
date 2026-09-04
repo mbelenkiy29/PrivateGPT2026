@@ -1,7 +1,9 @@
 const { EventLogs } = require("../models/eventLogs");
 const { Invite } = require("../models/invite");
+const { Organization } = require("../models/organization");
 const { User } = require("../models/user");
-const { reqBody } = require("../utils/http");
+const { reqBody, sessionTokenForUser } = require("../utils/http");
+const { sessionUserPayload } = require("../utils/tenant");
 const {
   simpleSSOLoginDisabledMiddleware,
 } = require("../utils/middleware/simpleSSOEnabled");
@@ -84,7 +86,22 @@ function inviteEndpoints(app) {
           user.id
         );
 
-        response.status(200).json({ success: true, error: null });
+        const { organization, membership } = await Organization.resolveForUser(
+          user.id,
+          invite.organizationId,
+          { requirePreferred: Boolean(invite.organizationId) }
+        );
+        const token = organization
+          ? sessionTokenForUser(user, organization)
+          : null;
+
+        response.status(200).json({
+          success: true,
+          error: null,
+          valid: Boolean(token),
+          token,
+          user: sessionUserPayload(user, membership, organization),
+        });
       } catch (e) {
         console.error(e);
         response.sendStatus(500).end();

@@ -23,12 +23,23 @@ async function validApiKey(request, response, next) {
     return;
   }
 
+  if (multiUserMode && !apiKey.organizationId) {
+    response.status(403).json({
+      error: "API key is not bound to an organization.",
+    });
+    return;
+  }
+
   if (apiKey.organizationId) {
     const organization = await Organization.get({ id: apiKey.organizationId });
-    if (organization) {
-      response.locals.tenant = organization;
-      response.locals.tenantId = organization.id;
+    if (!organization || organization.status !== "active") {
+      response.status(403).json({
+        error: "API key organization is missing or suspended.",
+      });
+      return;
     }
+    response.locals.tenant = organization;
+    response.locals.tenantId = organization.id;
   }
 
   next();

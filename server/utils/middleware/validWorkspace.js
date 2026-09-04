@@ -7,6 +7,10 @@ async function validWorkspaceSlug(request, response, next) {
   const { slug } = request.params;
   const user = await userFromSession(request, response);
   const tenantId = response.locals?.tenantId || user?.organizationId || null;
+  if (multiUserMode(response) && !tenantId) {
+    response.status(403).json({ error: "No tenant context." });
+    return;
+  }
   const clause = {
     slug,
     ...(tenantId ? { organizationId: Number(tenantId) } : {}),
@@ -29,6 +33,10 @@ async function validWorkspaceAndThreadSlug(request, response, next) {
   const { slug, threadSlug } = request.params;
   const user = await userFromSession(request, response);
   const tenantId = response.locals?.tenantId || user?.organizationId || null;
+  if (multiUserMode(response) && !tenantId) {
+    response.status(403).json({ error: "No tenant context." });
+    return;
+  }
   const clause = {
     slug,
     ...(tenantId ? { organizationId: Number(tenantId) } : {}),

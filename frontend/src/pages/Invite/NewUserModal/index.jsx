@@ -29,19 +29,25 @@ export default function NewUserModal() {
     const data = {};
     const form = new FormData(e.target);
     for (var [key, value] of form.entries()) data[key] = value;
-    const { success, error } = await Invite.acceptInvite(code, data);
-    if (success) {
-      const { valid, user, token, message } = await System.requestToken(data);
-      if (valid && !!token && !!user) {
-        window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
-        window.localStorage.setItem(AUTH_TOKEN, token);
-        window.location = paths.userOnboarding();
-      } else {
-        setError(message);
-      }
+    const accepted = await Invite.acceptInvite(code, data);
+    if (!accepted?.success) {
+      setError(accepted?.error);
       return;
     }
-    setError(error);
+    if (accepted.valid && accepted.token && accepted.user) {
+      window.localStorage.setItem(AUTH_USER, JSON.stringify(accepted.user));
+      window.localStorage.setItem(AUTH_TOKEN, accepted.token);
+      window.location = paths.userOnboarding();
+      return;
+    }
+    const { valid, user, token, message } = await System.requestToken(data);
+    if (valid && !!token && !!user) {
+      window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
+      window.localStorage.setItem(AUTH_TOKEN, token);
+      window.location = paths.userOnboarding();
+    } else {
+      setError(message);
+    }
   };
 
   return (

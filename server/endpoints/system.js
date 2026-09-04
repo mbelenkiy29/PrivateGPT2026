@@ -303,6 +303,24 @@ function systemEndpoints(app) {
         const { organization, membership } = await Organization.resolveForUser(
           existingUser.id
         );
+        if (!organization || !membership) {
+          response.status(200).json({
+            user: null,
+            valid: false,
+            token: null,
+            message: "[006] No organization membership for this account.",
+          });
+          return;
+        }
+        if (organization.status && organization.status !== "active") {
+          response.status(200).json({
+            user: null,
+            valid: false,
+            token: null,
+            message: "[007] Organization is suspended.",
+          });
+          return;
+        }
         const sessionToken = sessionTokenForUser(
           existingUser,
           organization,

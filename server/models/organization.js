@@ -173,9 +173,15 @@ const Organization = {
 
   /**
    * Resolve which organization a JWT/session should use.
-   * Preference: explicit tenantId if the user is a member, else sole membership.
+   * The JWT tenantId is only honored when the user is a member of that org.
+   * When requirePreferred is set, a missing/foreign tenantId does not fall
+   * back to another membership (fail closed).
    */
-  resolveForUser: async function (userId, preferredTenantId = null) {
+  resolveForUser: async function (
+    userId,
+    preferredTenantId = null,
+    { requirePreferred = false } = {}
+  ) {
     const memberships = await this.membershipsForUser(userId);
     if (!memberships.length) return { organization: null, membership: null };
 
@@ -186,6 +192,7 @@ const Organization = {
       if (match) {
         return { organization: match.organization, membership: match };
       }
+      if (requirePreferred) return { organization: null, membership: null };
     }
 
     const sole = memberships[0];

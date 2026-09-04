@@ -83,7 +83,15 @@ const TemporaryAuthToken = {
       if (token.user.suspended) throw new Error("User account suspended.");
 
       const { Organization } = require("./organization");
-      const { organization } = await Organization.resolveForUser(token.user.id);
+      const { organization, membership } = await Organization.resolveForUser(
+        token.user.id
+      );
+      if (!organization || !membership) {
+        throw new Error("No organization membership.");
+      }
+      if (organization.status && organization.status !== "active") {
+        throw new Error("Organization is suspended.");
+      }
       const { sessionTokenForUser } = require("../utils/http");
       const sessionToken = sessionTokenForUser(token.user, organization);
 
